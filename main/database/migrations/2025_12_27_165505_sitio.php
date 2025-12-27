@@ -6,19 +6,18 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        //
+        Schema::create('sitio', function (Blueprint $table) {
+            $table->id('SITIO_ID'); // SERIAL PRIMARY KEY
+            $table->string('SITIO_NAME', 100);
+            $table->boolean('SITIO_IS_DELETED')->default(false);
+            $table->timestamps();
+        });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        //
+        Schema::dropIfExists('sitio');
     }
 };

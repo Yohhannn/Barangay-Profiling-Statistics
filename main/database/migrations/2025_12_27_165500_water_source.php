@@ -6,19 +6,17 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        //
+        Schema::create('water_source', function (Blueprint $table) {
+            $table->id('WATER_ID'); // SERIAL PRIMARY KEY
+            $table->string('WATER_SOURCE_NAME', 50);
+            $table->timestamps();
+        });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        //
+        Schema::dropIfExists('water_source');
     }
 };

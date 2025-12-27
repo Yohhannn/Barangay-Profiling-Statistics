@@ -6,19 +6,17 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        //
+        Schema::create('educational_attainment', function (Blueprint $table) {
+            $table->id('EDAT_ID'); // SERIAL PRIMARY KEY
+            $table->string('EDAT_LEVEL', 100)->nullable();
+            $table->timestamps();
+        });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        //
+        Schema::dropIfExists('educational_attainment');
     }
 };

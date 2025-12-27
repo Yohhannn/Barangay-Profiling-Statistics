@@ -6,19 +6,17 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        //
+        Schema::create('toilet_type', function (Blueprint $table) {
+            $table->id('TOIL_ID'); // SERIAL PRIMARY KEY
+            $table->string('TOIL_TYPE_NAME', 50);
+            $table->timestamps();
+        });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        //
+        Schema::dropIfExists('toilet_type');
     }
 };

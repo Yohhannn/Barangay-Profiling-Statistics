@@ -11,7 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        //
+        Schema::create('classification_health_risk', function (Blueprint $table) {
+            $table->id('CLAH_ID');
+
+            $table->string('CLAH_CLASSIFICATION_NAME', 50);
+
+            $table->timestamps();
+        });
     }
 
     /**
@@ -19,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        //
+        Schema::dropIfExists('classification_health_risk');
     }
 };
