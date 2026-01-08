@@ -1,0 +1,39 @@
+# Barangay Profiling Statistics System
+A modern web application built with Laravel 12, Inertia.js (React), Tailwind CSS v4, and PostgreSQL for managing and analyzing barangay-level profiling data.
+
+--------------------------------
+
+### Prerequisites
+#### Before starting, ensure you have the following installed:
+- PHP 8.2+
+- Composer
+- Node.js & NPM
+- PostgreSQL (Running locally)
+
+--------------------------------
+
+### Installation & Setup
+All commands should be executed from within the ***/main*** directory of the repository.
+
+1. Clone and Navigate to cd /main
+2. composer run setup
+3. Open the .env file in the root of the /main directory and update your PostgreSQL credentials
+
+``` DB_CONNECTION=pgsql 
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=DB_BarangayProfilingStatistics
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+```
+
+Set this to 'file' to avoid "sessions table not found" errors unless you create the table
+SESSION_DRIVER=file
+
+4. php artisan migrate --seed
+5. composer run dev
+
+```
+Server running on [http://127.0.0.1:8000].
+VITE Local:   http://localhost:5173/ 
+```
