@@ -69,7 +69,7 @@ export default function Login({
                                 <div className="grid gap-5">
                                     {/* User ID Field */}
                                     <div className="grid gap-2">
-                                        <Label htmlFor="user_id" className="text-slate-700 font-bold ml-1">UUID</Label>
+                                        <Label htmlFor="user_id" className="text-slate-700 font-bold ml-1">Account ID</Label>
                                         <div className="relative">
                                             <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                             <Input
