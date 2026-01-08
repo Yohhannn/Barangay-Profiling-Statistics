@@ -141,7 +141,7 @@ export default function Login({
 
                                     <Button
                                         type="submit"
-                                        className="group relative overflow-hidden mt-4 w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-blue-100"
+                                        className="group relative overflow-hidden mt-4 w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-blue-100"
                                         tabIndex={4}
                                         disabled={processing}
                                         data-test="login-button"

@@ -25,7 +25,7 @@ const LandingPage = () => {
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="bg-blue-600 p-2 rounded-lg shadow-blue-200 shadow-lg">
+            <div className="bg-blue-600 p-2 rounded-full shadow-blue-200 shadow-lg mr-2">
               <img
                   src="/logo/w-icon.png"
                   alt="MaPro Logo"

@@ -30,7 +30,8 @@ DB_PASSWORD=your_password
 Set this to 'file' to avoid "sessions table not found" errors unless you create the table
 SESSION_DRIVER=file
 
-4. php artisan migrate --seed
+4. php artisan key:generate
+5. php artisan migrate --seed
 5. composer run dev
 
 ```
