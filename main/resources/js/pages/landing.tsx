@@ -1,6 +1,6 @@
 import React from 'react';
-import { Head, Link } from '@inertiajs/react'; // Added Link for Inertia navigation
-import { dashboard, login, register } from '@/routes';
+import { Head, Link } from '@inertiajs/react';
+import { login } from '@/routes'; // Import the login route helper
 import ScrollToTop from "@/components/ScrollToTop";
 import {
   Database,
@@ -11,7 +11,6 @@ import {
   Clock,
   AlertCircle,
   ArrowRight,
-  Server,
   LayoutDashboard
 } from 'lucide-react';
 
@@ -36,7 +35,8 @@ const LandingPage = () => {
           <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
             <a href="#problem" className="hover:text-blue-600 transition">Challenges</a>
             <a href="#features" className="hover:text-blue-600 transition">System</a>
-            {/* Changed to Login Link */}
+
+            {/* Login Link using helper */}
             <Link
               href={login()}
               className="bg-slate-900 text-white px-6 py-2.5 rounded-lg hover:bg-slate-800 transition shadow-sm"
@@ -65,21 +65,19 @@ const LandingPage = () => {
               MaPro is an offline-first database system designed to eliminate manual bottlenecks and secure the future of Barangay Marigondon's resident data.
             </p>
             <div className="flex flex-wrap gap-4">
-              {/* Main CTA now also points to login */}
+              {/* Updated "Get Started" button to use login helper */}
               <Link
-                href="/login"
+                href={login()}
                 className="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold shadow-xl shadow-blue-100 hover:bg-blue-700 transition flex items-center gap-2"
               >
                 Get Started <ArrowRight className="w-5 h-5" />
               </Link>
-              {/* Technical Overview Button Removed */}
             </div>
           </div>
 
           <div className="relative">
             <div className="absolute -inset-4 bg-gradient-to-tr from-blue-100 to-indigo-50 rounded-[2rem] -z-10 transform rotate-3"></div>
             <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 overflow-hidden">
-                {/* Mock UI Header */}
               <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-4">
                 <div className="flex gap-1.5">
                   <div className="w-3 h-3 rounded-full bg-slate-200"></div>
@@ -88,7 +86,6 @@ const LandingPage = () => {
                 </div>
                 <div className="h-4 w-32 bg-slate-100 rounded"></div>
               </div>
-              {/* Mock UI Content */}
               <div className="space-y-3">
                 <div className="h-10 bg-blue-50 rounded-lg w-full flex items-center px-4">
                     <div className="h-2 w-24 bg-blue-200 rounded"></div>
