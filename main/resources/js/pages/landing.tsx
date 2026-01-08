@@ -43,9 +43,12 @@ const LandingPage = () => {
             <a href="#features" className="hover:text-blue-600 transition">System</a>
             <Link
               href={login()}
-              className="bg-slate-900 text-white px-6 py-2.5 rounded-lg hover:bg-slate-800 transition shadow-sm"
+              className="group relative overflow-hidden bg-slate-900 text-white px-6 py-2.5 rounded-lg transition-all duration-200 hover:bg-slate-800 hover:scale-105 active:scale-95 hover:shadow-lg shadow-sm"
             >
-              Login
+              {/* The Shine Effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out"></div>
+
+              <span className="relative z-10">Login</span>
             </Link>
           </div>
         </div>
@@ -73,12 +76,17 @@ const LandingPage = () => {
               MaPro is a <strong>real-time</strong> database system designed to eliminate manual bottlenecks, allowing staff to securely manage and <strong>easily export</strong> resident data.
             </p>
             <div className="flex flex-wrap gap-4">
-              <Link
-                href={login()}
-                className="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold shadow-xl shadow-blue-100 hover:bg-blue-700 transition flex items-center gap-2"
-              >
-                Get Started <ArrowRight className="w-5 h-5" />
-              </Link>
+                <Link
+                  href={login()}
+                  className="group relative overflow-hidden bg-blue-600 text-white px-8 py-4 rounded-xl font-bold shadow-xl shadow-blue-200/50 transition-all duration-300 hover:bg-blue-700 hover:scale-105 active:scale-95 flex items-center gap-2"
+                >
+                  {/* The Shine Effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>
+
+                  <span className="relative z-10 flex items-center gap-2">
+                    Get Started <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
+                  </span>
+                </Link>
             </div>
           </div>
 
