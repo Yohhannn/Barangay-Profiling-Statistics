@@ -16,4 +16,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
 });
 
+Route::get('/', function () {
+    return Inertia::render('landing'); // Renders resources/js/pages/landing.tsx
+});
+
 require __DIR__.'/settings.php';

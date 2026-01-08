@@ -61,6 +61,15 @@
     --color-sidebar-ring: var(--sidebar-ring);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+/* Optional: Offset for fixed/sticky headers */
+section {
+  scroll-margin-top: 5rem; /* Matches your nav height (h-20 = 5rem) */
+}
+
 :root {
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);
