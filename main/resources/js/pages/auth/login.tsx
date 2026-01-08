@@ -6,14 +6,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import AuthLayout from '@/layouts/auth-layout';
-import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
-// Added Link to imports
 import { Form, Head, Link } from '@inertiajs/react';
 import { DotScreenShader } from "@/components/ui/dot-shader-background";
-// Added ArrowLeft to icons
 import { Hash, Lock, ArrowRight, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 interface LoginProps {
@@ -58,7 +54,7 @@ export default function Login({
                         />
                     </div>
                     <h1 className="text-3xl font-black tracking-tight text-slate-900">Welcome Back</h1>
-                    <p className="text-slate-500 font-medium italic">Barangay Marigondon Records & Statistics</p>
+                    <p className="text-slate-500 font-medium italic text-center">Barangay Marigondon Records & Statistics</p>
                 </div>
 
                 {/* Login Card */}
@@ -73,7 +69,7 @@ export default function Login({
                                 <div className="grid gap-5">
                                     {/* User ID Field */}
                                     <div className="grid gap-2">
-                                        <Label htmlFor="user_id" className="text-slate-700 font-bold ml-1">User ID (6 Digits)</Label>
+                                        <Label htmlFor="user_id" className="text-slate-700 font-bold ml-1">UUID</Label>
                                         <div className="relative">
                                             <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                             <Input
@@ -81,7 +77,10 @@ export default function Login({
                                                 type="text"
                                                 name="user_id"
                                                 maxLength={6}
-                                                pattern="\d*"
+                                                inputMode="numeric"
+                                                onInput={(e) => {
+                                                    e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
+                                                }}
                                                 className="pl-10 bg-white border-slate-200 text-slate-900 focus:ring-blue-500 focus:border-blue-500 h-11 font-mono tracking-[0.2em]"
                                                 required
                                                 autoFocus
@@ -89,20 +88,20 @@ export default function Login({
                                                 placeholder="XXXXXX"
                                             />
                                         </div>
-                                        <InputError message={errors.email} />
+                                        <InputError message={errors.user_id} />
                                     </div>
 
-                                    {/* Password Field */}
+                                    {/* PIN Field (Replaced Password) */}
                                     <div className="grid gap-2">
                                         <div className="flex items-center justify-between ml-1">
-                                            <Label htmlFor="password" className="text-slate-700 font-bold">Password</Label>
+                                            <Label htmlFor="password" className="text-slate-700 font-bold">Security PIN</Label>
                                             {canResetPassword && (
                                                 <TextLink
                                                     href={request()}
                                                     className="text-xs font-semibold text-blue-600 hover:text-blue-700"
                                                     tabIndex={5}
                                                 >
-                                                    Forgot password?
+                                                    Forgot PIN?
                                                 </TextLink>
                                             )}
                                         </div>
@@ -112,11 +111,17 @@ export default function Login({
                                                 id="password"
                                                 type={showPassword ? "text" : "password"}
                                                 name="password"
-                                                className="pl-10 pr-10 bg-white border-slate-200 text-slate-900 focus:ring-blue-500 focus:border-blue-500 h-11"
+                                                maxLength={6}
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
+                                                onInput={(e) => {
+                                                    e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
+                                                }}
+                                                className="pl-10 pr-10 bg-white border-slate-200 text-slate-900 focus:ring-blue-500 focus:border-blue-500 h-11 font-mono tracking-[0.3em]"
                                                 required
                                                 tabIndex={2}
                                                 autoComplete="current-password"
-                                                placeholder="••••••••"
+                                                placeholder="••••••"
                                             />
                                             <button
                                                 type="button"

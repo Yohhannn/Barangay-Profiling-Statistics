@@ -185,16 +185,22 @@ const LandingPage = () => {
       <footer className="py-12 border-t border-slate-200">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
-            <Database className="text-blue-600 w-5 h-5" />
-            <span className="font-bold">MaPro 2025</span>
+              <div>
+              <img
+                  src="/logo/ravenlabs.png"
+                  alt="MaPro Logo"
+                  className="w-7 h-7 object-contain"
+              />
+              </div>
+            <span className="font-bold">RavenLabs Dev.</span>
           </div>
           <p className="text-slate-500 text-sm">
             Developed for Barangay Marigondon. Optimized for Local Governance.
           </p>
           <div className="flex gap-6 text-sm font-medium text-slate-400">
-            <span>PostgreSQL</span>
-            <span>PHP</span>
-            <span>Laravel</span>
+            <span>Modern</span>
+            <span>Secure</span>
+            <span>Simple</span>
           </div>
         </div>
       </footer>
