@@ -49,12 +49,28 @@ return new class extends Migration
 
         // ADD COLUMN MANUALLY
         DB::statement("ALTER TABLE system_activity_log ADD COLUMN act_action_type action_type_enum");
+        
+        Schema::create('cache', function (Blueprint $table) {
+            $table->string('key')->primary();
+            $table->text('value');
+            $table->timestamp('expiration')->nullable();
+        });
+        Schema::create('sessions', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->foreignId('user_id')->nullable()->index();
+            $table->string('ip_address', 45)->nullable();
+            $table->text('user_agent')->nullable();
+            $table->text('payload');
+            $table->integer('last_activity')->index();
+        });
     }
 
     public function down(): void
     {
         Schema::dropIfExists('system_activity_log');
         Schema::dropIfExists('system_account');
+        Schema::dropIfExists('sessions');
+        Schema::dropIfExists('cache');
         DB::statement("DROP SEQUENCE IF EXISTS SYS_USER_ID_SEQ");
         DB::statement("DROP SEQUENCE IF EXISTS SYS_CTZ_ID_SEQ");
         DB::statement("DROP TYPE IF EXISTS role_type_enum");
