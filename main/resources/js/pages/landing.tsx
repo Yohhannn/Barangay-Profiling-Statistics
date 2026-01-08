@@ -1,7 +1,8 @@
 import React from 'react';
 import { Head, Link } from '@inertiajs/react';
-import { login } from '@/routes'; // Import the login route helper
+import { login } from '@/routes';
 import ScrollToTop from "@/components/ScrollToTop";
+import { DotScreenShader } from "@/components/ui/dot-shader-background";
 import {
   Database,
   Users,
@@ -11,7 +12,8 @@ import {
   Clock,
   AlertCircle,
   ArrowRight,
-  LayoutDashboard
+  LayoutDashboard,
+  Download
 } from 'lucide-react';
 
 const LandingPage = () => {
@@ -24,7 +26,11 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="bg-blue-600 p-2 rounded-lg shadow-blue-200 shadow-lg">
-              <Database className="text-white w-6 h-6" />
+              <img
+                  src="/logo/w-icon.png"
+                  alt="MaPro Logo"
+                  className="w-10 h-10 object-contain"
+              />
             </div>
             <div>
               <span className="text-xl font-bold block leading-none tracking-tight">MaPro</span>
@@ -35,8 +41,6 @@ const LandingPage = () => {
           <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
             <a href="#problem" className="hover:text-blue-600 transition">Challenges</a>
             <a href="#features" className="hover:text-blue-600 transition">System</a>
-
-            {/* Login Link using helper */}
             <Link
               href={login()}
               className="bg-slate-900 text-white px-6 py-2.5 rounded-lg hover:bg-slate-800 transition shadow-sm"
@@ -47,9 +51,13 @@ const LandingPage = () => {
         </div>
       </nav>
 
-      {/* --- Hero Section --- */}
-      <header className="relative pt-16 pb-24 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
+      {/* --- Full-Screen Hero Section --- */}
+      <header className="relative min-h-[calc(100vh-80px)] flex items-center overflow-hidden">
+               {/* SHADER BACKGROUND BLOCK */}
+        <div className="absolute inset-0 z-0 pointer-events-none opacity-30">
+          <DotScreenShader />
+        </div>
+        <div className="max-w-7xl mx-auto px-6 w-full grid lg:grid-cols-2 gap-16 items-center py-12">
           <div className="relative z-10">
             <div className="inline-flex items-center gap-2 px-3 py-1 mb-6 text-xs font-bold tracking-wider text-blue-700 uppercase bg-blue-100 rounded-full">
               <span className="relative flex h-2 w-2">
@@ -62,10 +70,9 @@ const LandingPage = () => {
               Modernizing <span className="text-blue-600">Local Governance.</span>
             </h1>
             <p className="text-xl text-slate-600 mb-10 leading-relaxed max-w-xl">
-              MaPro is an offline-first database system designed to eliminate manual bottlenecks and secure the future of Barangay Marigondon's resident data.
+              MaPro is a <strong>real-time</strong> database system designed to eliminate manual bottlenecks, allowing staff to securely manage and <strong>easily export</strong> resident data.
             </p>
             <div className="flex flex-wrap gap-4">
-              {/* Updated "Get Started" button to use login helper */}
               <Link
                 href={login()}
                 className="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold shadow-xl shadow-blue-100 hover:bg-blue-700 transition flex items-center gap-2"
@@ -145,13 +152,13 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-4xl font-bold mb-6">Localized Excellence</h2>
-            <p className="text-slate-600">MaPro utilizes a robust technical stack to provide a secure, offline environment for barangay operations.</p>
+            <p className="text-slate-600">MaPro utilizes a robust technical stack to provide a secure, real-time environment for barangay operations.</p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               { icon: <ShieldCheck />, title: "Secure Storage", desc: "PostgreSQL-backed data management with zero risk of physical loss." },
-              { icon: <Users />, title: "Smart Profiling", desc: "Intuitive resident data entry with advanced searching and filtering." },
+              { icon: <Download />, title: "Easy Export", desc: "Staff can instantly export resident records and statistics to various file formats." },
               { icon: <BarChart3 />, title: "Auto-Reporting", desc: "Generate actionable statistical reports with a single click." },
             ].map((feat, i) => (
               <div key={i} className="p-8 bg-white border border-slate-200 rounded-2xl hover:border-blue-300 hover:shadow-lg transition group">
@@ -178,8 +185,8 @@ const LandingPage = () => {
           </p>
           <div className="flex gap-6 text-sm font-medium text-slate-400">
             <span>PostgreSQL</span>
-            <span>Python</span>
-            <span>PyQt6</span>
+            <span>PHP</span>
+            <span>Laravel</span>
           </div>
         </div>
       </footer>
