@@ -165,7 +165,7 @@ const LandingPage = () => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { icon: <ShieldCheck />, title: "Secure Storage", desc: "PostgreSQL-backed data management with zero risk of physical loss." },
+              { icon: <ShieldCheck />, title: "Secure Storage", desc: "Secure data management with zero risk of physical loss." },
               { icon: <Download />, title: "Easy Export", desc: "Staff can instantly export resident records and statistics to various file formats." },
               { icon: <BarChart3 />, title: "Auto-Reporting", desc: "Generate actionable statistical reports with a single click." },
             ].map((feat, i) => (
