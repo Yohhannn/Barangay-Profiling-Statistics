@@ -10,7 +10,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { dashboard, citizenPanel, citizenRecords, statistics, institutions, transactions, activityLogs, archives } from '@/routes';
+import { dashboard, citizenPanel, citizenRecords, statistics, institutions, transactions, activityLogs, archives, adminPanel } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
 import {
@@ -68,7 +68,7 @@ const mainNavItems: NavItem[] = [
 const adminNavItems: NavItem[] = [
     {
         title: 'Admin Panel',
-        href: activityLogs(), // Update with actual route helper when created
+        href: adminPanel(), // Update with actual route helper when created
         icon: Shield,
     },
     {

@@ -44,7 +44,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // ------------------------------------------------  ADMIN PANEL
     Route::get('admin-panel', function () {
-        return Inertia::render('admin/ActivityLogs/admin-panel');
+        return Inertia::render('admin/AdminPanel/admin-panel');
     })->name('admin-panel');
 
     // ------------------------------------------------  ACTIVITY LOGS
