@@ -10,7 +10,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { dashboard, citizenPanel, citizenRecords } from '@/routes';
+import { dashboard, citizenPanel, citizenRecords, statistics, institutions, transactions } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
 import { BookOpen, Folder, LayoutGrid, UserRound, Archive, ChartPie, Landmark, ConciergeBell } from 'lucide-react';
@@ -34,17 +34,17 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Statistics',
-        href: dashboard(),
+        href: statistics(),
         icon: ChartPie,
     },
     {
         title: 'Institutions',
-        href: dashboard(),
+        href: institutions(),
         icon: Landmark,
     },
     {
         title: 'Transactions',
-        href: dashboard(),
+        href: transactions(),
         icon: ConciergeBell,
     },
 ];
