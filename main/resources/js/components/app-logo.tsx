@@ -21,7 +21,7 @@ export default function AppLogo() {
             */}
             {!isCollapsed && (
                 <div className="ml-2 grid flex-1 text-left leading-tight transition-all">
-                    <span className="truncate font-black text-blue-600 text-sm tracking-tight">
+                    <span className="truncate font-black text-blue-600 text-sm tracking-tight dark:text-blue-300">
                         MaPro
                     </span>
                     <span className="truncate text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">

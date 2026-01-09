@@ -13,7 +13,7 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, UserRound, Archive, ChartPie, Landmark, ConciergeBell } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -21,6 +21,31 @@ const mainNavItems: NavItem[] = [
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
+    },
+    {
+        title: 'Citizen Panel',
+        href: dashboard(),
+        icon: UserRound,
+    },
+    {
+        title: 'Citizen Records',
+        href: dashboard(),
+        icon: Archive,
+    },
+    {
+        title: 'Statistics',
+        href: dashboard(),
+        icon: ChartPie,
+    },
+    {
+        title: 'Institutions',
+        href: dashboard(),
+        icon: Landmark,
+    },
+    {
+        title: 'Transactions',
+        href: dashboard(),
+        icon: ConciergeBell,
     },
 ];
 
