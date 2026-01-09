@@ -10,12 +10,27 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { dashboard, citizenPanel, citizenRecords, statistics, institutions, transactions } from '@/routes';
+import { dashboard, citizenPanel, citizenRecords, statistics, institutions, transactions, activityLogs, archives } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, UserRound, Archive, ChartPie, Landmark, ConciergeBell } from 'lucide-react';
+import {
+    LayoutGrid,
+    UserRound,
+    Archive,
+    ChartPie,
+    Landmark,
+    ConciergeBell,
+    UserCircle,
+    ShieldCheck,
+    Shield,
+    Logs,
+    Users,
+    Settings,
+    ArchiveX,
+} from 'lucide-react';
 import AppLogo from './app-logo';
 
+// General Navigation Items
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
@@ -49,18 +64,26 @@ const mainNavItems: NavItem[] = [
     },
 ];
 
-const footerNavItems: NavItem[] = [
-    // {
-    //     title: 'Repository',
-    //     href: 'https://github.com/laravel/react-starter-kit',
-    //     icon: Folder,
-    // },
-    // {
-    //     title: 'Documentation',
-    //     href: 'https://laravel.com/docs/starter-kits#react',
-    //     icon: BookOpen,
-    // },
+// Administrative Access Items
+const adminNavItems: NavItem[] = [
+    {
+        title: 'Admin Panel',
+        href: activityLogs(), // Update with actual route helper when created
+        icon: Shield,
+    },
+    {
+        title: 'Activity Logs',
+        href: activityLogs(), // Update with actual route helper when created
+        icon: Logs,
+    },
+    {
+        title: 'Archives',
+        href: archives(), // Update with actual route helper when created
+        icon: ArchiveX
+    },
 ];
+
+const footerNavItems: NavItem[] = [];
 
 export function AppSidebar() {
     return (
@@ -78,7 +101,11 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                {/* General Group */}
+                <NavMain items={mainNavItems} label="General" />
+
+                {/* Administrative Access Group */}
+                <NavMain items={adminNavItems} label="Administrative Access" />
             </SidebarContent>
 
             <SidebarFooter>

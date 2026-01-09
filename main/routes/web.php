@@ -41,6 +41,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('transactions', function () {
         return Inertia::render('main/Transactions/transactions');
     })->name('transactions');
+
+    // ------------------------------------------------  ADMIN PANEL
+    Route::get('admin-panel', function () {
+        return Inertia::render('admin/ActivityLogs/admin-panel');
+    })->name('admin-panel');
+
+    // ------------------------------------------------  ACTIVITY LOGS
+    Route::get('activity-logs', function () {
+        return Inertia::render('admin/ActivityLogs/activity-logs');
+    })->name('activity-logs');
+
+    // ------------------------------------------------  ARCHIVES
+    Route::get('archives', function () {
+        return Inertia::render('admin/Archives/archives');
+    })->name('archives');
 });
 
 // Import additional route groups
