@@ -17,11 +17,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
 
     Route::get('citizen-panel', function () {
-        return Inertia::render('citizen-panel');
+        return Inertia::render('main/CitizenPanel/citizen-panel');
     })->name('citizen-panel');
 
     Route::get('citizen-records', function () {
-        return Inertia::render('citizen-records');
+        return Inertia::render('main/CitizenRecords/citizen-records');
     })->name('citizen-records');
 });
 
