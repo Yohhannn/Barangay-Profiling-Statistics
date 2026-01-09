@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react'; // [1] Added useState
 import { Head, Link } from '@inertiajs/react';
 import { login } from '@/routes';
 import ScrollToTop from "@/components/ScrollToTop";
@@ -13,10 +13,17 @@ import {
   AlertCircle,
   ArrowRight,
   LayoutDashboard,
-  Download
+  Download,
+  Menu, // [2] Added Menu icon
+  X     // [2] Added Close icon
 } from 'lucide-react';
 
 const LandingPage = () => {
+  // [3] State for mobile menu
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-900">
       <Head title="MaPro - Marigondon Records and Statistics" />
@@ -38,6 +45,7 @@ const LandingPage = () => {
             </div>
           </div>
 
+          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-600">
             <a href="#problem" className="hover:text-blue-600 transition">Challenges</a>
             <a href="#features" className="hover:text-blue-600 transition">System</a>
@@ -45,10 +53,36 @@ const LandingPage = () => {
               href={login()}
               className="group relative overflow-hidden bg-slate-900 text-white px-6 py-2.5 rounded-lg transition-all duration-200 hover:bg-slate-800 hover:scale-105 active:scale-95 hover:shadow-lg shadow-sm"
             >
-              {/* The Shine Effect */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out"></div>
-
               <span className="relative z-10">Login</span>
+            </Link>
+          </div>
+
+          {/* [4] Mobile Menu Toggle Button */}
+          <div className="md:hidden flex items-center">
+            <button
+              onClick={toggleMenu}
+              className="p-2 text-slate-600 hover:text-blue-600 transition-colors"
+              aria-label="Toggle Menu"
+            >
+              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
+        </div>
+
+        {/* [5] Mobile Dropdown Menu */}
+        <div className={`
+          md:hidden absolute top-20 left-0 w-full bg-white border-b border-slate-200 transition-all duration-300 ease-in-out overflow-hidden
+          ${isMenuOpen ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0 pointer-events-none'}
+        `}>
+          <div className="flex flex-col p-6 gap-4 text-sm font-semibold text-slate-600">
+            <a href="#problem" onClick={() => setIsMenuOpen(false)} className="hover:text-blue-600 transition py-2">Challenges</a>
+            <a href="#features" onClick={() => setIsMenuOpen(false)} className="hover:text-blue-600 transition py-2">System</a>
+            <Link
+              href={login()}
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg text-center hover:bg-blue-700 transition"
+            >
+              Login to Portal
             </Link>
           </div>
         </div>

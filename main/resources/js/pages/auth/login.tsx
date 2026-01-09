@@ -46,11 +46,11 @@ export default function Login({
             <div className="relative z-10 w-full max-w-md">
                 {/* Branding Section */}
                 <div className="flex flex-col items-center mb-8">
-                    <div className="bg-blue-600 p-3 rounded-xl shadow-blue-200 shadow-xl mb-4 transform -rotate-3 hover:rotate-0 transition-transform duration-300">
+                    <div className=" p-3 rounded-full mb-4">
                         <img
-                            src="/logo/w-icon.png"
+                            src="/logo/brgylogo.png"
                             alt="MaPro Logo"
-                            className="w-12 h-12 object-contain"
+                            className="w-16 h-16 object-contain"
                         />
                     </div>
                     <h1 className="text-3xl font-black tracking-tight text-slate-900">Welcome Back</h1>
