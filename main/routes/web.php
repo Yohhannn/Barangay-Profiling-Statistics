@@ -9,6 +9,10 @@ Route::get('/', function () {
     return Inertia::render('landing');
 })->name('home');
 
+Route::get('/scan', function () {
+    return Inertia::render('scan'); // Points to resources/js/pages/scan.tsx
+});
+
 // Auth routes for standard users
 Route::middleware(['auth', 'verified'])->group(function () {
 
