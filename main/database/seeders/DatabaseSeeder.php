@@ -3,24 +3,21 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
-
         User::firstOrCreate(
-            ['email' => 'test@example.com'],
+            ['sys_user_id' => 123456], // Match migration column
             [
-                'name' => 'Test User',
-                'password' => 'password',
-                'email_verified_at' => now(),
+                'sys_fname' => 'Test',
+                'sys_lname' => 'Admin',
+                'sys_password' => Hash::make('111111'), // Hashed 6-digit PIN
+                'sys_role' => 'Admin',
+                'sys_is_active' => true,
             ]
         );
     }

@@ -75,7 +75,7 @@ export default function Login({
                                             <Input
                                                 id="user_id"
                                                 type="text"
-                                                name="user_id"
+                                                name="sys_user_id"
                                                 maxLength={6}
                                                 inputMode="numeric"
                                                 onInput={(e) => {
@@ -88,7 +88,7 @@ export default function Login({
                                                 placeholder="XXXXXX"
                                             />
                                         </div>
-                                        <InputError message={errors.user_id} />
+                                        <InputError message={errors.sys_user_id} />
                                     </div>
 
                                     {/* PIN Field (Replaced Password) */}
