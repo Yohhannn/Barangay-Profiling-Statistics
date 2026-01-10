@@ -10,32 +10,80 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { dashboard } from '@/routes';
+import { dashboard, citizenPanel, citizenRecords, statistics, institutions, transactions, activityLogs, archives, adminPanel } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-react';
+import {
+    LayoutGrid,
+    UserRound,
+    Archive,
+    ChartPie,
+    Landmark,
+    ConciergeBell,
+    UserCircle,
+    ShieldCheck,
+    Shield,
+    Logs,
+    Users,
+    Settings,
+    ArchiveX,
+} from 'lucide-react';
 import AppLogo from './app-logo';
 
+// General Navigation Items
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
     },
+    {
+        title: 'Citizen Panel',
+        href: citizenPanel(),
+        icon: UserRound,
+    },
+    {
+        title: 'Citizen Records',
+        href: citizenRecords(),
+        icon: Archive,
+    },
+    {
+        title: 'Statistics',
+        href: statistics(),
+        icon: ChartPie,
+    },
+    {
+        title: 'Institutions',
+        href: institutions(),
+        icon: Landmark,
+    },
+    {
+        title: 'Transactions',
+        href: transactions(),
+        icon: ConciergeBell,
+    },
 ];
 
-const footerNavItems: NavItem[] = [
+// Administrative Access Items
+const adminNavItems: NavItem[] = [
     {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: Folder,
+        title: 'Admin Panel',
+        href: adminPanel(), // Update with actual route helper when created
+        icon: Shield,
     },
     {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
+        title: 'Activity Logs',
+        href: activityLogs(), // Update with actual route helper when created
+        icon: Logs,
+    },
+    {
+        title: 'Archives',
+        href: archives(), // Update with actual route helper when created
+        icon: ArchiveX
     },
 ];
+
+const footerNavItems: NavItem[] = [];
 
 export function AppSidebar() {
     return (
@@ -53,7 +101,11 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                {/* General Group */}
+                <NavMain items={mainNavItems} label="General" />
+
+                {/* Administrative Access Group */}
+                <NavMain items={adminNavItems} label="Administrative Access" />
             </SidebarContent>
 
             <SidebarFooter>
