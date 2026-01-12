@@ -10,7 +10,7 @@ class CitizenInformation extends Model
     /** @use HasFactory<\Database\Factories\CitizenInformationFactory> */
     use HasFactory;
 
-    protected $table = 'citizen_information';
+    protected $table = 'citizen_informations';
     protected $primaryKey = 'ctz_info_id';
     public $timestamps = false;
 
@@ -30,6 +30,7 @@ class CitizenInformation extends Model
         'is_registered_voter',
         'is_indigenous',
         'relationship_type',
+        'hh_id',
         'sitio_id',
         'emp_id',
         'con_id',
@@ -44,6 +45,11 @@ class CitizenInformation extends Model
     ];
 
     // Relationships
+    public function householdInfo()
+    {
+        return $this->belongsTo(HouseholdInfo::class, 'hh_id', 'hh_id');
+    }
+
     public function sitio()
     {
         return $this->belongsTo(Sitio::class, 'sitio_id', 'sitio_id');
