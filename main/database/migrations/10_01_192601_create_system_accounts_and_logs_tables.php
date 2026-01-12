@@ -9,18 +9,12 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // 1. Create Sequences
-        DB::statement("CREATE SEQUENCE IF NOT EXISTS SYS_USER_ID_SEQ START 1001");
-        DB::statement("CREATE SEQUENCE IF NOT EXISTS SYS_CTZ_ID_SEQ START 1001");
-
-        // 2. Create Enums
-        DB::statement("DO $$ BEGIN CREATE TYPE role_type_enum AS ENUM('Staff', 'Admin', 'Super Admin'); EXCEPTION WHEN duplicate_object THEN null; END $$;");
-        DB::statement("DO $$ BEGIN CREATE TYPE action_type_enum AS ENUM('INSERT', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT'); EXCEPTION WHEN duplicate_object THEN null; END $$;");
+      
 
         // 3. System Accounts
         Schema::create('system_accounts', function (Blueprint $table) {
             $table->increments('sys_id');
-            $table->integer('sys_account_id')->unique()->default(DB::raw("nextval('SYS_USER_ID_SEQ')"));
+            $table->integer('sys_account_id');
             $table->text('sys_password');
             $table->string('sys_fname', 50);
             $table->string('sys_mname', 50)->nullable();
@@ -31,15 +25,14 @@ return new class extends Migration
             $table->date('date_created')->useCurrent();
         });
 
-        // ADD COLUMN MANUALLY
-        DB::statement("ALTER TABLE system_accounts ADD COLUMN sys_role role_type_enum");
+      
 
        
 
         Schema::create('cache', function (Blueprint $table) {
             $table->string('key')->primary();
             $table->text('value');
-            $table->timestamp('expiration')->nullable();
+            $table->integer('expiration');
         });
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
@@ -53,13 +46,9 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('system_activity_log');
-        Schema::dropIfExists('system_account');
+        Schema::dropIfExists('system_accounts');
         Schema::dropIfExists('sessions');
         Schema::dropIfExists('cache');
-        DB::statement("DROP SEQUENCE IF EXISTS SYS_USER_ID_SEQ");
-        DB::statement("DROP SEQUENCE IF EXISTS SYS_CTZ_ID_SEQ");
-        DB::statement("DROP TYPE IF EXISTS role_type_enum");
-        DB::statement("DROP TYPE IF EXISTS action_type_enum");
+   
     }
 };

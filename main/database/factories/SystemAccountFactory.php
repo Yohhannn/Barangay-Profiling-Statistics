@@ -23,29 +23,56 @@ class SystemAccountFactory extends Factory
         $userAccount++;
         if($userAccount == 1){
             $info = [
-                'sys_account_id' => 123456,
-                'sys_password' => Hash::make('adminpass'),
-            ];
-        }else if($userAccount == 2){
-            $info = [
+                'sys_fname' => 'SR_OFFICE',
                 'sys_account_id' => 111111,
-                'sys_password' => Hash::make('adminpass'),
+                'sys_password' => Hash::make('111111'),
             ];
 
+        }else if($userAccount == 2){
+            $info = [
+                'sys_fname' => 'OFFICE',
+                'sys_account_id' => 222222,
+                'sys_password' => Hash::make('111111'),
+            ];
         }else if($userAccount == 3){
             $info = [
-                'sys_account_id' => 222222,
-                'sys_password' => Hash::make('adminpass'),
+                'sys_fname' => 'OFFICE ENCODER',
+                'sys_account_id' => 333333,
+                'sys_password' => Hash::make('111111'),
+            ];
+        }else if($userAccount == 4){
+            $info = [
+                'sys_fname' => 'SR_BPSO',
+                'sys_account_id' => 444444,
+                'sys_password' => Hash::make('111111'),
+            ];
+        }else if($userAccount == 5){
+            $info = [
+                'sys_fname' => 'BPSO',
+                'sys_account_id' => 555555,
+                'sys_password' => Hash::make('111111'),
+            ];
+        }else if($userAccount == 6){
+            $info = [
+                'sys_fname' => 'SR_BHW',
+                'sys_account_id' => 666666,
+                'sys_password' => Hash::make('111111'),
+            ];
+        }else if($userAccount == 7){
+            $info = [
+                'sys_fname' => 'BHW',
+                'sys_account_id' => 777777,
+                'sys_password' => Hash::make('111111'),
             ];
         }else{
             $info = [
+                'sys_fname' => $this->faker->firstName(),
                 'sys_account_id' => rand(100000,999999),
-                'sys_password' => Hash::make('adminpass'),
+                'sys_password' => Hash::make('111111'),
             ];
         }
         return [
             ...$info,
-            'sys_fname' => $this->faker->firstName(),
             'sys_mname' => $this->faker->lastName(),
             'sys_lname' => $this->faker->lastName(),
             'is_deleted' => false,
