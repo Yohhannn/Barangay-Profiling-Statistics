@@ -12,7 +12,7 @@ class User extends Authenticatable
     use HasFactory, Notifiable, TwoFactorAuthenticatable;
 
     // Use your custom table name
-    protected $table = 'system_account';
+    protected $table = 'system_accounts';
 
     // Use your custom primary key
     protected $primaryKey = 'sys_id';

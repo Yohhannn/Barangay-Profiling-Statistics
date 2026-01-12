@@ -75,7 +75,7 @@ export default function Login({
                                             <Input
                                                 id="user_id"
                                                 type="text"
-                                                name="sys_user_id"
+                                                name="sys_account_id"
                                                 maxLength={6}
                                                 inputMode="numeric"
                                                 onInput={(e) => {

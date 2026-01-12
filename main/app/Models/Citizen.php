@@ -21,7 +21,7 @@ class Citizen extends Model
         'deleted_reason',
         'date_encoded',
         'date_updated',
-        'hh_id',
+        'face_recog_uuid',
         'updated_by',
         'encoded_by',
         'ctz_info_id',
@@ -34,11 +34,6 @@ class Citizen extends Model
     ];
 
     // Relationships
-    public function householdInfo()
-    {
-        return $this->belongsTo(HouseholdInfo::class, 'hh_id', 'hh_id');
-    }
-
     public function updatedByAccount()
     {
         return $this->belongsTo(SystemAccount::class, 'updated_by', 'sys_id');

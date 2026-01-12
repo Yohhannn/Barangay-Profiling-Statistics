@@ -3,19 +3,20 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
-class SystemAccount extends Model
+class SystemAccount extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\SystemAccountFactory> */
-    use HasFactory;
+    use HasFactory, Notifiable;
 
     protected $table = 'system_accounts';
     protected $primaryKey = 'sys_id';
     public $incrementing = true;
 
     protected $fillable = [
-        'sys_user_id',
+        'sys_account_id',
         'sys_password',
         'sys_fname',
         'sys_mname',
@@ -29,6 +30,11 @@ class SystemAccount extends Model
     protected $casts = [
         'date_created' => 'date',
         'is_deleted' => 'boolean',
+    ];
+
+    protected $hidden = [
+        'sys_password',
+        'remember_token',
     ];
 
     public $timestamps = false;
@@ -127,5 +133,13 @@ class SystemAccount extends Model
     public function businessInfosUpdated()
     {
         return $this->hasMany(BusinessInfo::class, 'updated_by', 'sys_id');
+    }
+
+    /**
+     * Return the password for authentication.
+     */
+    public function getAuthPassword()
+    {
+        return $this->sys_password;
     }
 }
