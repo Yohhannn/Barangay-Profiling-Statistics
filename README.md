@@ -31,11 +31,12 @@ Set this to 'file' to avoid "sessions table not found" errors unless you create 
 SESSION_DRIVER=file
 
 4. php artisan key:generate
-5. php artisan migrate --seed
-5. composer run dev
+5. php artisan make:cache-table
+6. php artisan migrate --seed
+7. composer run dev
 
 ```
 Server running on [http://127.0.0.1:8000].
 VITE Local:   http://localhost:5173/ 
 ```
-6. npm install three @types/three @react-three/fiber @react-three/drei next-themes
+8. npm install three @types/three @react-three/fiber @react-three/drei next-themes
