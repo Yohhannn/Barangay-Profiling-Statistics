@@ -39,4 +39,4 @@ SESSION_DRIVER=file
 Server running on [http://127.0.0.1:8000].
 VITE Local:   http://localhost:5173/ 
 ```
-8. npm install three @types/three @react-three/fiber @react-three/drei next-themes
+8. npm install three @types/three @react-three/fiber @react-three/drei next-themes lucide-react
