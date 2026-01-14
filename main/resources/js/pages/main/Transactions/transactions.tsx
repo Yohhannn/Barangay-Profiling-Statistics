@@ -109,4 +109,4 @@ export default function Transactions({ pendingCount = 0 }: TransactionsProps) {
             </div>
         </AppLayout>
     );
-}w
+}
