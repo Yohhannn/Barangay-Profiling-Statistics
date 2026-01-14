@@ -21,10 +21,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
 
-    // ------------------------------------------------  CITIZEN PANEL
+    // ------------------------------------------------  CITIZEN PANEL (MENU)
     Route::get('citizen-panel', function () {
         return Inertia::render('main/CitizenPanel/citizen-panel');
     })->name('citizen-panel');
+
+    // ------------------------------------------------  CITIZEN PROFILES (SUB-MODULE)
+    Route::get('citizen-panel/citizen-profile', function () {
+        return Inertia::render('main/CitizenPanel/citizen-profiles');
+    })->name('citizen-profile');
 
     // ------------------------------------------------  CITIZEN RECORDS
     Route::get('citizen-records', function () {
