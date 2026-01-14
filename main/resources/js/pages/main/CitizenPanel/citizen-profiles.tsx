@@ -6,9 +6,9 @@ import {
     ArrowLeft, Search, Plus, PenSquare, Trash2,
     User, MapPin, Briefcase, UserX, GraduationCap,
     HeartPulse, Baby, Phone, Hash, Calendar, Flag,
-    AlertCircle, FileBadge
+    Filter, X, SlidersHorizontal, Edit3
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 // --- 1. Comprehensive Type Definition ---
 interface Citizen {
@@ -276,6 +276,41 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function CitizenProfiles() {
     const [selectedCitizen, setSelectedCitizen] = useState<Citizen | null>(mockCitizens[0]);
     const [searchQuery, setSearchQuery] = useState('');
+    const [showFilters, setShowFilters] = useState(false);
+
+    // Filter States
+    const [filterStatus, setFilterStatus] = useState('All');
+    const [filterSitio, setFilterSitio] = useState('All');
+    const [filterSex, setFilterSex] = useState('All');
+
+    // Get unique Sitios for dropdown
+    const uniqueSitios = useMemo(() => {
+        return Array.from(new Set(mockCitizens.map(c => c.sitio))).sort();
+    }, []);
+
+    // Derived State for Filtered List
+    const filteredCitizens = useMemo(() => {
+        return mockCitizens.filter(citizen => {
+            const matchesSearch =
+                citizen.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                citizen.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                citizen.citizenId.toLowerCase().includes(searchQuery.toLowerCase());
+
+            const matchesStatus = filterStatus === 'All' || citizen.status === filterStatus;
+            const matchesSitio = filterSitio === 'All' || citizen.sitio === filterSitio;
+            const matchesSex = filterSex === 'All' || citizen.sex === filterSex;
+
+            return matchesSearch && matchesStatus && matchesSitio && matchesSex;
+        });
+    }, [searchQuery, filterStatus, filterSitio, filterSex]);
+
+    const handleDelete = (e: React.MouseEvent, id: number) => {
+        e.stopPropagation(); // Prevent row selection
+        if (confirm('Are you sure you want to move this citizen to archives?')) {
+            console.log('Deleted citizen:', id);
+            // Add your deletion logic here
+        }
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -300,69 +335,129 @@ export default function CitizenProfiles() {
 
                     {/* === LEFT COLUMN: Table List (Spans 4 columns) === */}
                     <div className="lg:col-span-4 flex flex-col gap-4 bg-white dark:bg-sidebar rounded-2xl border border-sidebar-border/60 shadow-sm overflow-hidden">
-                        {/* Table Header / Search */}
+
+                        {/* Table Header / Search & Filter */}
                         <div className="p-4 bg-neutral-50/50 dark:bg-neutral-900/20 border-b border-sidebar-border/60 space-y-3">
                             <div className="flex justify-between items-center">
-                                <h2 className="text-xs font-bold text-white bg-neutral-900 dark:bg-blue-600 py-1 px-3 rounded-md uppercase tracking-wider">
-                                    Registered List
-                                </h2>
+                                <div className="flex items-center gap-2">
+                                    <h2 className="text-xs font-bold text-white bg-neutral-900 dark:bg-blue-600 py-1 px-3 rounded-md uppercase tracking-wider">
+                                        Registered List
+                                    </h2>
+                                    {/* REGISTER BUTTON ADDED HERE */}
+                                    <button className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white p-1 rounded-md transition-colors shadow-sm" title="Register New Citizen">
+                                        <Plus className="size-4" />
+                                    </button>
+                                </div>
                                 <span className="text-[10px] text-neutral-400 font-mono">
-                                    TOTAL: {mockCitizens.length}
+                                    TOTAL: {filteredCitizens.length}
                                 </span>
                             </div>
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Search Name, ID, or Sitio..."
-                                    className="w-full pl-10 pr-4 py-2 text-sm border border-sidebar-border rounded-lg bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
+
+                            {/* Search & Toggle Row */}
+                            <div className="flex gap-2">
+                                <div className="relative flex-1">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search..."
+                                        className="w-full pl-10 pr-4 py-2 text-sm border border-sidebar-border rounded-lg bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                </div>
+                                <button
+                                    onClick={() => setShowFilters(!showFilters)}
+                                    className={`p-2 rounded-lg border border-sidebar-border transition-colors ${showFilters ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white hover:bg-neutral-50 text-neutral-500'}`}
+                                >
+                                    {showFilters ? <X className="size-4" /> : <SlidersHorizontal className="size-4" />}
+                                </button>
                             </div>
+
+                            {/* Collapsible Filters */}
+                            {showFilters && (
+                                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-sidebar-border/50 animate-in slide-in-from-top-2 duration-200">
+                                    <select
+                                        className="text-xs p-2 rounded-lg border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-blue-500/20"
+                                        value={filterStatus}
+                                        onChange={(e) => setFilterStatus(e.target.value)}
+                                    >
+                                        <option value="All">All Status</option>
+                                        <option value="Active">Active</option>
+                                        <option value="Deceased">Deceased</option>
+                                        <option value="Moved">Moved</option>
+                                    </select>
+                                    <select
+                                        className="text-xs p-2 rounded-lg border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-blue-500/20"
+                                        value={filterSex}
+                                        onChange={(e) => setFilterSex(e.target.value)}
+                                    >
+                                        <option value="All">All Sex</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                    </select>
+                                    <select
+                                        className="col-span-2 text-xs p-2 rounded-lg border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-blue-500/20"
+                                        value={filterSitio}
+                                        onChange={(e) => setFilterSitio(e.target.value)}
+                                    >
+                                        <option value="All">All Sitios / Locations</option>
+                                        {uniqueSitios.map(sitio => (
+                                            <option key={sitio} value={sitio}>{sitio}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
                         </div>
 
                         {/* Table Content */}
                         <div className="flex-1 overflow-auto">
                             <div className="flex flex-col">
-                                {mockCitizens.map((citizen) => (
-                                    <div
-                                        key={citizen.id}
-                                        onClick={() => setSelectedCitizen(citizen)}
-                                        // Fixed the "weird line" by keeping border-l-4 always present but colored differently
-                                        className={`
-                                            group cursor-pointer p-4 border-b border-sidebar-border/50 border-l-4 transition-all duration-200
-                                            ${selectedCitizen?.id === citizen.id
-                                            ? 'bg-blue-50 dark:bg-blue-900/20 border-l-blue-500'
-                                            : 'border-l-transparent hover:bg-neutral-50 dark:hover:bg-neutral-800/50 hover:border-l-blue-200'}
-                                        `}
-                                    >
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <h3 className={`font-bold text-sm ${selectedCitizen?.id === citizen.id ? 'text-blue-700 dark:text-blue-300' : 'text-neutral-900 dark:text-neutral-100'}`}>
-                                                    {citizen.lastName}, {citizen.firstName}
-                                                </h3>
-                                                <p className="text-xs text-neutral-500 font-mono mt-0.5">{citizen.citizenId}</p>
+                                {filteredCitizens.length > 0 ? (
+                                    filteredCitizens.map((citizen) => (
+                                        <div
+                                            key={citizen.id}
+                                            onClick={() => setSelectedCitizen(citizen)}
+                                            className={`
+                                                group cursor-pointer p-4 border-b border-sidebar-border/50 border-l-4 transition-all duration-200
+                                                ${selectedCitizen?.id === citizen.id
+                                                ? 'bg-blue-50 dark:bg-blue-900/20 border-l-blue-500'
+                                                : 'border-l-transparent hover:bg-neutral-50 dark:hover:bg-neutral-800/50 hover:border-l-blue-200'}
+                                            `}
+                                        >
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <h3 className={`font-bold text-sm ${selectedCitizen?.id === citizen.id ? 'text-blue-700 dark:text-blue-300' : 'text-neutral-900 dark:text-neutral-100'}`}>
+                                                        {citizen.lastName}, {citizen.firstName}
+                                                    </h3>
+                                                    <p className="text-xs text-neutral-500 font-mono mt-0.5">{citizen.citizenId}</p>
+                                                </div>
+                                                <div className="flex flex-col items-end gap-2">
+                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${citizen.status === 'Deceased' ? 'bg-red-100 text-red-700' : 'bg-neutral-100 text-neutral-600'}`}>
+                                                        {citizen.sitio}
+                                                    </span>
+                                                    {/* TRASH ICON ADDED HERE */}
+                                                    <button
+                                                        onClick={(e) => handleDelete(e, citizen.id)}
+                                                        className="text-neutral-400 hover:text-red-600 transition-colors p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                        title="Move to Archive"
+                                                    >
+                                                        <Trash2 className="size-3.5" />
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${citizen.status === 'Deceased' ? 'bg-red-100 text-red-700' : 'bg-neutral-100 text-neutral-600'}`}>
-                                                {citizen.sitio}
-                                            </span>
                                         </div>
+                                    ))
+                                ) : (
+                                    <div className="p-8 text-center text-neutral-400 text-xs">
+                                        No citizens found matching your filters.
                                     </div>
-                                ))}
+                                )}
                             </div>
                         </div>
                     </div>
 
                     {/* === RIGHT COLUMN: Detailed Profile (Spans 8 columns) === */}
                     <div className="lg:col-span-8 flex flex-col gap-4 min-h-0">
-
-                        {/* Action Buttons Bar */}
-                        <div className="flex gap-3">
-                            <ActionButton icon={<Plus className="size-4" />} label="Register" color="bg-green-600 hover:bg-green-700" />
-                            <ActionButton icon={<PenSquare className="size-4" />} label="Update" color="bg-blue-600 hover:bg-blue-700" />
-                            <ActionButton icon={<Trash2 className="size-4" />} label="Delete" color="bg-red-600 hover:bg-red-700" />
-                        </div>
 
                         {/* Main Profile Container */}
                         {selectedCitizen ? (
@@ -392,6 +487,10 @@ export default function CitizenProfiles() {
                                                         </span>
                                                     </div>
                                                 </div>
+                                                {/* UPDATE BUTTON ADDED HERE */}
+                                                <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all hover:shadow-md">
+                                                    <Edit3 className="size-3.5" /> Edit Profile
+                                                </button>
                                             </div>
 
                                             {/* Flags / Tags Row */}
@@ -550,14 +649,6 @@ export default function CitizenProfiles() {
 }
 
 // --- Reusable Sub-Components ---
-
-function ActionButton({ icon, label, color }: { icon: React.ReactNode, label: string, color: string }) {
-    return (
-        <button className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white text-xs font-bold uppercase tracking-wider shadow-sm transition-all hover:shadow-md active:scale-95 ${color}`}>
-            {icon} <span>{label}</span>
-        </button>
-    );
-}
 
 function SectionHeader({ icon, title }: { icon: React.ReactNode, title: string }) {
     return (
