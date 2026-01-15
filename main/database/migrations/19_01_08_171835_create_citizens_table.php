@@ -19,6 +19,7 @@ return new class extends Migration
             $table->date('date_encoded')->default(now());
             $table->date('date_updated')->nullable();
             $table->string('face_recog_uuid',255)->nullable();
+            $table->string('photo_uuid',255)->nullable();
             $table->foreignId('updated_by')->constrained('system_accounts','sys_id')->onDelete('cascade')->onUpdate('cascade');
             $table->foreignId('encoded_by')->constrained('system_accounts','sys_id')->onDelete('cascade')->onUpdate('cascade');
             $table->foreignId('ctz_info_id')->constrained('citizen_informations','ctz_info_id')->onDelete('cascade')->onUpdate('cascade');

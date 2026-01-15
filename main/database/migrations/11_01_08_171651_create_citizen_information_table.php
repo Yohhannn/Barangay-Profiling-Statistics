@@ -20,7 +20,7 @@ return new class extends Migration
             $table->date('date_of_birth');
             $table->string('place_of_birth');
             $table->enum('sex',['Male','Female']);
-            $table->string('photo',255)->nullable();
+         #   $table->string('photo',255)->nullable(); moved to citizen
             $table->enum('civil_status',[ 'Single', 'Married', 'Widowed', 'Separated', 'Divorced']);
             $table->enum('blood_type', ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-','Unknown'])->nullable();
             $table->string('religion')->nullable();
