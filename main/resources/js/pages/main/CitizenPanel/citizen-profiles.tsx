@@ -6,7 +6,7 @@ import {
     ArrowLeft, Search, Plus, PenSquare, Trash2,
     User, MapPin, Briefcase, UserX, GraduationCap,
     HeartPulse, Baby, Phone, Hash, Calendar, Flag,
-    Filter, X, SlidersHorizontal, Edit3
+    Filter, X, SlidersHorizontal, Edit3, ScanFace // Added ScanFace
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 
@@ -365,6 +365,12 @@ export default function CitizenProfiles() {
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                     />
                                 </div>
+                                <button
+                                    className="p-2 rounded-lg border border-sidebar-border bg-white hover:bg-neutral-50 text-neutral-500 transition-colors"
+                                    title="Scan Face to Search"
+                                >
+                                    <ScanFace className="size-4" />
+                                </button>
                                 <button
                                     onClick={() => setShowFilters(!showFilters)}
                                     className={`p-2 rounded-lg border border-sidebar-border transition-colors ${showFilters ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white hover:bg-neutral-50 text-neutral-500'}`}
