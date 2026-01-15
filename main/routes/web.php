@@ -45,10 +45,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('main/CitizenRecords/citizen-history');
     })->name('citizen-history');
 
-    // NEW: Medical History Route
     Route::get('citizen-records/medical-history', function () {
         return Inertia::render('main/CitizenRecords/medical-history');
     })->name('medical-history');
+
+    // NEW: Settlement History Route
+    Route::get('citizen-records/settlement-history', function () {
+        return Inertia::render('main/CitizenRecords/settlement-history');
+    })->name('settlement-history');
 
     // --- STATISTICS ---
     Route::get('statistics', function () {
