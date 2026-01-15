@@ -13,15 +13,15 @@ import {
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'History Records', // Updated to match the image
+        title: 'Citizen Records',
         href: '/citizen-records',
     },
 ];
 
-export default function HistoryRecords() {
+export default function CitizenRecords() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="History Records" />
+            <Head title="Citizen Records" />
 
             <div className="flex flex-col gap-8 p-6 lg:p-8 h-full min-h-[85vh] max-w-7xl mx-auto w-full">
 
@@ -30,7 +30,7 @@ export default function HistoryRecords() {
                     <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div className="space-y-2">
                             <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-                                History Records
+                                Citizen Records
                             </h1>
                             <div className="flex items-center gap-3 text-sm font-medium text-neutral-500">
                                 <span className="flex h-6 items-center rounded-full bg-neutral-100 px-3 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700">
@@ -55,7 +55,7 @@ export default function HistoryRecords() {
 
                     {/* Card 1: Citizen History (Blue) */}
                     <Link
-                        href="/history/citizen"
+                        href="/citizen-records/citizen-history" // FIXED ROUTE
                         className="group relative flex flex-col items-center justify-center rounded-3xl border border-sidebar-border/60 bg-white dark:bg-sidebar p-8 py-12 text-center shadow-sm transition-all duration-300 hover:border-blue-500/30 hover:shadow-xl hover:shadow-blue-500/5 hover:-translate-y-1"
                     >
                         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-blue-50/30 dark:to-blue-900/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-3xl" />
@@ -85,7 +85,7 @@ export default function HistoryRecords() {
 
                     {/* Card 2: Medical History (Rose/Red) */}
                     <Link
-                        href="/history/medical"
+                        href="/citizen-records/medical-history" // FIXED ROUTE
                         className="group relative flex flex-col items-center justify-center rounded-3xl border border-sidebar-border/60 bg-white dark:bg-sidebar p-8 py-12 text-center shadow-sm transition-all duration-300 hover:border-rose-500/30 hover:shadow-xl hover:shadow-rose-500/5 hover:-translate-y-1"
                     >
                         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-rose-50/30 dark:to-rose-900/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-3xl" />
@@ -115,7 +115,7 @@ export default function HistoryRecords() {
 
                     {/* Card 3: Settlement History (Amber/Orange) */}
                     <Link
-                        href="/history/settlement"
+                        href="/citizen-records/settlement-history" // FIXED ROUTE
                         className="group relative flex flex-col items-center justify-center rounded-3xl border border-sidebar-border/60 bg-white dark:bg-sidebar p-8 py-12 text-center shadow-sm transition-all duration-300 hover:border-amber-500/30 hover:shadow-xl hover:shadow-amber-500/5 hover:-translate-y-1"
                     >
                         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-amber-50/30 dark:to-amber-900/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-3xl" />
