@@ -31,6 +31,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('main/CitizenPanel/citizen-profiles');
     })->name('citizen-profile');
 
+    Route::get('citizen-panel/household-profile', function () {
+        return Inertia::render('main/CitizenPanel/household-profiles');
+    })->name('household-profile');
+
     // ------------------------------------------------  CITIZEN RECORDS
     Route::get('citizen-records', function () {
         return Inertia::render('main/CitizenRecords/citizen-records');
