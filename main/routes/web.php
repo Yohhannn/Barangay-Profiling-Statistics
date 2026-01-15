@@ -45,6 +45,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('main/CitizenRecords/citizen-history');
     })->name('citizen-history');
 
+    // NEW: Medical History Route
+    Route::get('citizen-records/medical-history', function () {
+        return Inertia::render('main/CitizenRecords/medical-history');
+    })->name('medical-history');
+
     // --- STATISTICS ---
     Route::get('statistics', function () {
         return Inertia::render('main/Statistics/statistics');
