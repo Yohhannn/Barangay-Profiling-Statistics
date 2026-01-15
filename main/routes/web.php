@@ -2,31 +2,31 @@
 
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use Laravel\Fortify\Features;
 
-// Root route now correctly renders the Landing page as the home page
+// Root route
 Route::get('/', function () {
     return Inertia::render('landing');
 })->name('home');
 
+// Scan route
 Route::get('/scan', function () {
-    return Inertia::render('scan'); // Points to resources/js/pages/scan.tsx
+    return Inertia::render('scan');
 });
 
-// Auth routes for standard users
+// Auth routes
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    // ------------------------------------------------  DASHBOARD
+    // --- DASHBOARD ---
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
 
-    // ------------------------------------------------  CITIZEN PANEL (MENU)
+    // --- CITIZEN PANEL ---
     Route::get('citizen-panel', function () {
         return Inertia::render('main/CitizenPanel/citizen-panel');
     })->name('citizen-panel');
 
-    // ------------------------------------------------  CITIZEN PROFILES (SUB-MODULE)
+    // Sub-modules
     Route::get('citizen-panel/citizen-profile', function () {
         return Inertia::render('main/CitizenPanel/citizen-profiles');
     })->name('citizen-profile');
@@ -35,41 +35,45 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('main/CitizenPanel/household-profiles');
     })->name('household-profile');
 
-    // ------------------------------------------------  CITIZEN RECORDS
+    // --- CITIZEN RECORDS ---
     Route::get('citizen-records', function () {
         return Inertia::render('main/CitizenRecords/citizen-records');
     })->name('citizen-records');
 
-    // ------------------------------------------------  STATISTICS
+    // Sub-modules
+    Route::get('citizen-records/citizen-history', function () {
+        return Inertia::render('main/CitizenRecords/citizen-history');
+    })->name('citizen-history');
+
+    // --- STATISTICS ---
     Route::get('statistics', function () {
         return Inertia::render('main/Statistics/statistics');
     })->name('statistics');
 
-    // ------------------------------------------------  INSTITUTIONS
+    // --- INSTITUTIONS ---
     Route::get('institutions', function () {
         return Inertia::render('main/Institutions/institutions');
     })->name('institutions');
 
-    // ------------------------------------------------  TRANSACTIONS
+    // --- TRANSACTIONS ---
     Route::get('transactions', function () {
         return Inertia::render('main/Transactions/transactions');
     })->name('transactions');
 
-    // ------------------------------------------------  ADMIN PANEL
+    // --- ADMIN PANEL ---
     Route::get('admin-panel', function () {
         return Inertia::render('admin/AdminPanel/admin-panel');
     })->name('admin-panel');
 
-    // ------------------------------------------------  ACTIVITY LOGS
+    // --- ACTIVITY LOGS ---
     Route::get('activity-logs', function () {
         return Inertia::render('admin/ActivityLogs/activity-logs');
     })->name('activity-logs');
 
-    // ------------------------------------------------  ARCHIVES
+    // --- ARCHIVES ---
     Route::get('archives', function () {
         return Inertia::render('admin/Archives/archives');
     })->name('archives');
 });
 
-// Import additional route groups
 require __DIR__.'/settings.php';
