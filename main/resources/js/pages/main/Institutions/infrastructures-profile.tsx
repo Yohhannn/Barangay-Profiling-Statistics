@@ -123,10 +123,10 @@ export default function InfrastructureProfile() {
                             </h1>
                         </div>
                     </div>
-                    {/* Export Button */}
-                    <button className="flex items-center gap-2 px-4 py-2 bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm">
-                        <Download className="size-4" /> Export
-                    </button>
+                    {/*/!* Export Button *!/*/}
+                    {/*<button className="flex items-center gap-2 px-4 py-2 bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm">*/}
+                    {/*    <Download className="size-4" /> Export*/}
+                    {/*</button>*/}
                 </div>
 
                 {/* --- Main Content Split --- */}
