@@ -83,10 +83,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('main/Statistics/health-stats');
     })->name('health-stats');
 
-    // NEW: Business Stats Route
     Route::get('statistics/business', function () {
         return Inertia::render('main/Statistics/business-stats');
     })->name('business-stats');
+
+    // NEW: Infrastructure Stats Route
+    Route::get('statistics/infrastructure', function () {
+        return Inertia::render('main/Statistics/infrastructure-stats');
+    })->name('infrastructure-stats');
 
     // --- INSTITUTIONS ---
     Route::get('institutions', function () {
