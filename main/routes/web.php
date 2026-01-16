@@ -49,7 +49,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('main/CitizenRecords/medical-history');
     })->name('medical-history');
 
-    // NEW: Settlement History Route
     Route::get('citizen-records/settlement-history', function () {
         return Inertia::render('main/CitizenRecords/settlement-history');
     })->name('settlement-history');
@@ -58,6 +57,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('statistics', function () {
         return Inertia::render('main/Statistics/statistics');
     })->name('statistics');
+
+    // NEW: Demographics Route
+    Route::get('statistics/demographic', function () {
+        return Inertia::render('main/Statistics/demographic-stats');
+    })->name('demographic-stats');
 
     // --- INSTITUTIONS ---
     Route::get('institutions', function () {
