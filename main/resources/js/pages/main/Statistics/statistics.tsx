@@ -102,7 +102,7 @@ const statCategories = [
         border: 'group-hover:border-slate-200 dark:group-hover:border-slate-800',
         hoverBg: 'group-hover:bg-slate-50 dark:group-hover:bg-slate-900/20',
         gradient: 'from-slate-50 to-slate-100 dark:from-slate-900/20 dark:to-slate-900/10',
-        href: '/statistics/infrastructures'
+        href: '/statistics/infrastructure'
     },
 ];
 
