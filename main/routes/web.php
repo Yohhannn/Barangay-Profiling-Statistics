@@ -58,10 +58,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('main/Statistics/statistics');
     })->name('statistics');
 
-    // NEW: Demographics Route
+    // Sub-modules
     Route::get('statistics/demographic', function () {
         return Inertia::render('main/Statistics/demographic-stats');
     })->name('demographic-stats');
+
+    // NEW: Neighborhood Stats Route
+    Route::get('statistics/neighborhood', function () {
+        return Inertia::render('main/Statistics/neighborhood-stats');
+    })->name('neighborhood-stats');
 
     // --- INSTITUTIONS ---
     Route::get('institutions', function () {
