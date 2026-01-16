@@ -63,10 +63,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('main/Statistics/demographic-stats');
     })->name('demographic-stats');
 
-    // NEW: Neighborhood Stats Route
     Route::get('statistics/neighborhood', function () {
         return Inertia::render('main/Statistics/neighborhood-stats');
     })->name('neighborhood-stats');
+
+    // NEW: Household Stats Route
+    Route::get('statistics/household', function () {
+        return Inertia::render('main/Statistics/household-stats');
+    })->name('household-stats');
 
     // --- INSTITUTIONS ---
     Route::get('institutions', function () {
