@@ -75,10 +75,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('main/Statistics/education-stats');
     })->name('education-stats');
 
-    // NEW: Employment Stats Route
     Route::get('statistics/employment', function () {
         return Inertia::render('main/Statistics/employment-stats');
     })->name('employment-stats');
+
+    // NEW: Health Stats Route
+    Route::get('statistics/health', function () {
+        return Inertia::render('main/Statistics/health-stats');
+    })->name('health-stats');
 
     // --- INSTITUTIONS ---
     Route::get('institutions', function () {
