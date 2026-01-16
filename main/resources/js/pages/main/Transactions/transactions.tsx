@@ -52,7 +52,7 @@ export default function Transactions({ pendingCount = 0 }: TransactionsProps) {
 
                     {/* Card 1: Services (Yellow/Amber Theme) */}
                     <Link
-                        href="/transactions/services"
+                        href="/transactions/services-profile" // UPDATED ROUTE
                         className="group relative flex flex-col items-center justify-center rounded-3xl border border-sidebar-border/60 bg-white dark:bg-sidebar p-12 text-center shadow-sm transition-all duration-300 hover:border-yellow-500/30 hover:shadow-xl hover:shadow-yellow-500/5 hover:-translate-y-1"
                     >
                         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-yellow-50/30 dark:to-yellow-900/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-3xl" />

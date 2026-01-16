@@ -53,7 +53,7 @@ export default function Institutions({ businessCount = 0, infrastructureCount = 
 
                     {/* Card 1: Businesses (Blue Theme) */}
                     <Link
-                        href="/institutions/businesses"
+                        href="/institutions/business-profile" // FIXED ROUTE
                         className="group relative flex flex-col items-center justify-center rounded-3xl border border-sidebar-border/60 bg-white dark:bg-sidebar p-12 text-center shadow-sm transition-all duration-300 hover:border-blue-500/30 hover:shadow-xl hover:shadow-blue-500/5 hover:-translate-y-1"
                     >
                         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-blue-50/30 dark:to-blue-900/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-3xl" />
@@ -97,7 +97,7 @@ export default function Institutions({ businessCount = 0, infrastructureCount = 
 
                     {/* Card 2: Infrastructures (Amber/Yellow Theme) */}
                     <Link
-                        href="/institutions/infrastructures"
+                        href="/institutions/infrastructure-profile" // FIXED ROUTE
                         className="group relative flex flex-col items-center justify-center rounded-3xl border border-sidebar-border/60 bg-white dark:bg-sidebar p-12 text-center shadow-sm transition-all duration-300 hover:border-amber-500/30 hover:shadow-xl hover:shadow-amber-500/5 hover:-translate-y-1"
                     >
                         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-amber-50/30 dark:to-amber-900/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-3xl" />
