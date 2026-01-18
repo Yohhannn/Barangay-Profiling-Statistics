@@ -102,7 +102,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('business-profile');
 
     Route::get('institutions/infrastructure-profile', function () {
-        return Inertia::render('main/Institutions/infrastructures-profile');
+        return Inertia::render('main/Institutions/infrastructure-profile');
     })->name('infrastructure-profile');
 
     // --- TRANSACTIONS ---
@@ -110,7 +110,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('main/Transactions/transactions');
     })->name('transactions');
 
-    // NEW: Services Profile Route
+    // Sub-modules
     Route::get('transactions/services-profile', function () {
         return Inertia::render('main/Transactions/services-profile');
     })->name('services-profile');
@@ -119,6 +119,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('admin-panel', function () {
         return Inertia::render('admin/AdminPanel/admin-panel');
     })->name('admin-panel');
+
+    // Sub-modules
+    Route::get('admin-panel/manage-accounts', function () {
+        return Inertia::render('admin/AdminPanel/manage-accounts');
+    })->name('manage-accounts');
+
+    // NEW: Admin Control Route
+    Route::get('admin-panel/admin-control', function () {
+        return Inertia::render('admin/AdminPanel/admin-control');
+    })->name('admin-control');
 
     // --- ACTIVITY LOGS ---
     Route::get('activity-logs', function () {
