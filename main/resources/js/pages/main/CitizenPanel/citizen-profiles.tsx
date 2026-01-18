@@ -3,12 +3,14 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import {
-    ArrowLeft, Search, Plus, PenSquare, Trash2,
+    ArrowLeft, Search, Plus, Trash2,
     User, MapPin, Briefcase, UserX, GraduationCap,
-    HeartPulse, Baby, Phone, Hash, Calendar, Flag,
-    Filter, X, SlidersHorizontal, Edit3, ScanFace // Added ScanFace
+    HeartPulse, Baby, Phone, Hash,
+    Filter, X, SlidersHorizontal, Edit3, ScanFace
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
+// IMPORT THE MODAL COMPONENT
+import CitizenCreation from './popup/citizen-creation';
 
 // --- 1. Comprehensive Type Definition ---
 interface Citizen {
@@ -278,6 +280,9 @@ export default function CitizenProfiles() {
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilters, setShowFilters] = useState(false);
 
+    // --- NEW STATE FOR MODAL ---
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+
     // Filter States
     const [filterStatus, setFilterStatus] = useState('All');
     const [filterSitio, setFilterSitio] = useState('All');
@@ -305,16 +310,18 @@ export default function CitizenProfiles() {
     }, [searchQuery, filterStatus, filterSitio, filterSex]);
 
     const handleDelete = (e: React.MouseEvent, id: number) => {
-        e.stopPropagation(); // Prevent row selection
+        e.stopPropagation();
         if (confirm('Are you sure you want to move this citizen to archives?')) {
             console.log('Deleted citizen:', id);
-            // Add your deletion logic here
         }
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Citizen Profiles" />
+
+            {/* --- MOUNT THE MODAL HERE --- */}
+            <CitizenCreation isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
 
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
 
@@ -344,7 +351,11 @@ export default function CitizenProfiles() {
                                         Registered List
                                     </h2>
                                     {/* REGISTER BUTTON ADDED HERE */}
-                                    <button className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white p-1 rounded-md transition-colors shadow-sm" title="Register New Citizen">
+                                    <button
+                                        onClick={() => setIsCreateOpen(true)}
+                                        className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white p-1 rounded-md transition-colors shadow-sm"
+                                        title="Register New Citizen"
+                                    >
                                         <Plus className="size-4" />
                                     </button>
                                 </div>
