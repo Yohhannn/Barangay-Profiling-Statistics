@@ -4,10 +4,11 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import {
     ArrowLeft, Search, Plus, Trash2,
-    Home, MapPin, Users, Droplets, Link as LinkIcon,
-    UserCheck, FileText, Download, Edit3, X, SlidersHorizontal, Hash
+    Home, MapPin, Droplets, Link as LinkIcon,
+    UserCheck, FileText, Edit3, X, SlidersHorizontal, Hash
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import HouseholdCreation from './popup/household-creation'; // IMPORTED
 
 // --- Types ---
 interface HouseholdMember {
@@ -50,7 +51,7 @@ interface Household {
     updatedBy: string;
 }
 
-// --- Mock Data (10 Entries) ---
+// --- Mock Data ---
 const mockHouseholds: Household[] = [
     {
         id: 1, householdId: 'HH-001', householdNumber: '1001-A', sitio: 'Ylaya',
@@ -83,80 +84,6 @@ const mockHouseholds: Household[] = [
         ],
         dateEncoded: 'July 12, 2025 | 2:15 PM', encodedBy: 'STAFF_02', dateUpdated: 'N/A', updatedBy: 'N/A'
     },
-    {
-        id: 4, householdId: 'HH-004', householdNumber: '1004-D', sitio: 'Kawayan',
-        ownershipStatus: 'Caretaker', interviewedBy: 'Staff A', reviewedBy: 'Admin', dateOfVisit: '2025-07-13',
-        waterSource: 'Deep Well', toiletType: 'Water-sealed', homeAddress: 'Near Chapel, Kawayan', homeLink: '10.237, 123.459',
-        members: [
-            { id: 401, firstName: 'Pedro', lastName: 'Magtanggol', relationship: 'Head' },
-        ],
-        dateEncoded: 'July 13, 2025 | 10:00 AM', encodedBy: 'ADMIN', dateUpdated: 'N/A', updatedBy: 'N/A'
-    },
-    {
-        id: 5, householdId: 'HH-005', householdNumber: '1005-E', sitio: 'Crossing',
-        ownershipStatus: 'Owned', interviewedBy: 'Staff B', reviewedBy: 'Admin', dateOfVisit: '2025-07-14',
-        waterSource: 'MCWD', toiletType: 'Flush', homeAddress: 'Highway, Crossing', homeLink: '10.238, 123.460',
-        members: [
-            { id: 501, firstName: 'Rico', lastName: 'Puno', relationship: 'Head' },
-            { id: 502, firstName: 'Susan', lastName: 'Puno', relationship: 'Wife' },
-            { id: 503, firstName: 'Tosca', lastName: 'Puno', relationship: 'Daughter' },
-            { id: 504, firstName: 'Rox', lastName: 'Puno', relationship: 'Son' },
-        ],
-        dateEncoded: 'July 14, 2025 | 4:45 PM', encodedBy: 'STAFF_01', dateUpdated: 'N/A', updatedBy: 'N/A'
-    },
-    {
-        id: 6, householdId: 'HH-006', householdNumber: '1006-F', sitio: 'Sangi',
-        ownershipStatus: 'Rented', interviewedBy: 'Staff C', reviewedBy: 'Admin', dateOfVisit: '2025-07-15',
-        waterSource: 'Refilling Station', toiletType: 'Common', homeAddress: 'Interior Sangi', homeLink: '10.239, 123.461',
-        members: [
-            { id: 601, firstName: 'Carmen', lastName: 'Vda de Cruz', relationship: 'Head' },
-        ],
-        dateEncoded: 'July 15, 2025 | 11:20 AM', encodedBy: 'STAFF_02', dateUpdated: 'N/A', updatedBy: 'N/A'
-    },
-    {
-        id: 7, householdId: 'HH-007', householdNumber: '1007-G', sitio: 'Agro-Macro',
-        ownershipStatus: 'Owned', interviewedBy: 'Staff A', reviewedBy: 'Admin', dateOfVisit: '2025-07-16',
-        waterSource: 'MCWD', toiletType: 'Flush', homeAddress: 'Block 3, Agro-Macro', homeLink: '10.240, 123.462',
-        members: [
-            { id: 701, firstName: 'Jasmine', lastName: 'Ong', relationship: 'Daughter' },
-            { id: 702, firstName: 'Henry', lastName: 'Ong', relationship: 'Head' },
-            { id: 703, firstName: 'Tess', lastName: 'Ong', relationship: 'Wife' },
-        ],
-        dateEncoded: 'July 16, 2025 | 8:00 AM', encodedBy: 'ADMIN', dateUpdated: 'N/A', updatedBy: 'N/A'
-    },
-    {
-        id: 8, householdId: 'HH-008', householdNumber: '1008-H', sitio: 'Ibabao',
-        ownershipStatus: 'Owned', interviewedBy: 'Staff B', reviewedBy: 'Admin', dateOfVisit: '2025-07-17',
-        waterSource: 'Deep Well', toiletType: 'Water-sealed', homeAddress: 'Ibabao Basketball Court', homeLink: '10.241, 123.463',
-        members: [
-            { id: 801, firstName: 'Antonio', lastName: 'Luna', relationship: 'Head' },
-            { id: 802, firstName: 'Josefa', lastName: 'Luna', relationship: 'Mother' },
-        ],
-        dateEncoded: 'July 17, 2025 | 3:30 PM', encodedBy: 'STAFF_01', dateUpdated: 'N/A', updatedBy: 'N/A'
-    },
-    {
-        id: 9, householdId: 'HH-009', householdNumber: '1009-I', sitio: 'Mactan',
-        ownershipStatus: 'Informal Settler', interviewedBy: 'Staff C', reviewedBy: 'Admin', dateOfVisit: '2025-07-18',
-        waterSource: 'Shared Pump', toiletType: 'Open Pit', homeAddress: 'Coastal Area, Mactan', homeLink: '10.242, 123.464',
-        members: [
-            { id: 901, firstName: 'Lapu', lastName: 'Dimagiba', relationship: 'Head' },
-            { id: 902, firstName: 'Bulakna', lastName: 'Dimagiba', relationship: 'Wife' },
-            { id: 903, firstName: 'Sawili', lastName: 'Dimagiba', relationship: 'Son' },
-            { id: 904, firstName: 'Katahum', lastName: 'Dimagiba', relationship: 'Daughter' },
-            { id: 905, firstName: 'Araw', lastName: 'Dimagiba', relationship: 'Son' },
-        ],
-        dateEncoded: 'July 18, 2025 | 9:00 AM', encodedBy: 'STAFF_02', dateUpdated: 'Aug 10, 2025', updatedBy: 'ADMIN'
-    },
-    {
-        id: 10, householdId: 'HH-010', householdNumber: '1010-J', sitio: 'Tandang Sora',
-        ownershipStatus: 'Owned', interviewedBy: 'Staff A', reviewedBy: 'Admin', dateOfVisit: '2025-07-19',
-        waterSource: 'MCWD', toiletType: 'Flush', homeAddress: 'Compound, Tandang Sora', homeLink: '10.243, 123.465',
-        members: [
-            { id: 1001, firstName: 'Melchora', lastName: 'Aquino', relationship: 'Grandmother' },
-            { id: 1002, firstName: 'Juanito', lastName: 'Ramos', relationship: 'Head' },
-        ],
-        dateEncoded: 'July 19, 2025 | 1:00 PM', encodedBy: 'ADMIN', dateUpdated: 'N/A', updatedBy: 'N/A'
-    },
 ];
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -170,12 +97,13 @@ export default function HouseholdProfiles() {
     const [showFilters, setShowFilters] = useState(false);
     const [filterSitio, setFilterSitio] = useState('All');
 
-    // Get unique Sitios
+    // --- NEW: Modal State ---
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+
     const uniqueSitios = useMemo(() => {
         return Array.from(new Set(mockHouseholds.map(h => h.sitio))).sort();
     }, []);
 
-    // Filter Logic
     const filteredHouseholds = useMemo(() => {
         return mockHouseholds.filter(hh => {
             const matchesSearch =
@@ -199,9 +127,11 @@ export default function HouseholdProfiles() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Household Profile" />
 
+            {/* --- MOUNT THE MODAL --- */}
+            <HouseholdCreation isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
+
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
 
-                {/* --- Header Bar --- */}
                 <div className="flex items-center justify-between pb-2 border-b border-sidebar-border/60">
                     <div className="flex items-center gap-4">
                         <Link href="/citizen-panel" className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
@@ -213,24 +143,23 @@ export default function HouseholdProfiles() {
                             </h1>
                         </div>
                     </div>
-
                 </div>
 
-                {/* --- Main Content Split --- */}
                 <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
 
-                    {/* === LEFT COLUMN: List (Spans 4) === */}
                     <div className="lg:col-span-4 flex flex-col gap-4 bg-white dark:bg-sidebar rounded-2xl border border-sidebar-border/60 shadow-sm overflow-hidden">
-
-                        {/* List Header */}
                         <div className="p-4 bg-neutral-50/50 dark:bg-neutral-900/20 border-b border-sidebar-border/60 space-y-3">
                             <div className="flex justify-between items-center">
                                 <div className="flex items-center gap-2">
                                     <h2 className="text-xs font-bold text-white bg-neutral-900 dark:bg-orange-600 py-1 px-3 rounded-md uppercase tracking-wider">
                                         Registered Household
                                     </h2>
-                                    {/* REGISTER BUTTON MOVED HERE */}
-                                    <button className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white p-1 rounded-md transition-colors shadow-sm" title="Register New Household">
+                                    {/* --- CONNECTED BUTTON --- */}
+                                    <button
+                                        onClick={() => setIsCreateOpen(true)}
+                                        className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white p-1 rounded-md transition-colors shadow-sm"
+                                        title="Register New Household"
+                                    >
                                         <Plus className="size-4" />
                                     </button>
                                 </div>
@@ -239,7 +168,6 @@ export default function HouseholdProfiles() {
                                 </span>
                             </div>
 
-                            {/* Search & Filter */}
                             <div className="flex gap-2">
                                 <div className="relative flex-1">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-400" />
@@ -259,7 +187,6 @@ export default function HouseholdProfiles() {
                                 </button>
                             </div>
 
-                            {/* Filter Dropdown */}
                             {showFilters && (
                                 <div className="pt-2 border-t border-sidebar-border/50 animate-in slide-in-from-top-2">
                                     <select
@@ -276,7 +203,6 @@ export default function HouseholdProfiles() {
                             )}
                         </div>
 
-                        {/* List Content */}
                         <div className="flex-1 overflow-auto">
                             <table className="w-full text-sm text-left">
                                 <thead className="text-[10px] text-neutral-500 uppercase bg-neutral-50 dark:bg-neutral-800/50 sticky top-0 z-10 backdrop-blur-sm">
@@ -301,7 +227,6 @@ export default function HouseholdProfiles() {
                                         <td className="px-4 py-3 text-right">
                                             <div className="flex flex-col items-end gap-1">
                                                 <span className="text-xs text-neutral-600">{hh.sitio}</span>
-                                                {/* DELETE BUTTON ADDED HERE */}
                                                 <button
                                                     onClick={(e) => handleDelete(e, hh.id)}
                                                     className="text-neutral-400 hover:text-red-600 transition-colors p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
@@ -318,14 +243,9 @@ export default function HouseholdProfiles() {
                         </div>
                     </div>
 
-                    {/* === RIGHT COLUMN: Details (Spans 8) === */}
                     <div className="lg:col-span-8 flex flex-col gap-4 min-h-0">
-
-                        {/* Detail Content */}
                         {selectedHousehold ? (
                             <div className="flex-1 bg-white dark:bg-sidebar rounded-2xl border border-sidebar-border/60 shadow-sm flex flex-col overflow-hidden">
-
-                                {/* Profile Header (New) */}
                                 <div className="p-6 border-b border-sidebar-border/60 bg-neutral-50/50 dark:bg-neutral-900/30">
                                     <div className="flex justify-between items-start">
                                         <div className="flex items-start gap-4">
@@ -342,7 +262,6 @@ export default function HouseholdProfiles() {
                                                 </div>
                                             </div>
                                         </div>
-                                        {/* UPDATE BUTTON MOVED HERE */}
                                         <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all hover:shadow-md">
                                             <Edit3 className="size-3.5" /> Edit Household
                                         </button>
@@ -350,11 +269,7 @@ export default function HouseholdProfiles() {
                                 </div>
 
                                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
-
-                                    {/* Top Row: General Info & Interview Details */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                                        {/* Card 1: General Info */}
                                         <div className="bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 space-y-3">
                                             <div className="flex items-center gap-2 pb-2 border-b border-sidebar-border/50 text-orange-600">
                                                 <Hash className="size-4" />
@@ -365,8 +280,6 @@ export default function HouseholdProfiles() {
                                                 <InfoItem label="Ownership Status" value={selectedHousehold.ownershipStatus} />
                                             </div>
                                         </div>
-
-                                        {/* Card 2: Interview Details */}
                                         <div className="bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 space-y-3">
                                             <div className="flex items-center gap-2 pb-2 border-b border-sidebar-border/50 text-blue-600">
                                                 <UserCheck className="size-4" />
@@ -389,10 +302,7 @@ export default function HouseholdProfiles() {
                                         </div>
                                     </div>
 
-                                    {/* Middle Row: Utilities & Links */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                                        {/* Card 3: Water & Toilet (Split inside card) */}
                                         <div className="bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 flex flex-col justify-center">
                                             <div className="grid grid-cols-2 text-center divide-x divide-sidebar-border">
                                                 <div className="px-2">
@@ -411,8 +321,6 @@ export default function HouseholdProfiles() {
                                                 </div>
                                             </div>
                                         </div>
-
-                                        {/* Card 4: Home Link */}
                                         <div className="bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 flex flex-col items-center justify-center text-center">
                                             <div className="flex items-center gap-2 mb-2 text-neutral-500">
                                                 <LinkIcon className="size-4" />
@@ -424,13 +332,11 @@ export default function HouseholdProfiles() {
                                         </div>
                                     </div>
 
-                                    {/* Address Bar */}
                                     <div className="bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-4 flex items-center gap-4">
                                         <span className="text-xs font-bold text-neutral-500 uppercase whitespace-nowrap">Home Address:</span>
                                         <span className="text-sm font-medium truncate">{selectedHousehold.homeAddress}</span>
                                     </div>
 
-                                    {/* Members Table */}
                                     <div className="border border-sidebar-border rounded-xl overflow-hidden">
                                         <table className="w-full text-sm text-left bg-white dark:bg-sidebar">
                                             <thead className="bg-neutral-100 dark:bg-neutral-800 text-xs text-neutral-500 uppercase">
@@ -459,7 +365,6 @@ export default function HouseholdProfiles() {
 
                                 </div>
 
-                                {/* Footer Audit */}
                                 <div className="p-4 border-t border-sidebar-border/60 bg-neutral-50 dark:bg-neutral-900/50 flex flex-col md:flex-row justify-between items-start md:items-center text-[10px] text-neutral-400 font-mono gap-4">
                                     <div className="space-y-1">
                                         <div className="flex gap-2">
@@ -490,7 +395,6 @@ export default function HouseholdProfiles() {
                                 <p>Select a household to view details</p>
                             </div>
                         )}
-
                     </div>
                 </div>
             </div>
@@ -499,7 +403,6 @@ export default function HouseholdProfiles() {
 }
 
 // --- Reusable ---
-
 function InfoItem({ label, value, highlight = false }: { label: string, value: string, highlight?: boolean }) {
     return (
         <div className="flex flex-col">
