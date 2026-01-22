@@ -13,7 +13,7 @@ return new class extends Migration
 
         // 3. System Accounts
         Schema::create('system_accounts', function (Blueprint $table) {
-            $table->increments('sys_id');
+            $table->id('sys_id');
             $table->integer('sys_account_id');
             $table->text('sys_password');
             $table->string('sys_fname', 50);

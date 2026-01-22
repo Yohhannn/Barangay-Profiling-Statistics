@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-
+use App\Http\Controllers\pages\DashboardController;
 // Root route
 Route::get('/', function () {
     return Inertia::render('landing');
@@ -14,12 +14,10 @@ Route::get('/scan', function () {
 });
 
 // Auth routes
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['check.auth', 'verified'])->group(function () {
 
     // --- DASHBOARD ---
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // --- CITIZEN PANEL ---
     Route::get('citizen-panel', function () {
@@ -142,3 +140,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 require __DIR__.'/settings.php';
+require __DIR__.'/auth.php';
