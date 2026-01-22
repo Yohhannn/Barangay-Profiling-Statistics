@@ -1,15 +1,15 @@
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
-import { dashboard } from '@/routes';
+import { adminPanel, citizenPanel, citizenProfile, dashboard, demographicStats, statistics, transactions } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import {
     Building2, Users, Home, MapPin,
     Clock, Activity,
     FileText, CheckCircle, Search, Database, UserCircle, ShieldCheck
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-
+import { formatDisplayName } from '@/common_functionality/DisplayFunction';
 // --- Interfaces ---
 interface DashboardStats {
     totalCitizens: number;
@@ -26,10 +26,10 @@ interface Citizen {
 }
 
 interface User {
-    id: number;
-    name: string;
-    email: string;
-    [key: string]: any;
+    sys_account_id: number;
+    sys_fname: string;
+    sys_lname: string;
+    sys_mname: string;
 }
 
 interface DashboardProps {
@@ -44,7 +44,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function Dashboard({ stats, recentCitizens }: DashboardProps) {
     // We cast user as 'User' or 'any' to avoid TS strict errors if type definitions are missing
     const user = usePage().props.auth.user as User;
-
+    const displayName = formatDisplayName(user.sys_fname, user.sys_mname, user.sys_lname);
     const [currentTime, setCurrentTime] = useState(new Date());
 
     // Live Clock Logic
@@ -78,14 +78,14 @@ export default function Dashboard({ stats, recentCitizens }: DashboardProps) {
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-0.5">Welcome Back</span>
-                                <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">{user?.name || 'User'}</h2>
+                                <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">{displayName || 'User'}</h2>
                                 <div className="flex items-center gap-3 mt-1.5 text-xs text-neutral-500">
                                     <span className="flex items-center gap-1 bg-green-100 text-green-700 px-2 py-0.5 rounded-md dark:bg-green-900/30 dark:text-green-400 font-medium">
                                         <ShieldCheck className="size-3" /> Administrator
                                     </span>
                                     {/* FIX: Added String() and fallback to prevent crash if user.id is undefined */}
                                     <span className="font-mono opacity-70">
-                                        SysID: {String(user?.id || '0').padStart(6, '0')}
+                                        SysID: {String(user?.sys_account_id || '0').padStart(6, '0')}
                                     </span>
                                 </div>
                             </div>
@@ -135,10 +135,10 @@ export default function Dashboard({ stats, recentCitizens }: DashboardProps) {
                             </p>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <FeatureItem icon={<Search className="size-4 text-blue-500" />} title="Citizen Records" desc="Add, update & search details." />
-                                <FeatureItem icon={<Activity className="size-4 text-purple-500" />} title="Barangay Statistics" desc="Monitor population & demographics." />
-                                <FeatureItem icon={<FileText className="size-4 text-orange-500" />} title="Transaction Logs" desc="Track document request history." />
-                                <FeatureItem icon={<ShieldCheck className="size-4 text-green-500" />} title="Secure Access" desc="Role-based data integrity." />
+                                <Link href={citizenProfile.url()}><FeatureItem icon={<Search className="size-4 text-blue-500" />} title="Citizen Records" desc="Add, update & search details." /></Link>
+                                <Link href={demographicStats.url()}><FeatureItem icon={<Activity className="size-4 text-purple-500" />} title="Barangay Statistics" desc="Monitor population & demographics." /></Link>
+                                <Link href={transactions.url()}><FeatureItem icon={<FileText className="size-4 text-orange-500" />} title="Transaction Logs" desc="Track document request history." /></Link>
+                                <Link href={adminPanel.url()}><FeatureItem icon={<ShieldCheck className="size-4 text-green-500" />} title="Secure Access" desc="Role-based data integrity." /></Link>
                             </div>
                         </div>
 

@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { store } from '@/routes/login';
+import login from '@/routes/login';
 import { request } from '@/routes/password';
 import { Form, Head, Link } from '@inertiajs/react';
 import { DotScreenShader } from "@/components/ui/dot-shader-background";
@@ -60,7 +60,8 @@ export default function Login({
                 {/* Login Card */}
                 <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-8">
                     <Form
-                        {...store.form()}
+                        action={login.attempt()}
+                        method='post'
                         resetOnSuccess={['password']}
                         className="flex flex-col gap-5"
                     >
@@ -88,7 +89,7 @@ export default function Login({
                                                 placeholder="XXXXXX"
                                             />
                                         </div>
-                                        <InputError message={errors.sys_user_id} />
+                                        {/* <InputError message={errors.sys_account_id} /> */}
                                     </div>
 
                                     {/* PIN Field (Replaced Password) */}
@@ -110,7 +111,7 @@ export default function Login({
                                             <Input
                                                 id="password"
                                                 type={showPassword ? "text" : "password"}
-                                                name="password"
+                                                name="sys_password"
                                                 maxLength={6}
                                                 inputMode="numeric"
                                                 pattern="[0-9]*"
@@ -131,7 +132,7 @@ export default function Login({
                                                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                             </button>
                                         </div>
-                                        <InputError message={errors.password} />
+                                        <InputError message={errors.sys_password} />
                                     </div>
 
                                     <div className="flex items-center space-x-3 ml-1">

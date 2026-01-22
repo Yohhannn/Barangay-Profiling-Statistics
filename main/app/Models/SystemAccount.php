@@ -142,4 +142,20 @@ class SystemAccount extends Authenticatable
     {
         return $this->sys_password;
     }
+
+    /**
+     * Get the name of the unique identifier for the user.
+     */
+    public function getAuthIdentifierName()
+    {
+        return 'sys_id';
+    }
+
+    /**
+     * Get the unique identifier for the user.
+     */
+    public function getAuthIdentifier()
+    {
+        return $this->sys_id;
+    }
 }

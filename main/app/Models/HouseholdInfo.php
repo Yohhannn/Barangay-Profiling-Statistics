@@ -63,4 +63,5 @@ class HouseholdInfo extends Model
     {
         return $this->hasMany(Citizen::class, 'hh_id', 'hh_id');
     }
+
 }

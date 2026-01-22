@@ -4,6 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\SystemAccount;
+use App\Models\CitizenInformation;
+use App\Models\CitizenHistory;
+use App\Models\MedicalHistory;
+use App\Models\Complainant;
+use App\Models\TransactionLog;
+use App\Models\Infrastructure;
+use App\Models\BusinessInfo;
+use App\Models\HouseholdInfo;
 
 class Citizen extends Model
 {
@@ -77,5 +86,8 @@ class Citizen extends Model
     public function businessInfos()
     {
         return $this->hasMany(BusinessInfo::class, 'ctz_id', 'ctz_id');
+    }
+    public function household() {
+        return $this->belongsTo(HouseholdInfo::class, 'household_id');
     }
 }
