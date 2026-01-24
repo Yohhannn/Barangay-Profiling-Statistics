@@ -1,66 +1,86 @@
 import {
     X, CheckCircle, Stethoscope, User,
-    Activity, Tag, Search
+    Activity, Tag, Search, Loader2, UserCheck, UserX
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 
 interface MedicalHistoryCreationProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
-// Mock Data for Auto-fill (Simulating Database)
-const mockCitizens: Record<string, { first: string; middle: string; last: string }> = {
-    '2025-001': { first: 'Roberto', middle: 'A.', last: 'Gonzales' },
-    '2025-005': { first: 'Pedro', middle: 'C.', last: 'Magtanggol' },
-    '2025-011': { first: 'Carmen', middle: 'V.', last: 'Vda de Cruz' },
-};
+// Mock Database of Citizens
+const mockCitizensData = [
+    { id: '2025-001', first: 'Roberto', middle: 'A.', last: 'Gonzales' },
+    { id: '2025-002', first: 'Maria', middle: 'B.', last: 'Santos' },
+    { id: '2025-005', first: 'Pedro', middle: 'C.', last: 'Magtanggol' },
+    { id: '2025-011', first: 'Carmen', middle: 'V.', last: 'Vda de Cruz' },
+];
 
 export default function MedicalHistoryCreation({ isOpen, onClose }: MedicalHistoryCreationProps) {
-    // --- State ---
-    const [citizenIdSuffix, setCitizenIdSuffix] = useState('');
+    // --- Form State ---
     const [firstName, setFirstName] = useState('');
     const [middleName, setMiddleName] = useState('');
     const [lastName, setLastName] = useState('');
-    const [isAutoFilled, setIsAutoFilled] = useState(false);
+    const [citizenId, setCitizenId] = useState('');
 
-    // Auto-fill Logic
-    useEffect(() => {
-        const citizen = mockCitizens[citizenIdSuffix];
-        if (citizen) {
-            setFirstName(citizen.first);
-            setMiddleName(citizen.middle);
-            setLastName(citizen.last);
-            setIsAutoFilled(true);
-        } else {
-            // Only clear if previously autofilled to allow manual entry
-            if (isAutoFilled) {
-                setFirstName('');
-                setMiddleName('');
-                setLastName('');
-                setIsAutoFilled(false);
-            }
-        }
-    }, [citizenIdSuffix]);
+    // --- Search State ---
+    const [searchQuery, setSearchQuery] = useState('');
+    const [showResults, setShowResults] = useState(false);
+    const [isLocked, setIsLocked] = useState(false);
+
+    // Filter Logic
+    const filteredCitizens = useMemo(() => {
+        if (!searchQuery) return [];
+        const lowerQuery = searchQuery.toLowerCase();
+        return mockCitizensData.filter(c =>
+            c.first.toLowerCase().includes(lowerQuery) ||
+            c.last.toLowerCase().includes(lowerQuery) ||
+            c.middle.toLowerCase().includes(lowerQuery)
+        );
+    }, [searchQuery]);
 
     if (!isOpen) return null;
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        console.log("Medical Record Submitted");
-        onClose();
-        // Reset State
-        setCitizenIdSuffix('');
+    // Handle Selecting a Citizen
+    const handleSelectCitizen = (citizen: typeof mockCitizensData[0]) => {
+        setCitizenId(citizen.id);
+        setFirstName(citizen.first);
+        setMiddleName(citizen.middle);
+        setLastName(citizen.last);
+        setIsLocked(true);
+
+        setSearchQuery('');
+        setShowResults(false);
+    };
+
+    // Cancel Selection / Unlock
+    const handleCancelSelection = () => {
+        setCitizenId('');
         setFirstName('');
         setMiddleName('');
         setLastName('');
+        setIsLocked(false);
+        setSearchQuery('');
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        console.log("Medical Record Submitted", {
+            citizenId: citizenId ? `CTZ-${citizenId}` : 'Manual Entry',
+            firstName,
+            middleName,
+            lastName
+        });
+        onClose();
+        handleCancelSelection();
     };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-[#F8F9FC] dark:bg-[#0f172a] w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-white/20">
 
-                {/* --- Header (Rose Theme to match Medical context) --- */}
+                {/* --- Header (Rose Theme) --- */}
                 <div className="relative bg-rose-700 text-white p-5 flex justify-between items-center overflow-hidden shrink-0">
                     <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
                         <Stethoscope className="w-32 h-32" />
@@ -91,63 +111,123 @@ export default function MedicalHistoryCreation({ isOpen, onClose }: MedicalHisto
                     <div className="space-y-4">
                         <SectionLabel icon={<User className="size-4" />} label="Citizen Information" color="text-rose-600" />
 
-                        <div className="bg-white dark:bg-[#1e293b] p-5 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm space-y-4 relative overflow-hidden">
-                            {isAutoFilled && (
-                                <div className="absolute top-0 right-0 bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg shadow-sm animate-in slide-in-from-top-1">
-                                    ✓ Record Found
+                        <div className="bg-white dark:bg-[#1e293b] p-5 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm space-y-4 relative">
+
+                            {/* SEARCH BAR (Only visible if NOT locked) */}
+                            {!isLocked && (
+                                <div className="space-y-1.5 relative z-20 animate-in fade-in slide-in-from-top-2">
+                                    <label className="text-[10px] font-bold uppercase text-neutral-500 tracking-wide">
+                                        Search Existing Citizen (Optional)
+                                    </label>
+                                    <div className="relative group">
+                                        <input
+                                            className="w-full text-xs p-2.5 pl-9 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all"
+                                            placeholder="Type First, Middle, or Last Name to search..."
+                                            value={searchQuery}
+                                            onChange={(e) => {
+                                                setSearchQuery(e.target.value);
+                                                setShowResults(true);
+                                            }}
+                                            onFocus={() => setShowResults(true)}
+                                        />
+                                        <div className="absolute left-3 top-2.5 text-neutral-400">
+                                            <Search className="size-4" />
+                                        </div>
+                                    </div>
+
+                                    {/* RESULTS DROPDOWN */}
+                                    {showResults && searchQuery.length > 0 && (
+                                        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700 shadow-xl max-h-48 overflow-y-auto z-50">
+                                            {filteredCitizens.length > 0 ? (
+                                                filteredCitizens.map((citizen) => (
+                                                    <button
+                                                        key={citizen.id}
+                                                        onClick={() => handleSelectCitizen(citizen)}
+                                                        className="w-full text-left px-4 py-3 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors flex items-center justify-between group border-b border-neutral-100 dark:border-neutral-700/50 last:border-0"
+                                                    >
+                                                        <div>
+                                                            <p className="text-xs font-bold text-neutral-800 dark:text-neutral-200 group-hover:text-rose-700 dark:group-hover:text-rose-300">
+                                                                {citizen.last}, {citizen.first} {citizen.middle}
+                                                            </p>
+                                                            <p className="text-[10px] text-neutral-400 font-mono mt-0.5">
+                                                                ID: CTZ-{citizen.id}
+                                                            </p>
+                                                        </div>
+                                                        <UserCheck className="size-4 text-neutral-300 group-hover:text-rose-500" />
+                                                    </button>
+                                                ))
+                                            ) : (
+                                                <div className="p-4 text-center text-xs text-neutral-400 italic">
+                                                    No citizens found. You can enter names manually below.
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
-                            {/* ID Input with Fixed Prefix "CTZ-" */}
-                            <div className="space-y-1.5 w-full">
-                                <label className="text-[10px] font-bold uppercase text-neutral-500 tracking-wide">
-                                    Citizen ID (Optional)
-                                </label>
-                                <div className="relative group flex items-center">
-                                    <div className="absolute left-3 top-2.5 text-neutral-500 font-mono text-xs font-bold pointer-events-none select-none">
-                                        CTZ-
+                            {/* SELECTED CITIZEN BANNER (Visible ONLY when locked) */}
+                            {isLocked && (
+                                <div className="flex items-center justify-between p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/50 rounded-lg animate-in fade-in zoom-in duration-300">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-rose-100 dark:bg-rose-900/40 rounded-full text-rose-600 dark:text-rose-300">
+                                            <UserCheck className="size-4" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase text-rose-500 dark:text-rose-400 tracking-wide">
+                                                Citizen Selected
+                                            </p>
+                                            <p className="text-xs font-medium text-rose-900 dark:text-rose-100 font-mono">
+                                                ID: CTZ-{citizenId}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <input
-                                        className="w-full text-xs p-2.5 pl-12 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all font-mono"
-                                        placeholder="XXXX-XXX"
-                                        value={citizenIdSuffix}
-                                        onChange={(e) => setCitizenIdSuffix(e.target.value)}
-                                    />
-                                    <div className="absolute right-3 top-2.5 text-neutral-400">
-                                        <Search className="size-4" />
-                                    </div>
+                                    <button
+                                        onClick={handleCancelSelection}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-black/20 border border-neutral-200 dark:border-neutral-700 hover:border-red-300 hover:text-red-500 dark:hover:border-red-800 dark:hover:text-red-400 rounded text-[10px] font-bold uppercase tracking-wider text-neutral-500 transition-all shadow-sm"
+                                    >
+                                        <UserX className="size-3" /> Change
+                                    </button>
                                 </div>
-                            </div>
+                            )}
 
+                            {/* Divider */}
+                            {!isLocked && <div className="border-t border-dashed border-neutral-200 dark:border-neutral-700 my-2"></div>}
+
+                            {/* NAME FIELDS */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <InputGroup
                                     label="First Name"
                                     placeholder="First Name"
+                                    required
                                     value={firstName}
                                     onChange={(e) => setFirstName(e.target.value)}
-                                    readOnly={isAutoFilled}
-                                    className={isAutoFilled ? 'opacity-80 bg-neutral-50' : ''}
+                                    readOnly={isLocked}
+                                    className={isLocked ? 'bg-neutral-50/80 dark:bg-neutral-900/50 text-neutral-500 cursor-not-allowed border-neutral-200' : ''}
                                 />
                                 <InputGroup
                                     label="Middle Name"
                                     placeholder="Middle Name"
                                     value={middleName}
                                     onChange={(e) => setMiddleName(e.target.value)}
-                                    readOnly={isAutoFilled}
-                                    className={isAutoFilled ? 'opacity-80 bg-neutral-50' : ''}
+                                    readOnly={isLocked}
+                                    className={isLocked ? 'bg-neutral-50/80 dark:bg-neutral-900/50 text-neutral-500 cursor-not-allowed border-neutral-200' : ''}
                                 />
                                 <InputGroup
                                     label="Last Name"
                                     placeholder="Last Name"
+                                    required
                                     value={lastName}
                                     onChange={(e) => setLastName(e.target.value)}
-                                    readOnly={isAutoFilled}
-                                    className={isAutoFilled ? 'opacity-80 bg-neutral-50' : ''}
+                                    readOnly={isLocked}
+                                    className={isLocked ? 'bg-neutral-50/80 dark:bg-neutral-900/50 text-neutral-500 cursor-not-allowed border-neutral-200' : ''}
                                 />
                             </div>
 
                             <p className="text-[10px] text-right text-neutral-400 italic">
-                                Note: By entering the Citizen ID, the corresponding Name will be displayed.
+                                {isLocked
+                                    ? "Fields are locked because a registered citizen is selected."
+                                    : "Enter names manually if citizen is not in the database."}
                             </p>
                         </div>
                     </div>
@@ -256,7 +336,7 @@ function SelectGroup({ label, options, required, ...props }: SelectProps) {
                     className="w-full text-xs p-2.5 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none appearance-none transition-all cursor-pointer hover:border-rose-300"
                     {...props}
                 >
-                    <option value="">Select {label}</option>
+                    <option value="">Select Option</option>
                     {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
                 <div className="absolute right-3 top-3 pointer-events-none text-neutral-400">
