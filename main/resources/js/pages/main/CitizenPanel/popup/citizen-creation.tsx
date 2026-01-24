@@ -1,7 +1,7 @@
 import {
     X, Camera, Upload, CheckCircle,
     User, MapPin, Briefcase, GraduationCap, Activity, Home,
-    CreditCard, Heart, Plus, Trash2, ScanFace, Users, Info
+    CreditCard, Heart, Plus, Trash2, ScanFace, Users, Info, Search
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import RegisterFace from './register-face';
@@ -11,7 +11,7 @@ interface CitizenCreationProps {
     onClose: () => void;
 }
 
-// Mock Data for Household Lookup (Status removed from individual members)
+// Mock Data for Household Lookup
 const mockHouseholdData: Record<string, { members: { name: string; relationship: string; address: string }[], status: string }> = {
     'HH-001': {
         status: 'Owner',
@@ -41,17 +41,32 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
     // Face Scan Modal State
     const [isFaceScanOpen, setIsFaceScanOpen] = useState(false);
 
-    // Household Logic
-    const [householdId, setHouseholdId] = useState('HH-');
+    // Household Logic (Search)
+    const [householdId, setHouseholdId] = useState('');
     const [householdInfo, setHouseholdInfo] = useState<{ members: { name: string; relationship: string; address: string }[], status: string } | null>(null);
+    const [isSearchingHH, setIsSearchingHH] = useState(false);
 
+    // Simulate Search Effect
     useEffect(() => {
-        // Simple lookup simulation
-        if (mockHouseholdData[householdId]) {
-            setHouseholdInfo(mockHouseholdData[householdId]);
-        } else {
-            setHouseholdInfo(null);
-        }
+        const timer = setTimeout(() => {
+            if (householdId.length > 3) { // Start searching after 3 chars
+                setIsSearchingHH(true);
+                // Simulate network delay
+                setTimeout(() => {
+                    const found = mockHouseholdData[householdId];
+                    if (found) {
+                        setHouseholdInfo(found);
+                    } else {
+                        setHouseholdInfo(null);
+                    }
+                    setIsSearchingHH(false);
+                }, 500);
+            } else {
+                setHouseholdInfo(null);
+            }
+        }, 300); // Debounce
+
+        return () => clearTimeout(timer);
     }, [householdId]);
 
     if (!isOpen) return null;
@@ -66,7 +81,7 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
         setEmploymentStatus('');
         setIsDeceased(false);
         setIsStudying(false);
-        setHouseholdId('HH-');
+        setHouseholdId('');
         setHouseholdInfo(null);
     };
 
@@ -115,9 +130,11 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
 
                         {/* SECTION 1: PERSONAL IDENTITY (Same as before) */}
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                            {/* ... Left Personal Info ... */}
                             <div className="lg:col-span-7 space-y-6">
                                 <SectionLabel icon={<User className="size-4" />} label="Personal Identity" />
                                 <div className="bg-white dark:bg-[#1e293b] p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm flex flex-col sm:flex-row gap-6">
+                                    {/* Photo Area with Button */}
                                     <div className="flex flex-col gap-3 w-full sm:w-40 shrink-0">
                                         <div className="w-full aspect-[3/4] bg-neutral-100 dark:bg-black/20 rounded-lg border-2 border-dashed border-neutral-300 dark:border-neutral-600 flex flex-col items-center justify-center text-neutral-400 gap-2 hover:border-indigo-400 transition-colors cursor-pointer group">
                                             <Camera className="size-8 group-hover:text-indigo-500 transition-colors" />
@@ -131,6 +148,7 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
                                             <ScanFace className="size-4 group-hover:scale-110 transition-transform" /> Register Face Data
                                         </button>
                                     </div>
+                                    {/* Fields */}
                                     <div className="flex-1 grid grid-cols-2 gap-4">
                                         <InputGroup label="First Name" placeholder="Given Name" required className="col-span-2" />
                                         <InputGroup label="Middle Name" placeholder="Middle Name" />
@@ -154,6 +172,7 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
                                 </div>
                             </div>
 
+                            {/* ... Right Address & Contact (Same as before) ... */}
                             <div className="lg:col-span-5 space-y-6">
                                 <SectionLabel icon={<MapPin className="size-4" />} label="Contact & Address" />
                                 <div className="bg-white dark:bg-[#1e293b] p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm space-y-4">
@@ -198,14 +217,31 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
                                     <div className="grid grid-cols-2 gap-4">
                                         <SelectGroup label="Socio-Economic Class" options={['NHTS 4Ps', 'NHTS Non 4Ps', 'Non-NHTS']} className="col-span-2" />
 
-                                        {/* HOUSEHOLD ID with Default Value and Lookup */}
-                                        <div className="col-span-1">
-                                            <InputGroup
-                                                label="Household ID"
-                                                placeholder="HH-XXXX"
-                                                value={householdId}
-                                                onChange={(e) => setHouseholdId(e.target.value)}
-                                            />
+                                        {/* HOUSEHOLD SEARCH INPUT */}
+                                        <div className="col-span-1 space-y-1.5">
+                                            <label className="text-[10px] font-bold uppercase text-neutral-500 tracking-wide">
+                                                Search Household ID
+                                            </label>
+                                            <div className="relative group">
+                                                <input
+                                                    className="w-full text-xs p-2.5 pl-9 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                                                    placeholder="e.g. HH-001"
+                                                    value={householdId}
+                                                    onChange={(e) => setHouseholdId(e.target.value)}
+                                                />
+                                                <div className="absolute left-2.5 top-2.5 text-neutral-400">
+                                                    {isSearchingHH ? (
+                                                        <div className="size-3.5 border-2 border-neutral-400 border-t-transparent rounded-full animate-spin"></div>
+                                                    ) : (
+                                                        <Search className="size-3.5" />
+                                                    )}
+                                                </div>
+                                                {householdInfo && (
+                                                    <div className="absolute right-2.5 top-2.5 text-green-500 animate-in zoom-in duration-200">
+                                                        <CheckCircle className="size-3.5" />
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
 
                                         <SelectGroup label="Relationship to Head" required options={['Head', 'Spouse', 'Son', 'Daughter', 'Parent', 'Other']} />
