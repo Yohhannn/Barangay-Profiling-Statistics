@@ -101,9 +101,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('main/Institutions/business-profile');
     })->name('business-profile');
 
-    Route::get('institutions/infrastructure-profile', function () {
-        return Inertia::render('main/Institutions/infrastructure-profile');
-    })->name('infrastructure-profile');
+    Route::get('institutions/infrastructures-profile', function () {
+        return Inertia::render('main/Institutions/infrastructures-profile');
+    })->name('infrastructures-profile');
 
     // --- TRANSACTIONS ---
     Route::get('transactions', function () {
