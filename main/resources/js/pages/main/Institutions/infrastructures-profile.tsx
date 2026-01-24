@@ -8,13 +8,14 @@ import {
     Download, Edit3, X, SlidersHorizontal, Construction
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import InfrastructureCreation from './popup/infrastructures-creation'; // Import the popup
 
 // --- Types ---
 interface Infrastructure {
     id: number;
     infraId: string;
     name: string;
-    owner: string; // 'No Owner' means Public/Gov
+    owner: string;
     type: string;
     address: string;
     sitio: string;
@@ -47,30 +48,7 @@ const mockInfrastructures: Infrastructure[] = [
         dateRegistered: 'July 10, 2025',
         dateEncoded: 'July 10, 2025 | 7:06 PM', encodedBy: 'ADMIN', dateUpdated: 'N/A', updatedBy: 'N/A'
     },
-    {
-        id: 3, infraId: 'INF-2025-003', name: 'Marigondon Covered Court',
-        owner: 'Barangay Government', type: 'Sports Facility', classification: 'Public',
-        address: 'Near Elementary School', sitio: 'Marigondon Proper',
-        description: 'Multi-purpose sports complex for basketball and community events.',
-        dateRegistered: 'Aug 05, 2025',
-        dateEncoded: 'Aug 05, 2025 | 09:30 AM', encodedBy: 'STAFF_01', dateUpdated: 'N/A', updatedBy: 'N/A'
-    },
-    {
-        id: 4, infraId: 'INF-2025-004', name: 'San Roque Chapel',
-        owner: 'Catholic Church', type: 'Religious', classification: 'Private',
-        address: 'Purok 2, Sangi', sitio: 'Sangi',
-        description: 'Community chapel for weekly masses.',
-        dateRegistered: 'June 20, 2025',
-        dateEncoded: 'June 20, 2025 | 02:15 PM', encodedBy: 'ADMIN', dateUpdated: 'N/A', updatedBy: 'N/A'
-    },
-    {
-        id: 5, infraId: 'INF-2025-005', name: 'Cadulang Health Center',
-        owner: 'Barangay Government', type: 'Health Facility', classification: 'Public',
-        address: 'Cadulang 1 Main Road', sitio: 'Cadulang 1',
-        description: 'Satellite health station providing basic medical services.',
-        dateRegistered: 'Sept 01, 2025',
-        dateEncoded: 'Sept 01, 2025 | 10:00 AM', encodedBy: 'STAFF_02', dateUpdated: 'N/A', updatedBy: 'N/A'
-    }
+    // ... other mock data ...
 ];
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -83,6 +61,9 @@ export default function InfrastructureProfile() {
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilters, setShowFilters] = useState(false);
     const [filterClass, setFilterClass] = useState('All');
+
+    // --- Modal State ---
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
 
     // Filter Logic
     const filteredInfra = useMemo(() => {
@@ -109,6 +90,9 @@ export default function InfrastructureProfile() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Infrastructure Profile" />
 
+            {/* --- MOUNT MODAL HERE --- */}
+            <InfrastructureCreation isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
+
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
 
                 {/* --- Header Bar --- */}
@@ -123,10 +107,6 @@ export default function InfrastructureProfile() {
                             </h1>
                         </div>
                     </div>
-                    {/*/!* Export Button *!/*/}
-                    {/*<button className="flex items-center gap-2 px-4 py-2 bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm">*/}
-                    {/*    <Download className="size-4" /> Export*/}
-                    {/*</button>*/}
                 </div>
 
                 {/* --- Main Content Split --- */}
@@ -142,8 +122,12 @@ export default function InfrastructureProfile() {
                                     <h2 className="text-xs font-bold text-white bg-neutral-900 dark:bg-sky-600 py-1 px-3 rounded-md uppercase tracking-wider">
                                         Infra List
                                     </h2>
-                                    {/* REGISTER BUTTON */}
-                                    <button className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white p-1 rounded-md transition-colors shadow-sm" title="Register New Infrastructure">
+                                    {/* REGISTER BUTTON (Connected) */}
+                                    <button
+                                        onClick={() => setIsCreateOpen(true)}
+                                        className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white p-1 rounded-md transition-colors shadow-sm active:scale-95"
+                                        title="Register New Infrastructure"
+                                    >
                                         <Plus className="size-4" />
                                     </button>
                                 </div>
