@@ -24,7 +24,8 @@ export default function InfrastructureCreation({ isOpen, onClose }: Infrastructu
     const [address, setAddress] = useState('');
     const [sitio, setSitio] = useState('');
     const [type, setType] = useState('');
-    const [classification, setClassification] = useState('Private'); // Default
+    const [status, setStatus] = useState(''); // Added Status State
+    const [classification, setClassification] = useState('Private');
     const [description, setDescription] = useState('');
 
     // --- Owner State ---
@@ -76,6 +77,7 @@ export default function InfrastructureCreation({ isOpen, onClose }: Infrastructu
         e.preventDefault();
         console.log("Infrastructure Registered", {
             infraName,
+            status,
             classification,
             owner: { first: ownerFirst, last: ownerLast, id: ownerId }
         });
@@ -83,6 +85,7 @@ export default function InfrastructureCreation({ isOpen, onClose }: Infrastructu
         // Reset Logic
         handleCancelOwner();
         setInfraName('');
+        setStatus('');
     };
 
     return (
@@ -138,7 +141,8 @@ export default function InfrastructureCreation({ isOpen, onClose }: Infrastructu
                                 required
                             />
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* 3-Column Grid for Dropdowns */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <SelectGroup
                                     label="Sitio"
                                     options={['Cadulang 1', 'Cadulang 2', 'Ibabao', 'Proper', 'Kawayan']}
@@ -151,6 +155,14 @@ export default function InfrastructureCreation({ isOpen, onClose }: Infrastructu
                                     options={['Residential', 'Commercial Building', 'Government', 'Religious', 'Utility', 'Other']}
                                     value={type}
                                     onChange={(e) => setType(e.target.value)}
+                                    required
+                                />
+                                {/* NEW STATUS FIELD */}
+                                <SelectGroup
+                                    label="Status"
+                                    options={['Operational', 'Under Construction', 'Maintenance', 'Abandoned', 'Proposed']}
+                                    value={status}
+                                    onChange={(e) => setStatus(e.target.value)}
                                     required
                                 />
                             </div>
