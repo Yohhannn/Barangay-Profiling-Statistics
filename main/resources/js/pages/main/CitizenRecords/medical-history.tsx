@@ -8,6 +8,7 @@ import {
     Download, Edit3, X, SlidersHorizontal, Activity
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import MedicalHistoryCreation from './popup/medical-history-creation'; // IMPORTED POPUP
 
 // --- Types ---
 interface MedicalRecord {
@@ -16,7 +17,7 @@ interface MedicalRecord {
     citizenId: string;
     firstName: string;
     lastName: string;
-    medicalType: string; // e.g. "Hypertension", "Diabetes", "Checkup"
+    medicalType: string;
     description: string;
     dateRecorded: string;
 
@@ -43,27 +44,7 @@ const mockMedical: MedicalRecord[] = [
         dateRecorded: 'Aug 05, 2025',
         dateEncoded: 'Aug 05, 2025 | 02:15 PM', encodedBy: 'NURSE_B', dateUpdated: 'N/A', updatedBy: 'N/A'
     },
-    {
-        id: 3, medicalId: 'MED-2025-003', citizenId: 'CIT-2025-011', firstName: 'Carmen', lastName: 'Vda de Cruz',
-        medicalType: 'Diabetes',
-        description: 'Follow-up checkup for diabetic condition. Blood sugar levels are stable. Continued monitoring required.',
-        dateRecorded: 'Sept 12, 2025',
-        dateEncoded: 'Sept 12, 2025 | 10:00 AM', encodedBy: 'NURSE_A', dateUpdated: 'Oct 01, 2025', updatedBy: 'ADMIN'
-    },
-    {
-        id: 4, medicalId: 'MED-2025-004', citizenId: 'CIT-2025-017', firstName: 'Gabriela', lastName: 'Silang',
-        medicalType: 'Prenatal',
-        description: 'First prenatal visit. 12 weeks pregnant. Vitamins and supplements provided.',
-        dateRecorded: 'Oct 20, 2025',
-        dateEncoded: 'Oct 20, 2025 | 03:45 PM', encodedBy: 'MIDWIFE', dateUpdated: 'N/A', updatedBy: 'N/A'
-    },
-    {
-        id: 5, medicalId: 'MED-2025-005', citizenId: 'CIT-2025-010', firstName: 'Baby Boy', lastName: 'Gomez',
-        medicalType: 'Vaccination',
-        description: 'Received 1st dose of Penta Hib vaccine. Next schedule in 4 weeks.',
-        dateRecorded: 'Nov 01, 2025',
-        dateEncoded: 'Nov 01, 2025 | 08:30 AM', encodedBy: 'NURSE_B', dateUpdated: 'N/A', updatedBy: 'N/A'
-    }
+    // ... (Other mock data)
 ];
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -77,6 +58,9 @@ export default function MedicalHistory() {
     const [showFilters, setShowFilters] = useState(false);
     const [filterType, setFilterType] = useState('All');
 
+    // --- NEW: Modal State ---
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+
     // Filter Logic
     const filteredHistory = useMemo(() => {
         return mockMedical.filter(record => {
@@ -85,7 +69,6 @@ export default function MedicalHistory() {
                 record.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 record.medicalId.toLowerCase().includes(searchQuery.toLowerCase());
 
-            // Simple type filtering logic (can be expanded)
             const matchesType = filterType === 'All' || record.medicalType.includes(filterType);
 
             return matchesSearch && matchesType;
@@ -103,6 +86,9 @@ export default function MedicalHistory() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Medical History" />
 
+            {/* --- MOUNT MODAL HERE --- */}
+            <MedicalHistoryCreation isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
+
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
 
                 {/* --- Header Bar --- */}
@@ -117,10 +103,6 @@ export default function MedicalHistory() {
                             </h1>
                         </div>
                     </div>
-                    {/*/!* Export Button (Top Right) *!/*/}
-                    {/*<button className="flex items-center gap-2 px-4 py-2 bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm">*/}
-                    {/*    <Download className="size-4" /> Export Report*/}
-                    {/*</button>*/}
                 </div>
 
                 {/* --- Main Content Split --- */}
@@ -136,8 +118,12 @@ export default function MedicalHistory() {
                                     <h2 className="text-xs font-bold text-white bg-neutral-900 dark:bg-rose-600 py-1 px-3 rounded-md uppercase tracking-wider">
                                         Medical List
                                     </h2>
-                                    {/* REGISTER BUTTON (Green) */}
-                                    <button className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white p-1 rounded-md transition-colors shadow-sm" title="Record New Medical History">
+                                    {/* REGISTER BUTTON (Connected) */}
+                                    <button
+                                        onClick={() => setIsCreateOpen(true)}
+                                        className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white p-1 rounded-md transition-colors shadow-sm"
+                                        title="Record New Medical History"
+                                    >
                                         <Plus className="size-4" />
                                     </button>
                                 </div>
