@@ -5,9 +5,10 @@ import { Head, Link } from '@inertiajs/react';
 import {
     ArrowLeft, Search, Plus, Trash2,
     FileClock, User, Calendar, FileText,
-    Download, Edit3, X, SlidersHorizontal
+    Download, Edit3, X, SlidersHorizontal, Activity, Tag
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import CitizenHistoryCreation from './popup/citizen-history-creation'; // IMPORTED
 
 // --- Types ---
 interface HistoryRecord {
@@ -78,6 +79,9 @@ export default function CitizenHistory() {
     const [showFilters, setShowFilters] = useState(false);
     const [filterType, setFilterType] = useState('All');
 
+    // --- NEW: Modal State ---
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+
     // Filter Logic
     const filteredHistory = useMemo(() => {
         return mockHistory.filter(record => {
@@ -103,6 +107,9 @@ export default function CitizenHistory() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Citizen History" />
 
+            {/* --- MOUNT THE MODAL HERE --- */}
+            <CitizenHistoryCreation isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
+
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
 
                 {/* --- Header Bar --- */}
@@ -117,9 +124,9 @@ export default function CitizenHistory() {
                             </h1>
                         </div>
                     </div>
-                    {/*/!* Export Button (Top Right) *!/*/}
+                    {/* Export Button (Optional) */}
                     {/*<button className="flex items-center gap-2 px-4 py-2 bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm">*/}
-                    {/*    <Download className="size-4" /> Export Report*/}
+                    {/* <Download className="size-4" /> Export Report*/}
                     {/*</button>*/}
                 </div>
 
@@ -136,8 +143,12 @@ export default function CitizenHistory() {
                                     <h2 className="text-xs font-bold text-white bg-neutral-900 dark:bg-purple-600 py-1 px-3 rounded-md uppercase tracking-wider">
                                         Records List
                                     </h2>
-                                    {/* RECORD (ADD) BUTTON */}
-                                    <button className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white p-1 rounded-md transition-colors shadow-sm" title="Record New History">
+                                    {/* RECORD (ADD) BUTTON CONNECTED */}
+                                    <button
+                                        onClick={() => setIsCreateOpen(true)}
+                                        className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white p-1 rounded-md transition-colors shadow-sm"
+                                        title="Record New History"
+                                    >
                                         <Plus className="size-4" />
                                     </button>
                                 </div>
