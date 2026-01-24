@@ -8,6 +8,7 @@ import {
     Download, Edit3, X, SlidersHorizontal, Building
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import BusinessCreation from './popup/business-creation'; // Corrected Import Path
 
 // --- Types ---
 interface Business {
@@ -84,6 +85,9 @@ export default function BusinessProfile() {
     const [showFilters, setShowFilters] = useState(false);
     const [filterStatus, setFilterStatus] = useState('All');
 
+    // --- Modal State ---
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+
     // Filter Logic
     const filteredBusinesses = useMemo(() => {
         return mockBusinesses.filter(biz => {
@@ -109,6 +113,9 @@ export default function BusinessProfile() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Business Profile" />
 
+            {/* --- MOUNT MODAL HERE --- */}
+            <BusinessCreation isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
+
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
 
                 {/* --- Header Bar --- */}
@@ -123,10 +130,6 @@ export default function BusinessProfile() {
                             </h1>
                         </div>
                     </div>
-                    {/*/!* Export Button *!/*/}
-                    {/*<button className="flex items-center gap-2 px-4 py-2 bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm">*/}
-                    {/*    <Download className="size-4" /> Export*/}
-                    {/*</button>*/}
                 </div>
 
                 {/* --- Main Content Split --- */}
@@ -142,8 +145,12 @@ export default function BusinessProfile() {
                                     <h2 className="text-xs font-bold text-white bg-neutral-900 dark:bg-indigo-600 py-1 px-3 rounded-md uppercase tracking-wider">
                                         Business List
                                     </h2>
-                                    {/* REGISTER BUTTON */}
-                                    <button className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white p-1 rounded-md transition-colors shadow-sm" title="Register New Business">
+                                    {/* REGISTER BUTTON (Connected) */}
+                                    <button
+                                        onClick={() => setIsCreateOpen(true)}
+                                        className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white p-1 rounded-md transition-colors shadow-sm"
+                                        title="Register New Business"
+                                    >
                                         <Plus className="size-4" />
                                     </button>
                                 </div>
