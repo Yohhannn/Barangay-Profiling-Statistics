@@ -8,6 +8,7 @@ import {
     Download, Edit3, X, SlidersHorizontal, ClipboardList
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import ServicesCreation from './popup/services-creation'; // Import the popup
 
 // --- Types ---
 interface Transaction {
@@ -16,7 +17,7 @@ interface Transaction {
     firstName: string;
     lastName: string;
     dateRequested: string;
-    type: string; // e.g., "Barangay Clearance", "Complaint"
+    type: string;
     status: 'Pending' | 'Processing' | 'Completed' | 'Rejected';
     purpose: string;
 
@@ -41,24 +42,7 @@ const mockTransactions: Transaction[] = [
         purpose: 'For business permit renewal.',
         dateEncoded: 'July 10, 2025 | 10:15 AM', encodedBy: 'STAFF_01', dateUpdated: 'N/A', updatedBy: 'N/A'
     },
-    {
-        id: 3, transactionId: 'TRX-2025-003', firstName: 'Maria', lastName: 'Santos',
-        dateRequested: 'August 7, 2025', type: 'Complaint', status: 'Pending',
-        purpose: 'Filing a complaint against a neighbor for noise disturbance.',
-        dateEncoded: 'Aug 07, 2025 | 02:45 PM', encodedBy: 'STAFF_02', dateUpdated: 'N/A', updatedBy: 'N/A'
-    },
-    {
-        id: 4, transactionId: 'TRX-2025-004', firstName: 'Juan', lastName: 'Dela Cruz',
-        dateRequested: 'August 8, 2025', type: 'Indigency', status: 'Completed',
-        purpose: 'Requirement for scholarship application.',
-        dateEncoded: 'Aug 08, 2025 | 08:00 AM', encodedBy: 'ADMIN', dateUpdated: 'Aug 08, 2025', updatedBy: 'ADMIN'
-    },
-    {
-        id: 5, transactionId: 'TRX-2025-005', firstName: 'Elena', lastName: 'Bautista',
-        dateRequested: 'Sept 01, 2025', type: 'Business Permit', status: 'Rejected',
-        purpose: 'New Sari-sari store application (Lacking documents).',
-        dateEncoded: 'Sept 01, 2025 | 11:30 AM', encodedBy: 'STAFF_01', dateUpdated: 'Sept 02, 2025', updatedBy: 'ADMIN'
-    }
+    // ...
 ];
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -71,6 +55,9 @@ export default function ServicesProfile() {
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilters, setShowFilters] = useState(false);
     const [filterStatus, setFilterStatus] = useState('All');
+
+    // --- Modal State ---
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
 
     // Filter Logic
     const filteredTransactions = useMemo(() => {
@@ -97,6 +84,9 @@ export default function ServicesProfile() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Service Transactions" />
+
+            {/* --- MOUNT MODAL HERE --- */}
+            <ServicesCreation isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
 
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
 
@@ -131,8 +121,12 @@ export default function ServicesProfile() {
                                     <h2 className="text-xs font-bold text-white bg-neutral-900 dark:bg-violet-600 py-1 px-3 rounded-md uppercase tracking-wider">
                                         Transact. List
                                     </h2>
-                                    {/* CREATE BUTTON */}
-                                    <button className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white p-1 rounded-md transition-colors shadow-sm" title="Create New Transaction">
+                                    {/* CREATE BUTTON (Connected) */}
+                                    <button
+                                        onClick={() => setIsCreateOpen(true)}
+                                        className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white p-1 rounded-md transition-colors shadow-sm active:scale-95"
+                                        title="Create New Transaction"
+                                    >
                                         <Plus className="size-4" />
                                     </button>
                                 </div>
