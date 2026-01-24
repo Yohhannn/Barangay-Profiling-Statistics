@@ -8,6 +8,7 @@ import {
     Download, Edit3, X, SlidersHorizontal, Scale, MessageSquare
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import SettlementHistoryCreation from './popup/settlement-history-creation'; // Ensure correct path
 
 // --- Types ---
 interface SettlementRecord {
@@ -97,6 +98,9 @@ export default function SettlementHistory() {
     const [showFilters, setShowFilters] = useState(false);
     const [filterStatus, setFilterStatus] = useState('All');
 
+    // --- Modal State ---
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+
     // Filter Logic
     const filteredHistory = useMemo(() => {
         return mockSettlements.filter(record => {
@@ -122,6 +126,12 @@ export default function SettlementHistory() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Settlement History" />
 
+            {/* --- MOUNT THE MODAL HERE --- */}
+            <SettlementHistoryCreation
+                isOpen={isCreateOpen}
+                onClose={() => setIsCreateOpen(false)}
+            />
+
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
 
                 {/* --- Header Bar --- */}
@@ -136,10 +146,6 @@ export default function SettlementHistory() {
                             </h1>
                         </div>
                     </div>
-                    {/*/!* Export Button (Top Right) *!/*/}
-                    {/*<button className="flex items-center gap-2 px-4 py-2 bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm">*/}
-                    {/*    <Download className="size-4" /> Export Report*/}
-                    {/*</button>*/}
                 </div>
 
                 {/* --- Main Content Split --- */}
@@ -155,8 +161,12 @@ export default function SettlementHistory() {
                                     <h2 className="text-xs font-bold text-white bg-neutral-900 dark:bg-amber-600 py-1 px-3 rounded-md uppercase tracking-wider">
                                         Settlement List
                                     </h2>
-                                    {/* REGISTER BUTTON (Green) */}
-                                    <button className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white p-1 rounded-md transition-colors shadow-sm" title="Record New Settlement">
+                                    {/* REGISTER BUTTON (Green) - NOW CONNECTED */}
+                                    <button
+                                        onClick={() => setIsCreateOpen(true)}
+                                        className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white p-1 rounded-md transition-colors shadow-sm active:scale-95"
+                                        title="Record New Settlement"
+                                    >
                                         <Plus className="size-4" />
                                     </button>
                                 </div>
@@ -222,7 +232,7 @@ export default function SettlementHistory() {
                                                 ${selectedRecord?.id === rec.id ? 'bg-amber-50 dark:bg-amber-900/20 border-l-4 border-l-amber-500' : 'border-l-4 border-l-transparent'}
                                             `}
                                     >
-                                        <td className="px-4 py-3 font-mono text-xs text-neutral-500">{rec.id}</td>
+                                        <td className="px-4 py-3 font-mono text-xs text-neutral-500">{rec.settlementId}</td>
                                         <td className="px-4 py-3">
                                             <div className="font-bold text-neutral-900 dark:text-neutral-100">{rec.complaineeName}</div>
                                             <div className="text-[10px] text-neutral-500">vs. {rec.complainantName}</div>
