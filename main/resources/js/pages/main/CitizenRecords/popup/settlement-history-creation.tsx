@@ -1,6 +1,6 @@
 import {
     X, CheckCircle, Handshake, User,
-    FileText, Search, Scale, UserCheck, UserX
+    FileText, Search, Scale, UserCheck, UserX, Link as LinkIcon, FileClock
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 
@@ -16,6 +16,13 @@ const mockCitizensData = [
     { id: '2025-005', first: 'Pedro', middle: 'C.', last: 'Magtanggol' },
     { id: '2025-014', first: 'Antonio', middle: 'L.', last: 'Luna' },
     { id: '2025-020', first: 'Juan', middle: 'D.', last: 'Dela Cruz' },
+];
+
+// Mock Database of Citizen History Records (for linking)
+const mockHistoryRecords = [
+    { id: 'HIST-2025-001', type: 'Complaint', description: 'Noise Barrage late at night', involved: 'Roberto Gonzales' },
+    { id: 'HIST-2025-002', type: 'Violation', description: 'Illegal Parking blockage', involved: 'Pedro Magtanggol' },
+    { id: 'HIST-2025-003', type: 'Dispute', description: 'Boundary dispute with neighbor', involved: 'Maria Santos' },
 ];
 
 export default function SettlementHistoryCreation({ isOpen, onClose }: SettlementHistoryCreationProps) {
@@ -42,6 +49,11 @@ export default function SettlementHistoryCreation({ isOpen, onClose }: Settlemen
     const [showCmeResults, setShowCmeResults] = useState(false);
     const [isCmeLocked, setIsCmeLocked] = useState(false);
 
+    // --- 3. Linked History State (NEW) ---
+    const [historySearchQuery, setHistorySearchQuery] = useState('');
+    const [showHistoryResults, setShowHistoryResults] = useState(false);
+    const [selectedHistory, setSelectedHistory] = useState<typeof mockHistoryRecords[0] | null>(null);
+
     // --- Filter Logic ---
     const filterCitizens = (query: string) => {
         if (!query) return [];
@@ -53,8 +65,19 @@ export default function SettlementHistoryCreation({ isOpen, onClose }: Settlemen
         );
     };
 
+    const filterHistory = (query: string) => {
+        if (!query) return [];
+        const lower = query.toLowerCase();
+        return mockHistoryRecords.filter(h =>
+            h.id.toLowerCase().includes(lower) ||
+            h.description.toLowerCase().includes(lower) ||
+            h.involved.toLowerCase().includes(lower)
+        );
+    };
+
     const filteredComplainants = useMemo(() => filterCitizens(cmpSearchQuery), [cmpSearchQuery]);
     const filteredComplainees = useMemo(() => filterCitizens(cmeSearchQuery), [cmeSearchQuery]);
+    const filteredHistory = useMemo(() => filterHistory(historySearchQuery), [historySearchQuery]);
 
     if (!isOpen) return null;
 
@@ -98,11 +121,24 @@ export default function SettlementHistoryCreation({ isOpen, onClose }: Settlemen
         setCmeSearchQuery('');
     };
 
+    // --- Handlers: History Link ---
+    const handleSelectHistory = (record: typeof mockHistoryRecords[0]) => {
+        setSelectedHistory(record);
+        setHistorySearchQuery('');
+        setShowHistoryResults(false);
+    };
+
+    const handleUnlinkHistory = () => {
+        setSelectedHistory(null);
+        setHistorySearchQuery('');
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         console.log("Settlement Record Submitted", {
             complainant: { hasRecord, id: cmpId, first: cmpFirstName, last: cmpLastName },
-            complainee: { id: cmeId, first: cmeFirstName, last: cmeLastName }
+            complainee: { id: cmeId, first: cmeFirstName, last: cmeLastName },
+            linkedHistory: selectedHistory ? selectedHistory.id : 'None'
         });
         onClose();
         // Reset Logic would go here
@@ -315,7 +351,63 @@ export default function SettlementHistoryCreation({ isOpen, onClose }: Settlemen
                     <div className="space-y-4">
                         <SectionLabel icon={<FileText className="size-4" />} label="Other Information" color="text-amber-700" />
 
-                        <div className="bg-white dark:bg-[#1e293b] p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm space-y-4">
+                        <div className="bg-white dark:bg-[#1e293b] p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm space-y-4 relative">
+
+                            {/* --- LINK CITIZEN HISTORY SEARCH --- */}
+                            <div className="relative z-10 p-4 bg-indigo-50 dark:bg-indigo-900/10 rounded-lg border border-indigo-100 dark:border-indigo-900/30 mb-2">
+                                <label className="text-[10px] font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wide flex items-center gap-1.5 mb-2">
+                                    <LinkIcon className="size-3" /> Link Previous Citizen History (Optional)
+                                </label>
+
+                                {!selectedHistory ? (
+                                    <div className="relative group">
+                                        <input
+                                            className="w-full text-xs p-2.5 pl-9 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                                            placeholder="Search by History ID, Type, or Details..."
+                                            value={historySearchQuery}
+                                            onChange={(e) => {
+                                                setHistorySearchQuery(e.target.value);
+                                                setShowHistoryResults(true);
+                                            }}
+                                            onFocus={() => setShowHistoryResults(true)}
+                                        />
+                                        <div className="absolute left-3 top-2.5 text-indigo-400"><FileClock className="size-4" /></div>
+
+                                        {/* History Results Dropdown */}
+                                        {showHistoryResults && historySearchQuery.length > 0 && (
+                                            <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700 shadow-xl max-h-40 overflow-y-auto z-50">
+                                                {filteredHistory.length > 0 ? (
+                                                    filteredHistory.map((h) => (
+                                                        <button key={h.id} onClick={() => handleSelectHistory(h)} className="w-full text-left px-4 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors flex items-center justify-between group border-b border-neutral-100 dark:border-neutral-700/50 last:border-0 text-xs">
+                                                            <div className="flex flex-col">
+                                                                <span className="font-bold text-neutral-700 dark:text-neutral-200">{h.type} - {h.id}</span>
+                                                                <span className="text-[10px] text-neutral-500 truncate max-w-[200px]">{h.description}</span>
+                                                            </div>
+                                                            <span className="text-[10px] bg-neutral-100 dark:bg-neutral-700 px-1.5 py-0.5 rounded text-neutral-500">{h.involved}</span>
+                                                        </button>
+                                                    ))
+                                                ) : (
+                                                    <div className="p-3 text-center text-xs text-neutral-400 italic">No history records found.</div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    // Linked History Banner
+                                    <div className="flex items-center justify-between p-2 bg-indigo-100 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 rounded-md">
+                                        <div className="flex items-center gap-2">
+                                            <FileClock className="size-4 text-indigo-600 dark:text-indigo-400" />
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-bold text-indigo-900 dark:text-indigo-200">{selectedHistory.id} - {selectedHistory.type}</span>
+                                                <span className="text-[10px] text-indigo-700 dark:text-indigo-300 truncate max-w-[250px]">{selectedHistory.description}</span>
+                                            </div>
+                                        </div>
+                                        <button onClick={handleUnlinkHistory} className="p-1 hover:bg-white/50 rounded-full text-indigo-500 transition-colors" title="Remove Link">
+                                            <X className="size-3.5" />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 <TextAreaGroup label="Complaint Description" placeholder="What is the complaint about?" required />
@@ -381,10 +473,10 @@ function InputGroup({ label, required, className, isIdField, ...props }: InputPr
                         CTZ-
                     </div>
                 )}
-                <input
-                    className={`w-full text-xs p-2.5 ${isIdField ? 'pl-12 font-mono' : ''} rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all ${className}`}
-                    {...props}
-                />
+                    <input
+                        className={`w-full text-xs p-2.5 ${isIdField ? 'pl-12 font-mono' : ''} rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all ${className}`}
+                        {...props}
+                    />
             </div>
         </div>
     );
