@@ -5,7 +5,7 @@ A modern web application built with Laravel 12, Inertia.js (React), Tailwind CSS
 
 ### Prerequisites
 #### Before starting, ensure you have the following installed:
-- PHP 8.2+
+- PHP 8.3+
 - Composer
 - Node.js & NPM
 - PostgreSQL (Running locally)
