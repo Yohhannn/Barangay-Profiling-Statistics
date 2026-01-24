@@ -1,85 +1,112 @@
 import {
     X, CheckCircle, Handshake, User,
-    FileText, Activity, Search, Scale
+    FileText, Search, Scale, UserCheck, UserX
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 
 interface SettlementHistoryCreationProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
-// Mock Data for Auto-fill
-const mockCitizens: Record<string, { first: string; middle: string; last: string }> = {
-    '2025-001': { first: 'Roberto', middle: 'A.', last: 'Gonzales' },
-    '2025-005': { first: 'Pedro', middle: 'C.', last: 'Magtanggol' },
-    '2025-014': { first: 'Antonio', middle: 'L.', last: 'Luna' },
-};
+// Mock Database of Citizens
+const mockCitizensData = [
+    { id: '2025-001', first: 'Roberto', middle: 'A.', last: 'Gonzales' },
+    { id: '2025-002', first: 'Maria', middle: 'B.', last: 'Santos' },
+    { id: '2025-005', first: 'Pedro', middle: 'C.', last: 'Magtanggol' },
+    { id: '2025-014', first: 'Antonio', middle: 'L.', last: 'Luna' },
+    { id: '2025-020', first: 'Juan', middle: 'D.', last: 'Dela Cruz' },
+];
 
 export default function SettlementHistoryCreation({ isOpen, onClose }: SettlementHistoryCreationProps) {
-    // --- 1. ALWAYS CALL ALL HOOKS FIRST ---
+    // --- 1. Complainant State ---
+    const [hasRecord, setHasRecord] = useState(false); // Toggle
+    const [cmpFirstName, setCmpFirstName] = useState('');
+    const [cmpMiddleName, setCmpMiddleName] = useState('');
+    const [cmpLastName, setCmpLastName] = useState('');
+    const [cmpId, setCmpId] = useState('');
 
-    // --- Complainant State ---
-    const [hasRecord, setHasRecord] = useState(false);
-    const [complainantIdSuffix, setComplainantIdSuffix] = useState('');
-    const [complainantFirst, setComplainantFirst] = useState('');
-    const [complainantMiddle, setComplainantMiddle] = useState('');
-    const [complainantLast, setComplainantLast] = useState('');
+    // Complainant Search State
+    const [cmpSearchQuery, setCmpSearchQuery] = useState('');
+    const [showCmpResults, setShowCmpResults] = useState(false);
+    const [isCmpLocked, setIsCmpLocked] = useState(false);
 
-    // --- Complainee State ---
-    const [complaineeIdSuffix, setComplaineeIdSuffix] = useState('');
-    const [complaineeFirst, setComplaineeFirst] = useState('');
-    const [complaineeMiddle, setComplaineeMiddle] = useState('');
-    const [complaineeLast, setComplaineeLast] = useState('');
-    const [isComplaineeAutoFilled, setIsComplaineeAutoFilled] = useState(false);
+    // --- 2. Complainee State ---
+    const [cmeFirstName, setCmeFirstName] = useState('');
+    const [cmeMiddleName, setCmeMiddleName] = useState('');
+    const [cmeLastName, setCmeLastName] = useState('');
+    const [cmeId, setCmeId] = useState('');
 
-    // --- Effects for Auto-fill ---
+    // Complainee Search State
+    const [cmeSearchQuery, setCmeSearchQuery] = useState('');
+    const [showCmeResults, setShowCmeResults] = useState(false);
+    const [isCmeLocked, setIsCmeLocked] = useState(false);
 
-    // 1. Complainant Auto-fill
-    useEffect(() => {
-        if (!hasRecord) return;
-        const citizen = mockCitizens[complainantIdSuffix];
-        if (citizen) {
-            setComplainantFirst(citizen.first);
-            setComplainantMiddle(citizen.middle);
-            setComplainantLast(citizen.last);
-        } else {
-            // Only clear if previously autofilled or empty to avoid overwriting manual typing if logic changes
-            if(complainantIdSuffix === '') {
-                setComplainantFirst('');
-                setComplainantMiddle('');
-                setComplainantLast('');
-            }
-        }
-    }, [complainantIdSuffix, hasRecord]);
-
-    // 2. Complainee Auto-fill
-    useEffect(() => {
-        const citizen = mockCitizens[complaineeIdSuffix];
-        if (citizen) {
-            setComplaineeFirst(citizen.first);
-            setComplaineeMiddle(citizen.middle);
-            setComplaineeLast(citizen.last);
-            setIsComplaineeAutoFilled(true);
-        } else {
-            if (isComplaineeAutoFilled) {
-                setComplaineeFirst('');
-                setComplaineeMiddle('');
-                setComplaineeLast('');
-                setIsComplaineeAutoFilled(false);
-            }
-        }
-    }, [complaineeIdSuffix]);
-
-    // --- Handlers ---
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        console.log("Settlement Record Submitted");
-        onClose();
+    // --- Filter Logic ---
+    const filterCitizens = (query: string) => {
+        if (!query) return [];
+        const lowerQuery = query.toLowerCase();
+        return mockCitizensData.filter(c =>
+            c.first.toLowerCase().includes(lowerQuery) ||
+            c.last.toLowerCase().includes(lowerQuery) ||
+            c.middle.toLowerCase().includes(lowerQuery)
+        );
     };
 
-    // --- 2. NOW CHECK VISIBILITY (Moved after all hooks) ---
+    const filteredComplainants = useMemo(() => filterCitizens(cmpSearchQuery), [cmpSearchQuery]);
+    const filteredComplainees = useMemo(() => filterCitizens(cmeSearchQuery), [cmeSearchQuery]);
+
     if (!isOpen) return null;
+
+    // --- Handlers: Complainant ---
+    const handleSelectComplainant = (citizen: typeof mockCitizensData[0]) => {
+        setCmpId(citizen.id);
+        setCmpFirstName(citizen.first);
+        setCmpMiddleName(citizen.middle);
+        setCmpLastName(citizen.last);
+        setIsCmpLocked(true);
+        setCmpSearchQuery('');
+        setShowCmpResults(false);
+    };
+
+    const handleCancelComplainant = () => {
+        setCmpId('');
+        setCmpFirstName('');
+        setCmpMiddleName('');
+        setCmpLastName('');
+        setIsCmpLocked(false);
+        setCmpSearchQuery('');
+    };
+
+    // --- Handlers: Complainee ---
+    const handleSelectComplainee = (citizen: typeof mockCitizensData[0]) => {
+        setCmeId(citizen.id);
+        setCmeFirstName(citizen.first);
+        setCmeMiddleName(citizen.middle);
+        setCmeLastName(citizen.last);
+        setIsCmeLocked(true);
+        setCmeSearchQuery('');
+        setShowCmeResults(false);
+    };
+
+    const handleCancelComplainee = () => {
+        setCmeId('');
+        setCmeFirstName('');
+        setCmeMiddleName('');
+        setCmeLastName('');
+        setIsCmeLocked(false);
+        setCmeSearchQuery('');
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        console.log("Settlement Record Submitted", {
+            complainant: { hasRecord, id: cmpId, first: cmpFirstName, last: cmpLastName },
+            complainee: { id: cmeId, first: cmeFirstName, last: cmeLastName }
+        });
+        onClose();
+        // Reset Logic would go here
+    };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -122,43 +149,91 @@ export default function SettlementHistoryCreation({ isOpen, onClose }: Settlemen
                                 <span className="text-[10px] font-bold uppercase text-neutral-500">Has Barangay Record?</span>
                                 <div className="flex gap-2">
                                     <label className="flex items-center gap-1.5 cursor-pointer">
-                                        <input type="radio" name="hasRec" className="accent-amber-600" checked={hasRecord} onChange={() => setHasRecord(true)} />
+                                        <input
+                                            type="radio"
+                                            name="hasRec"
+                                            className="accent-amber-600"
+                                            checked={hasRecord}
+                                            onChange={() => { setHasRecord(true); handleCancelComplainant(); }}
+                                        />
                                         <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">Yes</span>
                                     </label>
                                     <label className="flex items-center gap-1.5 cursor-pointer">
-                                        <input type="radio" name="hasRec" className="accent-amber-600" checked={!hasRecord} onChange={() => setHasRecord(false)} />
+                                        <input
+                                            type="radio"
+                                            name="hasRec"
+                                            className="accent-amber-600"
+                                            checked={!hasRecord}
+                                            onChange={() => { setHasRecord(false); handleCancelComplainant(); }}
+                                        />
                                         <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">No</span>
                                     </label>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="bg-white dark:bg-[#1e293b] p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm space-y-4">
+                        <div className="bg-white dark:bg-[#1e293b] p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm space-y-4 relative">
+                            {/* COMPLAINANT LOGIC */}
                             {hasRecord ? (
-                                // HAS RECORD: Show ID input + ReadOnly Fields
                                 <>
-                                    <InputGroup
-                                        label="Complainant Citizen ID"
-                                        isIdField={true}
-                                        value={complainantIdSuffix}
-                                        onChange={(e) => setComplainantIdSuffix(e.target.value)}
-                                        placeholder="XXXX-XXX"
-                                        required
-                                    />
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-amber-50 dark:bg-amber-900/10 rounded-lg border border-amber-100 dark:border-amber-900/30">
-                                        <InputGroup label="First Name" value={complainantFirst} readOnly className="bg-transparent" />
-                                        <InputGroup label="Middle Name" value={complainantMiddle} readOnly className="bg-transparent" />
-                                        <InputGroup label="Last Name" value={complainantLast} readOnly className="bg-transparent" />
-                                    </div>
+                                    {/* Search Bar (Only if Not Locked) */}
+                                    {!isCmpLocked && (
+                                        <div className="space-y-1.5 relative z-20 animate-in fade-in slide-in-from-top-2">
+                                            <label className="text-[10px] font-bold uppercase text-neutral-500 tracking-wide">
+                                                Search Complainant
+                                            </label>
+                                            <div className="relative group">
+                                                <input
+                                                    className="w-full text-xs p-2.5 pl-9 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all"
+                                                    placeholder="Search by Name..."
+                                                    value={cmpSearchQuery}
+                                                    onChange={(e) => {
+                                                        setCmpSearchQuery(e.target.value);
+                                                        setShowCmpResults(true);
+                                                    }}
+                                                    onFocus={() => setShowCmpResults(true)}
+                                                />
+                                                <div className="absolute left-3 top-2.5 text-neutral-400"><Search className="size-4" /></div>
+                                            </div>
+                                            {/* Results */}
+                                            {showCmpResults && cmpSearchQuery.length > 0 && (
+                                                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700 shadow-xl max-h-40 overflow-y-auto z-50">
+                                                    {filteredComplainants.map((c) => (
+                                                        <button key={c.id} onClick={() => handleSelectComplainant(c)} className="w-full text-left px-4 py-2 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors flex items-center justify-between group border-b border-neutral-100 dark:border-neutral-700/50 last:border-0 text-xs">
+                                                            <span className="font-bold text-neutral-700 dark:text-neutral-200">{c.last}, {c.first}</span>
+                                                            <span className="text-[10px] text-neutral-400 font-mono">CTZ-{c.id}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Locked Banner */}
+                                    {isCmpLocked && (
+                                        <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/50 rounded-lg animate-in fade-in zoom-in">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-amber-100 dark:bg-amber-900/40 rounded-full text-amber-600 dark:text-amber-300"><UserCheck className="size-4" /></div>
+                                                <div>
+                                                    <p className="text-[10px] font-bold uppercase text-amber-500 dark:text-amber-400 tracking-wide">Selected</p>
+                                                    <p className="text-xs font-medium text-amber-900 dark:text-amber-100 font-mono">ID: CTZ-{cmpId}</p>
+                                                </div>
+                                            </div>
+                                            <button onClick={handleCancelComplainant} className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-black/20 border border-neutral-200 dark:border-neutral-700 hover:border-red-300 hover:text-red-500 rounded text-[10px] font-bold uppercase text-neutral-500 transition-all"><UserX className="size-3" /> Change</button>
+                                        </div>
+                                    )}
+
+                                    {/* ID Field (Read-only) */}
+                                    <InputGroup label="Citizen ID" value={cmpId} readOnly isIdField={true} className="bg-neutral-50/50 cursor-not-allowed" />
                                 </>
-                            ) : (
-                                // NO RECORD: Manual Entry
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <InputGroup label="First Name" placeholder="Given Name" value={complainantFirst} onChange={e => setComplainantFirst(e.target.value)} required />
-                                    <InputGroup label="Middle Name" placeholder="Middle Name" value={complainantMiddle} onChange={e => setComplainantMiddle(e.target.value)} />
-                                    <InputGroup label="Last Name" placeholder="Surname" value={complainantLast} onChange={e => setComplainantLast(e.target.value)} required />
-                                </div>
-                            )}
+                            ) : null}
+
+                            {/* Name Fields (Conditional ReadOnly) */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <InputGroup label="First Name" placeholder="Given Name" value={cmpFirstName} onChange={e => setCmpFirstName(e.target.value)} readOnly={isCmpLocked} className={isCmpLocked ? 'bg-neutral-50/50 cursor-not-allowed' : ''} required />
+                                <InputGroup label="Middle Name" placeholder="Middle Name" value={cmpMiddleName} onChange={e => setCmpMiddleName(e.target.value)} readOnly={isCmpLocked} className={isCmpLocked ? 'bg-neutral-50/50 cursor-not-allowed' : ''} />
+                                <InputGroup label="Last Name" placeholder="Surname" value={cmpLastName} onChange={e => setCmpLastName(e.target.value)} readOnly={isCmpLocked} className={isCmpLocked ? 'bg-neutral-50/50 cursor-not-allowed' : ''} required />
+                            </div>
                         </div>
                     </div>
 
@@ -166,40 +241,68 @@ export default function SettlementHistoryCreation({ isOpen, onClose }: Settlemen
                     <div className="space-y-4">
                         <SectionLabel icon={<User className="size-4" />} label="Complainee Information" color="text-amber-700" />
 
-                        <div className="bg-white dark:bg-[#1e293b] p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm space-y-4">
-                            <InputGroup
-                                label="Complainee Citizen ID (Optional)"
-                                isIdField={true}
-                                value={complaineeIdSuffix}
-                                onChange={(e) => setComplaineeIdSuffix(e.target.value)}
-                                placeholder="XXXX-XXX"
-                            />
+                        <div className="bg-white dark:bg-[#1e293b] p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm space-y-4 relative">
+
+                            {/* SEARCH BAR (Only visible if NOT locked) */}
+                            {!isCmeLocked && (
+                                <div className="space-y-1.5 relative z-20 animate-in fade-in slide-in-from-top-2">
+                                    <label className="text-[10px] font-bold uppercase text-neutral-500 tracking-wide">
+                                        Search Existing Citizen (Optional)
+                                    </label>
+                                    <div className="relative group">
+                                        <input
+                                            className="w-full text-xs p-2.5 pl-9 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none transition-all"
+                                            placeholder="Search by Name..."
+                                            value={cmeSearchQuery}
+                                            onChange={(e) => {
+                                                setCmeSearchQuery(e.target.value);
+                                                setShowCmeResults(true);
+                                            }}
+                                            onFocus={() => setShowCmeResults(true)}
+                                        />
+                                        <div className="absolute left-3 top-2.5 text-neutral-400"><Search className="size-4" /></div>
+                                    </div>
+                                    {/* Results */}
+                                    {showCmeResults && cmeSearchQuery.length > 0 && (
+                                        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700 shadow-xl max-h-40 overflow-y-auto z-50">
+                                            {filteredComplainees.length > 0 ? (
+                                                filteredComplainees.map((c) => (
+                                                    <button key={c.id} onClick={() => handleSelectComplainee(c)} className="w-full text-left px-4 py-2 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors flex items-center justify-between group border-b border-neutral-100 dark:border-neutral-700/50 last:border-0 text-xs">
+                                                        <span className="font-bold text-neutral-700 dark:text-neutral-200">{c.last}, {c.first}</span>
+                                                        <span className="text-[10px] text-neutral-400 font-mono">CTZ-{c.id}</span>
+                                                    </button>
+                                                ))
+                                            ) : (
+                                                <div className="p-3 text-center text-xs text-neutral-400 italic">No citizens found. Enter manually below.</div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Locked Banner */}
+                            {isCmeLocked && (
+                                <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/50 rounded-lg animate-in fade-in zoom-in">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-amber-100 dark:bg-amber-900/40 rounded-full text-amber-600 dark:text-amber-300"><UserCheck className="size-4" /></div>
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase text-amber-500 dark:text-amber-400 tracking-wide">Selected</p>
+                                            <p className="text-xs font-medium text-amber-900 dark:text-amber-100 font-mono">ID: CTZ-{cmeId}</p>
+                                        </div>
+                                    </div>
+                                    <button onClick={handleCancelComplainee} className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-black/20 border border-neutral-200 dark:border-neutral-700 hover:border-red-300 hover:text-red-500 rounded text-[10px] font-bold uppercase text-neutral-500 transition-all"><UserX className="size-3" /> Change</button>
+                                </div>
+                            )}
+
+                            {/* ID Field (Only show if locked/found) */}
+                            {isCmeLocked && (
+                                <InputGroup label="Complainee Citizen ID" value={cmeId} readOnly isIdField={true} className="bg-neutral-50/50 cursor-not-allowed" />
+                            )}
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <InputGroup
-                                    label="First Name"
-                                    placeholder="First Name"
-                                    value={complaineeFirst}
-                                    onChange={(e) => setComplaineeFirst(e.target.value)}
-                                    readOnly={isComplaineeAutoFilled}
-                                    className={isComplaineeAutoFilled ? 'opacity-70 bg-neutral-100' : ''}
-                                />
-                                <InputGroup
-                                    label="Middle Name"
-                                    placeholder="Middle Name"
-                                    value={complaineeMiddle}
-                                    onChange={(e) => setComplaineeMiddle(e.target.value)}
-                                    readOnly={isComplaineeAutoFilled}
-                                    className={isComplaineeAutoFilled ? 'opacity-70 bg-neutral-100' : ''}
-                                />
-                                <InputGroup
-                                    label="Last Name"
-                                    placeholder="Surname"
-                                    value={complaineeLast}
-                                    onChange={(e) => setComplaineeLast(e.target.value)}
-                                    readOnly={isComplaineeAutoFilled}
-                                    className={isComplaineeAutoFilled ? 'opacity-70 bg-neutral-100' : ''}
-                                />
+                                <InputGroup label="First Name" placeholder="First Name" value={cmeFirstName} onChange={(e) => setCmeFirstName(e.target.value)} readOnly={isCmeLocked} className={isCmeLocked ? 'bg-neutral-50/50 cursor-not-allowed' : ''} />
+                                <InputGroup label="Middle Name" placeholder="Middle Name" value={cmeMiddleName} onChange={(e) => setCmeMiddleName(e.target.value)} readOnly={isCmeLocked} className={isCmeLocked ? 'bg-neutral-50/50 cursor-not-allowed' : ''} />
+                                <InputGroup label="Last Name" placeholder="Surname" value={cmeLastName} onChange={(e) => setCmeLastName(e.target.value)} readOnly={isCmeLocked} className={isCmeLocked ? 'bg-neutral-50/50 cursor-not-allowed' : ''} />
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                                 <SelectGroup label="Involvement Status" options={['Principal', 'Accomplice', 'Witness', 'Person of Interest']} />
