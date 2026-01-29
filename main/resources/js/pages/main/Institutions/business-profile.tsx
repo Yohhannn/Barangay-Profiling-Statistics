@@ -345,7 +345,7 @@ export default function BusinessProfile() {
     );
 }
 
-// --- Reusable ---
+// --- Reusable --- KEEP.
 
 function InfoRow({ label, value, highlight = false }: { label: string, value: string, highlight?: boolean }) {
     return (
