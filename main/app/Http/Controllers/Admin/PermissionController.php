@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
-use App\Models\MedicalHistory;
+use App\Http\Controllers\Controller;
+use App\Models\Permission;
 use Illuminate\Http\Request;
 
-class MedicalHistoryController extends Controller
+class PermissionController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -34,7 +35,7 @@ class MedicalHistoryController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(MedicalHistory $medicalHistory)
+    public function show(Permission $permission)
     {
         //
     }
@@ -42,7 +43,7 @@ class MedicalHistoryController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(MedicalHistory $medicalHistory)
+    public function edit(Permission $permission)
     {
         //
     }
@@ -50,7 +51,7 @@ class MedicalHistoryController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, MedicalHistory $medicalHistory)
+    public function update(Request $request, Permission $permission)
     {
         //
     }
@@ -58,7 +59,7 @@ class MedicalHistoryController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(MedicalHistory $medicalHistory)
+    public function destroy(Permission $permission)
     {
         //
     }

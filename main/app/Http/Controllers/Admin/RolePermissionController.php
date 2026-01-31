@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
-use App\Models\Role;
+use App\Http\Controllers\Controller;
+use App\Models\RolePermission;
 use Illuminate\Http\Request;
 
-class RoleController extends Controller
+class RolePermissionController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -34,7 +35,7 @@ class RoleController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Role $role)
+    public function show(RolePermission $rolePermission)
     {
         //
     }
@@ -42,7 +43,7 @@ class RoleController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Role $role)
+    public function edit(RolePermission $rolePermission)
     {
         //
     }
@@ -50,7 +51,7 @@ class RoleController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Role $role)
+    public function update(Request $request, RolePermission $rolePermission)
     {
         //
     }
@@ -58,7 +59,7 @@ class RoleController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Role $role)
+    public function destroy(RolePermission $rolePermission)
     {
         //
     }
