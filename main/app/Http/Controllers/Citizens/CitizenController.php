@@ -8,8 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
-use Inertia\Inertia; // <--- CRITICAL FIX: Required to render the page
-use App\Models\Sitio; // <--- CRITICAL FIX: Required to fetch data
+use Inertia\Inertia;
 
 // Models
 use App\Models\Citizen;
@@ -24,22 +23,111 @@ use App\Models\FamilyPlanning;
 use App\Models\EduHistory;
 use App\Models\EducationStatus;
 use App\Models\Philhealth;
+use App\Models\Sitio;
 use App\Models\HouseholdInfo;
 
 class CitizenController extends Controller
 {
     public function index()
     {
-        // Fetch data sorted alphabetically for better UX
-        $sitios = Sitio::select('sitio_id', 'sitio_name')
-            ->orderBy('sitio_name')
+        // 1. Fetch Citizens with ALL relationships to avoid N+1 query performance issues
+        $citizensQuery = Citizen::with([
+            'info.sitio',
+            'info.employment',
+            'info.contact.phone',
+            'info.demographic.socioEconomic',
+            'info.demographic.healthRisk',
+            'info.demographic.familyPlanning',
+            'info.demographic.educationStatus.educationHistory',
+            'info.demographic.philhealth',
+            'encodedBy',
+            'updatedBy'
+        ])
+            ->where('is_deleted', false) // Only fetch active records
+            ->orderBy('date_encoded', 'desc')
             ->get();
 
-        // Debug: Uncomment the line below to see data in your browser Network tab response
-        // dd($sitios);
+        // 2. Transform Data: Map DB structure to Frontend Interface
+        $mappedCitizens = $citizensQuery->map(function ($citizen) {
+            $info = $citizen->info;
+            $demo = $info->demographic;
 
+            // Helper to get contact number safely
+            $contactNum = $info->contact && $info->contact->phone
+                ? $info->contact->phone->phone_number
+                : null;
+
+            return [
+                'id' => $citizen->ctz_id,
+
+                // Header
+                'firstName' => $info->first_name,
+                'middleName' => $info->middle_name ?? '',
+                'lastName' => $info->last_name,
+                'suffix' => $info->suffix ?? '',
+                'citizenId' => $citizen->ctz_uuid ?? 'PENDING',
+                'status' => $info->is_deceased ? 'Deceased' : 'Active',
+
+                // Personal
+                'dob' => $info->date_of_birth,
+                'age' => Carbon::parse($info->date_of_birth)->age,
+                'sex' => $info->sex,
+                'bloodType' => $info->blood_type ?? 'Unknown',
+                'civilStatus' => $info->civil_status,
+                'religion' => $info->religion,
+                'pob' => $info->place_of_birth ?? 'N/A',
+
+                // Contact & Address
+                'email' => $info->contact->email ?? 'N/A',
+                'contact' => $contactNum ? [$contactNum] : [], // Wrap in array for frontend
+                'fullAddress' => $info->sitio ? $info->sitio->sitio_name . ', Marigondon' : 'N/A',
+                'sitio' => $info->sitio ? $info->sitio->sitio_name : 'Unknown',
+
+                // Socio-Economic
+                'employmentStatus' => $info->employment->status ?? 'N/A',
+                'occupation' => $info->employment->occupation ?? 'N/A',
+                'socioEconomicStatus' => $demo->socioEconomic->soec_status ?? 'N/A',
+
+                // Flags
+                'isGovWorker' => (bool) ($info->employment->is_gov_worker ?? false),
+                'isStudent' => (bool) ($demo->educationStatus->is_current_student ?? false),
+                'isVoter' => (bool) $info->is_registered_voter,
+                'isIp' => (bool) $info->is_indigenous,
+                'isDeceased' => (bool) $info->is_deceased,
+
+                // Conditional Data
+                'dateOfDeath' => $info->date_of_death,
+                'causeOfDeath' => $info->cause_of_death,
+
+                'educAttainment' => $demo->educationStatus->education_level ?? 'N/A',
+                'schoolName' => $demo->educationStatus->institution_name ?? 'N/A',
+
+                'fpStatus' => $demo->familyPlanning->status ?? 'N/A',
+                'fpMethod' => $demo->familyPlanning->method ?? 'N/A',
+                'fpDateStarted' => $demo->familyPlanning->start_date ?? null,
+                'fpDateEnded' => $demo->familyPlanning->end_date ?? null,
+
+                // System IDs
+                'nhtsNumber' => $demo->socioEconomic->soec_number,
+                'householdId' => $info->hh_id ?? 'N/A',
+                'relationship' => $info->relationship_type ?? 'Head',
+                'philhealthCategory' => $demo->philhealth->category_name ?? 'N/A',
+                'philhealthId' => $demo->philhealth->philhealth_id_number,
+                'membershipType' => $demo->philhealth->phea_membership_type,
+                'healthClassification' => $demo->healthRisk->clah_classification_name ?? 'Healthy',
+
+                // Audit
+                'dateEncoded' => Carbon::parse($citizen->date_encoded)->format('Y-m-d'),
+                'encodedBy' => $citizen->encodedBy->username ?? 'System',
+                'dateUpdated' => $citizen->date_updated ? Carbon::parse($citizen->date_updated)->format('Y-m-d') : 'N/A',
+                'updatedBy' => $citizen->updatedBy->username ?? 'System',
+            ];
+        });
+
+        // 3. Pass data to React
         return Inertia::render('Main/CitizenRecords/Index', [
-            'sitios' => $sitios
+            'citizens' => $mappedCitizens,
+            'sitios' => Sitio::select('sitio_id', 'sitio_name')->orderBy('sitio_name')->get()
         ]);
     }
 
@@ -60,10 +148,7 @@ class CitizenController extends Controller
             'contact_numbers' => 'nullable|array',
             'contact_numbers.*' => 'nullable|string',
             'email' => 'nullable|email|max:255',
-
-            // This validation ensures the Selected Sitio actually exists in your DB
             'sitio' => 'nullable|exists:sitios,sitio_name',
-
             'household_id' => 'nullable|exists:household_infos,hh_id',
             'relationship_to_head' => 'nullable|required_with:household_id|string',
             'socio_economic_class' => 'nullable|string',
@@ -168,7 +253,6 @@ class CitizenController extends Controller
 
             $sitioId = null;
             if (!empty($validated['sitio'])) {
-                // Find ID based on Name
                 $sitioObj = Sitio::where('sitio_name', $validated['sitio'])->first();
                 if ($sitioObj) $sitioId = $sitioObj->sitio_id;
             }
@@ -196,6 +280,8 @@ class CitizenController extends Controller
                 'demo_id' => $demographic->demo_id,
             ]);
 
+            // Create System Citizen Record
+            // Note: ctz_uuid is handled by the Model event
             $ctzNumber = (int) (Carbon::now()->format('Y') . rand(1000, 9999));
             $systemUserId = Auth::id() ?? 1;
 
@@ -206,8 +292,8 @@ class CitizenController extends Controller
                 'date_encoded' => now(),
                 'encoded_by' => $systemUserId,
                 'updated_by' => $systemUserId,
-                'face_recog_uuid' => null,
-                'photo_uuid' => null,
+                'face_recog_uuid' => null, // Explicitly null
+                'photo_uuid' => null,      // Explicitly null
             ]);
 
             DB::commit();
