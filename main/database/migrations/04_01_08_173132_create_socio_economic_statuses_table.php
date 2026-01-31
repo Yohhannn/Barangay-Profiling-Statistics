@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('socio_economic_statuses', function (Blueprint $table) {
             $table->id('soec_id');
-            $table->enum('soec_status', ['NHTS 4Ps', 'NHTS Non-4ps', 'Non-NHTS', null]);
+            $table->enum('soec_status', ['NHTS 4Ps', 'NHTS Non 4Ps', 'Non-NHTS', null]);
             $table->string('soec_number')->nullable();
         });
     }
