@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Institutions_Transactions;
 
+use App\Http\Controllers\Controller;
 use App\Models\businessInfo;
 use Illuminate\Http\Request;
 
-class BusinessInfoController extends Controller
+class BusinessController extends Controller
 {
     /**
      * Display a listing of the resource.

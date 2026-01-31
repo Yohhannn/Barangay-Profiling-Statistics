@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Records;
 
+use App\Http\Controllers\Controller;
 use App\Models\CitizenHistory;
 use Illuminate\Http\Request;
 
