@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('citizens', function (Blueprint $table) {
             $table->id('ctz_id');
+            $table->string('ctz_uuid');
             $table->integer('ctz_number');
             $table->boolean('is_deleted')->default(false);
             $table->text('deleted_reason')->nullable();

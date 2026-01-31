@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('middle_name')->nullable();
             $table->enum('suffix', ['Jr.', 'Sr.', 'I', 'II', 'III', 'IV', 'V'])->nullable();
             $table->date('date_of_birth')->nullable();
-            $table->string('place_of_birth');
+            $table->string('place_of_birth')->nullable();
             $table->enum('sex',['Male','Female']);
          #   $table->string('photo',255)->nullable(); moved to citizen
             $table->enum('civil_status',[ 'Single', 'Married', 'Widowed', 'Separated', 'Divorced']);
