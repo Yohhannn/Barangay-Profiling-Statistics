@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Citizens\CitizenController;
 use Inertia\Inertia;
 
 // Root route
@@ -139,6 +140,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('archives', function () {
         return Inertia::render('admin/Archives/archives');
     })->name('archives');
+
+
+    Route::post('/citizens/store', [CitizenController::class, 'store']);
 });
 
 require __DIR__.'/settings.php';
