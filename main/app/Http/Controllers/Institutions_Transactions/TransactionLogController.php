@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Institutions_Transactions;
 
-use App\Models\SystemAccountLog;
+use App\Http\Controllers\Controller;
+use App\Models\TransactionLog;
 use Illuminate\Http\Request;
 
-class SystemAccountLogController extends Controller
+class TransactionLogController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -34,7 +35,7 @@ class SystemAccountLogController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(SystemAccountLog $systemAccountLog)
+    public function show(TransactionLog $transactionLog)
     {
         //
     }
@@ -42,7 +43,7 @@ class SystemAccountLogController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(SystemAccountLog $systemAccountLog)
+    public function edit(TransactionLog $transactionLog)
     {
         //
     }
@@ -50,7 +51,7 @@ class SystemAccountLogController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, SystemAccountLog $systemAccountLog)
+    public function update(Request $request, TransactionLog $transactionLog)
     {
         //
     }
@@ -58,7 +59,7 @@ class SystemAccountLogController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(SystemAccountLog $systemAccountLog)
+    public function destroy(TransactionLog $transactionLog)
     {
         //
     }
