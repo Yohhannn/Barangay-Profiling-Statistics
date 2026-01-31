@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('philhealths', function (Blueprint $table) {
             $table->id('phea_id');
-            $table->string('philhealth_id_number');
-            $table->enum('phea_membership_type', ['None', 'Member', 'Dependent']);
-            $table->enum('category_name',['Formal Economy Government', 'Formal Economy Private', 'Indigenous People', 'Informal Economy', 'NHTS', 'Senior Citizen', 'Unknown']);
+            $table->string('philhealth_id_number')->nullable();
+            $table->enum('phea_membership_type', ['Member', 'Dependent'])->nullable();
+            $table->enum('category_name',['Formal Economy Government', 'Formal Economy Private', 'Indigenous People', 'Informal Economy', 'NHTS', 'Senior Citizen', 'Unknown'])->nullable();
         });
     }
 

@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('employments', function (Blueprint $table) {
             $table->id('emp_id');
-            $table->string('occupation');
-            $table->enum('status',['Employed','Unemployed','Self-Employed','Retired','Student','Homemaker']);
+            $table->string('occupation')->nullable();
+            $table->enum('status',['Employed','Unemployed','Self-Employed','Retired','Student','Homemaker'])->nullable();
             $table->boolean('is_gov_worker')->default(false);
         });
     }
