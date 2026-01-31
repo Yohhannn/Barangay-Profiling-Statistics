@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Citizens;
 
+use App\Http\Controllers\Controller;
 use App\Models\HouseholdInfo;
 use Illuminate\Http\Request;
 
-class HouseholdInfoController extends Controller
+class HouseholdController extends Controller
 {
     /**
      * Display a listing of the resource.
