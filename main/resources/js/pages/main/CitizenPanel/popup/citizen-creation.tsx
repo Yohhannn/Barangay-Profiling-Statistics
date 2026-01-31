@@ -360,7 +360,7 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
                                             required={isRelationRequired}
                                             value={data.relationship_to_head}
                                             onChange={e => setData('relationship_to_head', e.target.value)}
-                                            options={['Head', 'Spouse', 'Son', 'Daughter', 'Parent', 'Other']}
+                                            options={['Daughter','Son','Head','Spouse','Father','Mother','Grandfather','Grandmother','Grandson','Granddaughter','Brother','Sister','Uncle','Aunt','Nephew','Niece','Cousin','Other']}
                                             error={errors.relationship_to_head}
                                         />
                                     </div>
@@ -434,7 +434,7 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
                                     {data.is_studying && (
                                         <div className="grid grid-cols-1 gap-4 p-4 bg-indigo-50 dark:bg-indigo-900/10 rounded-lg border border-indigo-100 dark:border-indigo-900/30">
                                             <InputGroup label="School Name" value={data.school_name} onChange={e => setData('school_name', e.target.value)} />
-                                            <SelectGroup label="Current Level" value={data.current_level} onChange={e => setData('current_level', e.target.value)} options={['Elementary', 'High School', 'Senior High', 'College', 'Vocational']} />
+                                            <SelectGroup label="Current Level" value={data.current_level} onChange={e => setData('current_level', e.target.value)} options={['College Graduate', 'College Undergraduate', 'Elementary Graduate', 'Elementary undergraduate', 'Junior High School Graduate', 'Junior High School Undergraduate', 'Senior High School Graduate', 'Senior High School Undergraduate','Kindergarten','No Formal Education', 'Postgraduate']} />
                                         </div>
                                     )}
 
@@ -467,12 +467,41 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
                                     )}
 
                                     <div className="pt-4 border-t border-neutral-100 dark:border-neutral-700 space-y-3">
-                                        <div className="flex items-center gap-2 text-rose-500"><Heart className="size-4" /><span className="text-xs font-bold uppercase">Family Planning</span></div>
+                                        <div className="flex items-center gap-2 text-rose-500">
+                                            <Heart className="size-4" />
+                                            <span className="text-xs font-bold uppercase">Family Planning</span>
+                                        </div>
                                         <div className="grid grid-cols-2 gap-3">
-                                            <SelectGroup label="Method" value={data.fp_method} onChange={e => setData('fp_method', e.target.value)} options={['Pills', 'IUD', 'Condom', 'Natural']} />
-                                            <SelectGroup label="Status" value={data.fp_status} onChange={e => setData('fp_status', e.target.value)} options={['Active', 'Drop-out', 'New Acceptor']} />
-                                            <InputGroup label="Start Date" type="date" value={data.fp_start_date} onChange={e => setData('fp_start_date', e.target.value)} />
-                                            <InputGroup label="End Date" type="date" value={data.fp_end_date} onChange={e => setData('fp_end_date', e.target.value)} />
+                                            <SelectGroup
+                                                label="Method"
+                                                value={data.fp_method}
+                                                onChange={e => setData('fp_method', e.target.value)}
+                                                options={[
+                                                    'Others', 'BTL', 'COC', 'Condom', 'DPT',
+                                                    'Implant', 'Injectables', 'IUD', 'LAM', 'POP'
+                                                ]}
+                                            />
+                                            <SelectGroup
+                                                label="Status"
+                                                value={data.fp_status}
+                                                onChange={e => setData('fp_status', e.target.value)}
+                                                options={[
+                                                    'Changing Clinic', 'Changing Method', 'Current User',
+                                                    'Dropout', 'New Acceptor', 'Restarter'
+                                                ]}
+                                            />
+                                            <InputGroup
+                                                label="Start Date"
+                                                type="date"
+                                                value={data.fp_start_date}
+                                                onChange={e => setData('fp_start_date', e.target.value)}
+                                            />
+                                            <InputGroup
+                                                label="End Date"
+                                                type="date"
+                                                value={data.fp_end_date}
+                                                onChange={e => setData('fp_end_date', e.target.value)}
+                                            />
                                         </div>
                                     </div>
                                 </div>
