@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Models\Sitio;
 use App\Http\Controllers\Citizens\CitizenController;
 use Inertia\Inertia;
 
@@ -143,6 +144,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
     Route::post('/citizens/store', [CitizenController::class, 'store']);
+
+
+    Route::get('/api/sitio-list', function () {
+        return Sitio::select('sitio_id', 'sitio_name')->orderBy('sitio_name')->get();
+    });
 });
 
 require __DIR__.'/settings.php';
