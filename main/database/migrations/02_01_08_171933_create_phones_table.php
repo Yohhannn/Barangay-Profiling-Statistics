@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('phones', function (Blueprint $table) {
             $table->id('phone_id');
-            $table->enum('phone_type', ['Mobile', 'Landline', 'Work', 'Home']);
+       #     $table->enum('phone_type', ['Mobile', 'Landline', 'Work', 'Home']);
             $table->string('phone_number');
-            $table->string('network_name');
+       #     $table->string('network_name');
         });
     }
 
