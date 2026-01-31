@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
-use App\Models\SystemPermission;
+use App\Http\Controllers\Controller;
+use App\Models\SystemAccount;
 use Illuminate\Http\Request;
 
-class SystemPermissionController extends Controller
+class SystemAccountController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -34,7 +35,7 @@ class SystemPermissionController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(SystemPermission $systemPermission)
+    public function show(SystemAccount $systemAccount)
     {
         //
     }
@@ -42,7 +43,7 @@ class SystemPermissionController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(SystemPermission $systemPermission)
+    public function edit(SystemAccount $systemAccount)
     {
         //
     }
@@ -50,7 +51,7 @@ class SystemPermissionController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, SystemPermission $systemPermission)
+    public function update(Request $request, SystemAccount $systemAccount)
     {
         //
     }
@@ -58,7 +59,7 @@ class SystemPermissionController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(SystemPermission $systemPermission)
+    public function destroy(SystemAccount $systemAccount)
     {
         //
     }
