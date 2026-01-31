@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Inertia\Inertia; // <--- CRITICAL FIX: Required to render the page
+use App\Models\Sitio; // <--- CRITICAL FIX: Required to fetch data
 
 // Models
 use App\Models\Citizen;
@@ -22,16 +24,29 @@ use App\Models\FamilyPlanning;
 use App\Models\EduHistory;
 use App\Models\EducationStatus;
 use App\Models\Philhealth;
-use App\Models\Sitio;
 use App\Models\HouseholdInfo;
 
 class CitizenController extends Controller
 {
+    public function index()
+    {
+        // Fetch data sorted alphabetically for better UX
+        $sitios = Sitio::select('sitio_id', 'sitio_name')
+            ->orderBy('sitio_name')
+            ->get();
+
+        // Debug: Uncomment the line below to see data in your browser Network tab response
+        // dd($sitios);
+
+        return Inertia::render('Main/CitizenRecords/Index', [
+            'sitios' => $sitios
+        ]);
+    }
+
     public function store(Request $request)
     {
         // 1. Validation
         $validated = $request->validate([
-            // ... (Keep your existing validation rules here) ...
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
@@ -45,7 +60,10 @@ class CitizenController extends Controller
             'contact_numbers' => 'nullable|array',
             'contact_numbers.*' => 'nullable|string',
             'email' => 'nullable|email|max:255',
+
+            // This validation ensures the Selected Sitio actually exists in your DB
             'sitio' => 'nullable|exists:sitios,sitio_name',
+
             'household_id' => 'nullable|exists:household_infos,hh_id',
             'relationship_to_head' => 'nullable|required_with:household_id|string',
             'socio_economic_class' => 'nullable|string',
@@ -92,9 +110,7 @@ class CitizenController extends Controller
             }
 
             $phone = Phone::create([
-            #    'phone_type' => 'Mobile',
                 'phone_number' => $primaryPhone,
-             #   'network_name' => 'Unknown',
             ]);
 
             $contact = Contact::create([
@@ -112,12 +128,11 @@ class CitizenController extends Controller
                 'clah_classification_name' => $validated['health_classification'] ?? 'Healthy',
             ]);
 
-            // FIXED: Ensure defaults match the NEW migration enums
             $familyPlanning = FamilyPlanning::create([
                 'start_date' => $validated['fp_start_date'] ?? now(),
                 'end_date' => $validated['fp_end_date'] ?? null,
                 'status' => $validated['fp_status'] ?? 'New Acceptor',
-                'method' => $validated['fp_method'] ?? null, // null is now valid in DB
+                'method' => $validated['fp_method'] ?? null,
             ]);
 
             $philhealth = Philhealth::create([
@@ -153,6 +168,7 @@ class CitizenController extends Controller
 
             $sitioId = null;
             if (!empty($validated['sitio'])) {
+                // Find ID based on Name
                 $sitioObj = Sitio::where('sitio_name', $validated['sitio'])->first();
                 if ($sitioObj) $sitioId = $sitioObj->sitio_id;
             }
@@ -171,7 +187,7 @@ class CitizenController extends Controller
                 'is_deceased' => $request->boolean('is_deceased'),
                 'is_registered_voter' => $request->boolean('is_voter'),
                 'is_indigenous' => $request->boolean('is_ip'),
-                'relationship_type' => $validated['relationship_to_head'] ?? 'Other',
+                'relationship_type' => $validated['relationship_to_head'] ?? null,
 
                 'hh_id' => $validated['household_id'],
                 'sitio_id' => $sitioId,
@@ -180,7 +196,6 @@ class CitizenController extends Controller
                 'demo_id' => $demographic->demo_id,
             ]);
 
-            // Create System Citizen Record
             $ctzNumber = (int) (Carbon::now()->format('Y') . rand(1000, 9999));
             $systemUserId = Auth::id() ?? 1;
 
@@ -191,18 +206,16 @@ class CitizenController extends Controller
                 'date_encoded' => now(),
                 'encoded_by' => $systemUserId,
                 'updated_by' => $systemUserId,
-                'face_recog_uuid' => Str::uuid(),
-                'photo_uuid' => Str::uuid(),
+                'face_recog_uuid' => null,
+                'photo_uuid' => null,
             ]);
 
             DB::commit();
 
-            // FIXED: Return Redirect for Inertia instead of JSON
             return redirect()->back()->with('success', 'Citizen Record Created Successfully!');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            // Ideally, throw validation exception to show in form, but this works for general errors
             return redirect()->back()->withErrors(['error' => 'Error creating record: ' . $e->getMessage()]);
         }
     }

@@ -60,7 +60,7 @@ class HouseholdInfo extends Model
                 while (!$unique) {
                     // Generate random 3 digit number (000-999)
                     // str_pad ensures '5' becomes '005'
-                    $number = str_pad(mt_rand(0, 999), 3, '0', STR_PAD_LEFT);
+                    $number = str_pad(mt_rand(0, 999), 4, '0', STR_PAD_LEFT);
                     $code = 'HH-' . $number;
 
                     // Check database if this specific code exists
