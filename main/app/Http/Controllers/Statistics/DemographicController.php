@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Statistics;
 
+use App\Http\Controllers\Controller;
 use App\Models\demographic;
 use Illuminate\Http\Request;
 
