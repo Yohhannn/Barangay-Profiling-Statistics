@@ -11,18 +11,18 @@ class EduHistory extends Model
     use HasFactory;
 
     protected $table = 'edu_histories';
+
+    // Primary key is 'edu_hist', not 'id'
     protected $primaryKey = 'edu_hist';
     public $incrementing = true;
+
+    // --- FIX: DISABLE TIMESTAMPS ---
+    public $timestamps = false;
 
     protected $fillable = [
         'elementary_name',
         'highschool_name',
         'sr_highschool_name',
-    ];
-
-    protected $casts = [
-        'created_at' => 'timestamp',
-        'updated_at' => 'timestamp',
     ];
 
     // Relationships

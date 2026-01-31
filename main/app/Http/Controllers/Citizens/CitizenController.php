@@ -3,64 +3,207 @@
 namespace App\Http\Controllers\Citizens;
 
 use App\Http\Controllers\Controller;
-use App\Models\Citizen;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
+use Carbon\Carbon;
+
+// Models
+use App\Models\Citizen;
+use App\Models\CitizenInformation;
+use App\Models\Demographic;
+use App\Models\Employment;
+use App\Models\Phone;
+use App\Models\Contact;
+use App\Models\SocioEconomicStatus;
+use App\Models\ClassificationHealthRisk;
+use App\Models\FamilyPlanning;
+use App\Models\EduHistory;
+use App\Models\EducationStatus;
+use App\Models\Philhealth;
+use App\Models\Sitio;
+use App\Models\HouseholdInfo;
 
 class CitizenController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
-    }
+        // 1. Validation
+        $validated = $request->validate([
+            // ... (Keep your existing validation rules here) ...
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
+            'suffix' => 'nullable|string|max:10',
+            'sex' => 'required|in:Male,Female',
+            'date_of_birth' => 'required|date',
+            'place_of_birth' => 'nullable|string|max:255',
+            'civil_status' => 'nullable|string',
+            'religion' => 'nullable|string',
+            'blood_type' => 'nullable|string',
+            'contact_numbers' => 'nullable|array',
+            'contact_numbers.*' => 'nullable|string',
+            'email' => 'nullable|email|max:255',
+            'sitio' => 'nullable|exists:sitios,sitio_name',
+            'household_id' => 'nullable|exists:household_infos,hh_id',
+            'relationship_to_head' => 'nullable|required_with:household_id|string',
+            'socio_economic_class' => 'nullable|string',
+            'nhts_number' => 'nullable|string',
+            'employment_status' => 'nullable|string',
+            'occupation' => 'nullable|string',
+            'is_gov' => 'boolean',
+            'philhealth_id' => 'nullable|string',
+            'philhealth_category' => 'nullable|string',
+            'philhealth_membership' => 'nullable|string',
+            'is_studying' => 'boolean',
+            'school_name' => 'nullable|string',
+            'current_level' => 'nullable|string',
+            'elementary_name' => 'nullable|string',
+            'highschool_name' => 'nullable|string',
+            'senior_high_name' => 'nullable|string',
+            'college_name' => 'nullable|string',
+            'health_classification' => 'nullable|string',
+            'is_voter' => 'boolean',
+            'is_ip' => 'boolean',
+            'is_deceased' => 'boolean',
+            'date_of_death' => 'nullable|date',
+            'cause_of_death' => 'nullable|string',
+            'fp_method' => 'nullable|string',
+            'fp_status' => 'nullable|string',
+            'fp_start_date' => 'nullable|date',
+            'fp_end_date' => 'nullable|date',
+        ]);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Citizen $citizen)
-    {
-        //
-    }
+        try {
+            DB::beginTransaction();
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Citizen $citizen)
-    {
-        //
-    }
+            // --- STEP 1: Create Supporting Records ---
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Citizen $citizen)
-    {
-        //
-    }
+            $employment = Employment::create([
+                'status' => $validated['employment_status'] ?? 'Unemployed',
+                'occupation' => $validated['occupation'] ?? 'None',
+                'is_gov_worker' => $request->boolean('is_gov'),
+            ]);
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Citizen $citizen)
-    {
-        //
+            $primaryPhone = 'N/A';
+            if (!empty($validated['contact_numbers']) && isset($validated['contact_numbers'][0])) {
+                $primaryPhone = $validated['contact_numbers'][0];
+            }
+
+            $phone = Phone::create([
+                'phone_type' => 'Mobile',
+                'phone_number' => $primaryPhone,
+                'network_name' => 'Unknown',
+            ]);
+
+            $contact = Contact::create([
+                'email' => $validated['email'] ?? 'N/A',
+                'others' => 'N/A',
+                'phone_id' => $phone->phone_id,
+            ]);
+
+            $socioEco = SocioEconomicStatus::create([
+                'soec_status' => $validated['socio_economic_class'] ?? 'Non-NHTS',
+                'soec_number' => $validated['nhts_number'] ?? 'N/A',
+            ]);
+
+            $healthRisk = ClassificationHealthRisk::create([
+                'clah_classification_name' => $validated['health_classification'] ?? 'Healthy',
+            ]);
+
+            // FIXED: Ensure defaults match the NEW migration enums
+            $familyPlanning = FamilyPlanning::create([
+                'start_date' => $validated['fp_start_date'] ?? now(),
+                'end_date' => $validated['fp_end_date'] ?? null,
+                'status' => $validated['fp_status'] ?? 'New Acceptor',
+                'method' => $validated['fp_method'] ?? 'None', // 'None' is now valid in DB
+            ]);
+
+            $philhealth = Philhealth::create([
+                'philhealth_id_number' => $validated['philhealth_id'] ?? 'N/A',
+                'category_name' => $validated['philhealth_category'] ?? 'Unknown',
+                'phea_membership_type' => $validated['philhealth_membership'] ?? 'None',
+            ]);
+
+            $eduHistory = EduHistory::create([
+                'elementary_name' => $validated['elementary_name'],
+                'highschool_name' => $validated['highschool_name'],
+                'sr_highschool_name' => $validated['senior_high_name'],
+            ]);
+
+            $eduStatus = EducationStatus::create([
+                'is_current_student' => $request->boolean('is_studying'),
+                'institution_name' => $validated['school_name'],
+                'education_level' => $validated['current_level'] ?? 'None',
+                'edu_hist' => $eduHistory->edu_hist,
+            ]);
+
+            // --- STEP 2: Create Demographic Aggregator ---
+
+            $demographic = Demographic::create([
+                'soec_id' => $socioEco->soec_id,
+                'clah_id' => $healthRisk->clah_id,
+                'fp_id' => $familyPlanning->fp_id,
+                'edu_id' => $eduStatus->edu_id,
+                'phea_id' => $philhealth->phea_id,
+            ]);
+
+            // --- STEP 3: Resolve Foreign Keys & Create Main Records ---
+
+            $sitioId = null;
+            if (!empty($validated['sitio'])) {
+                $sitioObj = Sitio::where('sitio_name', $validated['sitio'])->first();
+                if ($sitioObj) $sitioId = $sitioObj->sitio_id;
+            }
+
+            $citizenInfo = CitizenInformation::create([
+                'first_name' => $validated['first_name'],
+                'last_name' => $validated['last_name'],
+                'middle_name' => $validated['middle_name'],
+                'suffix' => $validated['suffix'],
+                'date_of_birth' => $validated['date_of_birth'],
+                'place_of_birth' => $validated['place_of_birth'] ?? 'N/A',
+                'sex' => $validated['sex'],
+                'civil_status' => $validated['civil_status'] ?? 'Single',
+                'blood_type' => $validated['blood_type'],
+                'religion' => $validated['religion'],
+                'is_deceased' => $request->boolean('is_deceased'),
+                'is_registered_voter' => $request->boolean('is_voter'),
+                'is_indigenous' => $request->boolean('is_ip'),
+                'relationship_type' => $validated['relationship_to_head'] ?? 'Other',
+
+                'hh_id' => $validated['household_id'],
+                'sitio_id' => $sitioId,
+                'emp_id' => $employment->emp_id,
+                'con_id' => $contact->con_id,
+                'demo_id' => $demographic->demo_id,
+            ]);
+
+            // Create System Citizen Record
+            $ctzNumber = (int) (Carbon::now()->format('Y') . rand(1000, 9999));
+            $systemUserId = Auth::id() ?? 1;
+
+            Citizen::create([
+                'ctz_number' => $ctzNumber,
+                'ctz_info_id' => $citizenInfo->ctz_info_id,
+                'is_deleted' => false,
+                'date_encoded' => now(),
+                'encoded_by' => $systemUserId,
+                'updated_by' => $systemUserId,
+                'face_recog_uuid' => Str::uuid(),
+                'photo_uuid' => Str::uuid(),
+            ]);
+
+            DB::commit();
+
+            // FIXED: Return Redirect for Inertia instead of JSON
+            return redirect()->back()->with('success', 'Citizen Record Created Successfully!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            // Ideally, throw validation exception to show in form, but this works for general errors
+            return redirect()->back()->withErrors(['error' => 'Error creating record: ' . $e->getMessage()]);
+        }
     }
 }
