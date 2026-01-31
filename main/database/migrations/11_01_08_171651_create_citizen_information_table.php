@@ -28,11 +28,11 @@ return new class extends Migration
             $table->boolean('is_registered_voter')->default(true);
             $table->boolean('is_indigenous')->default(true);
             $table->enum('relationship_type',['Daughter','Son','Head','Spouse','Father','Mother','Grandfather','Grandmother','Grandson','Granddaughter','Brother','Sister','Uncle','Aunt','Nephew','Niece','Cousin','Other']);
-            $table->foreignId('hh_id')->constrained('household_infos','hh_id')->onDelete('cascade')->onUpdate('cascade');
+            $table->foreignId('hh_id')->nullable()->constrained('household_infos','hh_id')->onDelete('cascade')->onUpdate('cascade');
             $table->foreignId('sitio_id')->constrained('sitios','sitio_id')->onDelete('cascade')->onUpdate('cascade');
-            $table->foreignId('emp_id')->constrained('employments','emp_id')->onDelete('cascade')->onUpdate('cascade');
-            $table->foreignId('con_id')->constrained('contacts','con_id')->onDelete('cascade')->onUpdate('cascade');
-            $table->foreignId('demo_id')->constrained('demographics','demo_id')->onDelete('cascade')->onUpdate('cascade');
+            $table->foreignId('emp_id')->nullable()->constrained('employments','emp_id')->onDelete('cascade')->onUpdate('cascade');
+            $table->foreignId('con_id')->nullable()->constrained('contacts','con_id')->onDelete('cascade')->onUpdate('cascade');
+            $table->foreignId('demo_id')->nullable()->constrained('demographics','demo_id')->onDelete('cascade')->onUpdate('cascade');
         });
     }
 
