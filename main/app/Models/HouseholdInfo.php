@@ -15,6 +15,7 @@ class HouseholdInfo extends Model
     public $incrementing = true;
 
     protected $fillable = [
+        'hh_uuid', // Added: Allow filling this (though we auto-generate it)
         'house_number',
         'address',
         'ownership_status',
@@ -43,6 +44,36 @@ class HouseholdInfo extends Model
 
     public $timestamps = false;
 
+    /**
+     * The "booted" method of the model.
+     * Automatically generates the HH-UUID (e.g., HH-042) before creating a record.
+     */
+    protected static function booted()
+    {
+        static::creating(function ($household) {
+            // Only generate if not already set manually
+            if (empty($household->hh_uuid)) {
+                $unique = false;
+                $code = '';
+
+                // Loop to ensure the random number is unique in the database
+                while (!$unique) {
+                    // Generate random 3 digit number (000-999)
+                    // str_pad ensures '5' becomes '005'
+                    $number = str_pad(mt_rand(0, 999), 3, '0', STR_PAD_LEFT);
+                    $code = 'HH-' . $number;
+
+                    // Check database if this specific code exists
+                    if (!static::where('hh_uuid', $code)->exists()) {
+                        $unique = true;
+                    }
+                }
+
+                $household->hh_uuid = $code;
+            }
+        });
+    }
+
     // Relationships
     public function sitio()
     {
@@ -61,6 +92,7 @@ class HouseholdInfo extends Model
 
     public function citizens()
     {
+        // Adjusted to use 'hh_id' as that is your primary key
         return $this->hasMany(Citizen::class, 'hh_id', 'hh_id');
     }
 }
