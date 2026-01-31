@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\demographic;
 use Illuminate\Http\Request;
 
-class DemographicController extends Controller
+class DemographicStatController extends Controller
 {
     /**
      * Display a listing of the resource.
