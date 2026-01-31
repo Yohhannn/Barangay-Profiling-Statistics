@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id('fp_id');
             $table->date('start_date');
             $table->date('end_date')->nullable();
-            $table->enum('status', ['Changing Clinic', 'Changing Method', 'Current User', 'Dropout', 'New Acceptor', 'Restarter']);
-            $table->enum('method', ['None', 'Others', 'BTL', 'COC', 'Condom', 'DPT', 'Implant', 'Injectables', 'IUD', 'LAM', 'POP']);
+            $table->enum('status', ['Changing Clinic', 'Changing Method', 'Current User', 'Dropout', 'New Acceptor', 'Restarter'])->nullable();
+            $table->enum('method', ['Others', 'BTL', 'COC', 'Condom', 'DPT', 'Implant', 'Injectables', 'IUD', 'LAM', 'POP'])->nullable();
         });
     }
 

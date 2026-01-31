@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('last_name');
             $table->string('middle_name')->nullable();
             $table->enum('suffix', ['Jr.', 'Sr.', 'I', 'II', 'III', 'IV', 'V'])->nullable();
-            $table->date('date_of_birth');
+            $table->date('date_of_birth')->nullable();
             $table->string('place_of_birth');
             $table->enum('sex',['Male','Female']);
          #   $table->string('photo',255)->nullable(); moved to citizen
@@ -27,7 +27,7 @@ return new class extends Migration
             $table->boolean('is_deceased')->default(false);
             $table->boolean('is_registered_voter')->default(true);
             $table->boolean('is_indigenous')->default(true);
-            $table->enum('relationship_type',['Daughter','Son','Head','Spouse','Father','Mother','Grandfather','Grandmother','Grandson','Granddaughter','Brother','Sister','Uncle','Aunt','Nephew','Niece','Cousin','Other']);
+            $table->enum('relationship_type',['Daughter','Son','Head','Spouse','Father','Mother','Grandfather','Grandmother','Grandson','Granddaughter','Brother','Sister','Uncle','Aunt','Nephew','Niece','Cousin','Other'])->nullable();
             $table->foreignId('hh_id')->nullable()->constrained('household_infos','hh_id')->onDelete('cascade')->onUpdate('cascade');
             $table->foreignId('sitio_id')->nullable()->constrained('sitios','sitio_id')->onDelete('cascade')->onUpdate('cascade');
             $table->foreignId('emp_id')->nullable()->constrained('employments','emp_id')->onDelete('cascade')->onUpdate('cascade');
