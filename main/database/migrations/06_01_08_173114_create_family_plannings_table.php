@@ -16,7 +16,7 @@ return new class extends Migration
             $table->date('start_date');
             $table->date('end_date')->nullable();
             $table->enum('status', ['Changing Clinic', 'Changing Method', 'Current User', 'Dropout', 'New Acceptor', 'Restarter']);
-            $table->enum('method', ['Others', 'BTL', 'COC', 'Condom', 'DPT', 'Implant', 'Injectables', 'IUD', 'LAM', 'POP']);
+            $table->enum('method', ['None', 'Others', 'BTL', 'COC', 'Condom', 'DPT', 'Implant', 'Injectables', 'IUD', 'LAM', 'POP']);
         });
     }
 

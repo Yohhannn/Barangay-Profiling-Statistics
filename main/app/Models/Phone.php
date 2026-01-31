@@ -16,9 +16,9 @@ class Phone extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'phone_type',
+    #    'phone_type',
         'phone_number',
-        'network_name',
+  #      'network_name',
     ];
 
     // Relationships
