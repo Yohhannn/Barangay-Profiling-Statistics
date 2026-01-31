@@ -82,7 +82,7 @@ class CitizenController extends Controller
 
             $employment = Employment::create([
                 'status' => $validated['employment_status'] ?? 'Unemployed',
-                'occupation' => $validated['occupation'] ?? 'None',
+                'occupation' => $validated['occupation'] ?? null,
                 'is_gov_worker' => $request->boolean('is_gov'),
             ]);
 
@@ -92,20 +92,20 @@ class CitizenController extends Controller
             }
 
             $phone = Phone::create([
-                'phone_type' => 'Mobile',
+            #    'phone_type' => 'Mobile',
                 'phone_number' => $primaryPhone,
-                'network_name' => 'Unknown',
+             #   'network_name' => 'Unknown',
             ]);
 
             $contact = Contact::create([
-                'email' => $validated['email'] ?? 'N/A',
-                'others' => 'N/A',
+                'email' => $validated['email'] ?? null,
+                'others' => null,
                 'phone_id' => $phone->phone_id,
             ]);
 
             $socioEco = SocioEconomicStatus::create([
                 'soec_status' => $validated['socio_economic_class'] ?? 'Non-NHTS',
-                'soec_number' => $validated['nhts_number'] ?? 'N/A',
+                'soec_number' => $validated['nhts_number'] ?? null,
             ]);
 
             $healthRisk = ClassificationHealthRisk::create([
@@ -117,13 +117,13 @@ class CitizenController extends Controller
                 'start_date' => $validated['fp_start_date'] ?? now(),
                 'end_date' => $validated['fp_end_date'] ?? null,
                 'status' => $validated['fp_status'] ?? 'New Acceptor',
-                'method' => $validated['fp_method'] ?? 'None', // 'None' is now valid in DB
+                'method' => $validated['fp_method'] ?? null, // null is now valid in DB
             ]);
 
             $philhealth = Philhealth::create([
-                'philhealth_id_number' => $validated['philhealth_id'] ?? 'N/A',
+                'philhealth_id_number' => $validated['philhealth_id'] ?? null,
                 'category_name' => $validated['philhealth_category'] ?? 'Unknown',
-                'phea_membership_type' => $validated['philhealth_membership'] ?? 'None',
+                'phea_membership_type' => $validated['philhealth_membership'] ?? null,
             ]);
 
             $eduHistory = EduHistory::create([
@@ -135,7 +135,7 @@ class CitizenController extends Controller
             $eduStatus = EducationStatus::create([
                 'is_current_student' => $request->boolean('is_studying'),
                 'institution_name' => $validated['school_name'],
-                'education_level' => $validated['current_level'] ?? 'None',
+                'education_level' => $validated['current_level'] ?? null,
                 'edu_hist' => $eduHistory->edu_hist,
             ]);
 
@@ -163,7 +163,7 @@ class CitizenController extends Controller
                 'middle_name' => $validated['middle_name'],
                 'suffix' => $validated['suffix'],
                 'date_of_birth' => $validated['date_of_birth'],
-                'place_of_birth' => $validated['place_of_birth'] ?? 'N/A',
+                'place_of_birth' => $validated['place_of_birth'] ?? null,
                 'sex' => $validated['sex'],
                 'civil_status' => $validated['civil_status'] ?? 'Single',
                 'blood_type' => $validated['blood_type'],
