@@ -33,7 +33,8 @@ SESSION_DRIVER=file
 4. php artisan key:generate
 5. php artisan make:cache-table
 6. php artisan migrate --seed
-7. composer run dev
+7. npm install sweetalert2
+8. composer run dev
 
 ```
 Server running on [http://127.0.0.1:8000].
