@@ -300,6 +300,8 @@ class CitizenController extends Controller
 
             return redirect()->back()->with('success', 'Citizen Record Created Successfully!');
 
+
+            /// MINOR LOGS
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->withErrors(['error' => 'Error creating record: ' . $e->getMessage()]);
