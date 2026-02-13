@@ -31,7 +31,6 @@ Set this to 'file' to avoid "sessions table not found" errors unless you create 
 SESSION_DRIVER=file
 
 4. php artisan key:generate
-5. php artisan make:cache-table
 6. php artisan migrate --seed
 7. npm install sweetalert2
 8. composer run dev
