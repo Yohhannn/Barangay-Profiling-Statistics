@@ -1,14 +1,14 @@
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft, Search, Plus, Trash2,
     User, MapPin, Briefcase, UserX, GraduationCap,
     HeartPulse, Baby, Phone, Hash,
     Filter, X, SlidersHorizontal, Edit3, ScanFace
 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 // IMPORT THE MODAL COMPONENT
 import CitizenCreation from './popup/citizen-creation';
 
@@ -88,41 +88,65 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function CitizenProfiles({ citizens = [], sitios = [] }: { citizens?: Citizen[], sitios?: { sitio_id: number, sitio_name: string }[] }) {
+    // --- State ---
     const [selectedCitizen, setSelectedCitizen] = useState<Citizen | null>(citizens.length > 0 ? citizens[0] : null);
-    const [searchQuery, setSearchQuery] = useState('');
     const [showFilters, setShowFilters] = useState(false);
-
-    // --- NEW STATE FOR MODAL ---
     const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-    // Filter States
-    const [filterStatus, setFilterStatus] = useState('All');
-    const [filterSitio, setFilterSitio] = useState('All');
-    const [filterSex, setFilterSex] = useState('All');
+    // --- Filter State ---
+    // Initialize from props to persist state on reload
+    const [filterState, setFilterState] = useState({
+        search: new URLSearchParams(window.location.search).get('search') || '',
+        sitio: new URLSearchParams(window.location.search).get('sitio') || '',
+        sex: new URLSearchParams(window.location.search).get('sex') || '',
+        civilStatus: new URLSearchParams(window.location.search).get('civilStatus') || '',
+        employmentStatus: new URLSearchParams(window.location.search).get('employmentStatus') || '',
+        isVoter: new URLSearchParams(window.location.search).get('isVoter') || '',
+    });
+
+    const [isDebouncing, setIsDebouncing] = useState(false);
+
+    // --- Search/Filter Effect ---
+    // Debounce search input, but trigger immediate update for dropdowns
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            router.get(
+                '/citizen-panel/citizen-profile',
+                {
+                    search: filterState.search,
+                    sitio: filterState.sitio,
+                    sex: filterState.sex,
+                    civilStatus: filterState.civilStatus,
+                    employmentStatus: filterState.employmentStatus,
+                    isVoter: filterState.isVoter,
+                },
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                    onStart: () => setIsDebouncing(true),
+                    onFinish: () => setIsDebouncing(false),
+                }
+            );
+        }, 400); // 400ms debounce
+
+        return () => clearTimeout(timer);
+    }, [filterState]);
+
+    const handleFilterChange = (key: string, value: string) => {
+        setFilterState(prev => ({ ...prev, [key]: value }));
+    };
 
     // Get unique Sitios for dropdown
     const uniqueSitios = useMemo(() => {
         if (sitios && sitios.length > 0) {
             return sitios.map(s => s.sitio_name);
         }
-        return Array.from(new Set(citizens.map(c => c.sitio))).sort();
-    }, [citizens, sitios]);
+        return [];
+    }, [sitios]);
 
-    // Derived State for Filtered List
-    const filteredCitizens = useMemo(() => {
-        return citizens.filter(citizen => {
-            const matchesSearch =
-                citizen.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                citizen.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                citizen.citizenId.toLowerCase().includes(searchQuery.toLowerCase());
-
-            const matchesStatus = filterStatus === 'All' || citizen.status === filterStatus;
-            const matchesSitio = filterSitio === 'All' || citizen.sitio === filterSitio;
-            const matchesSex = filterSex === 'All' || citizen.sex === filterSex;
-
-            return matchesSearch && matchesStatus && matchesSitio && matchesSex;
-        });
-    }, [searchQuery, filterStatus, filterSitio, filterSex]);
+    // Use citizens directly from props (backend filtered)
+    const filteredCitizens = citizens;
 
     const handleDelete = (e: React.MouseEvent, id: number) => {
         e.stopPropagation();
@@ -185,18 +209,13 @@ export default function CitizenProfiles({ citizens = [], sitios = [] }: { citize
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-400" />
                                     <input
                                         type="text"
-                                        placeholder="Search..."
+                                        placeholder="Search name..."
                                         className="w-full pl-10 pr-4 py-2 text-sm border border-sidebar-border rounded-lg bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        value={filterState.search}
+                                        onChange={(e) => handleFilterChange('search', e.target.value)}
                                     />
+                                    {isDebouncing && <div className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>}
                                 </div>
-                                <button
-                                    className="p-2 rounded-lg border border-sidebar-border bg-white hover:bg-neutral-50 text-neutral-500 transition-colors"
-                                    title="Scan Face to Search"
-                                >
-                                    <ScanFace className="size-4" />
-                                </button>
                                 <button
                                     onClick={() => setShowFilters(!showFilters)}
                                     className={`p-2 rounded-lg border border-sidebar-border transition-colors ${showFilters ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white hover:bg-neutral-50 text-neutral-500'}`}
@@ -210,31 +229,52 @@ export default function CitizenProfiles({ citizens = [], sitios = [] }: { citize
                                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-sidebar-border/50 animate-in slide-in-from-top-2 duration-200">
                                     <select
                                         className="text-xs p-2 rounded-lg border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-blue-500/20"
-                                        value={filterStatus}
-                                        onChange={(e) => setFilterStatus(e.target.value)}
+                                        value={filterState.employmentStatus}
+                                        onChange={(e) => handleFilterChange('employmentStatus', e.target.value)}
                                     >
-                                        <option value="All">All Status</option>
-                                        <option value="Active">Active</option>
-                                        <option value="Deceased">Deceased</option>
-                                        <option value="Moved">Moved</option>
+                                        <option value="">All Employment</option>
+                                        <option value="Employed">Employed</option>
+                                        <option value="Unemployed">Unemployed</option>
+                                        <option value="Self-Employed">Self-Employed</option>
+                                        <option value="Student">Student</option>
                                     </select>
                                     <select
                                         className="text-xs p-2 rounded-lg border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-blue-500/20"
-                                        value={filterSex}
-                                        onChange={(e) => setFilterSex(e.target.value)}
+                                        value={filterState.sex}
+                                        onChange={(e) => handleFilterChange('sex', e.target.value)}
                                     >
-                                        <option value="All">All Sex</option>
+                                        <option value="">All Sex</option>
                                         <option value="Male">Male</option>
                                         <option value="Female">Female</option>
                                     </select>
                                     <select
-                                        className="col-span-2 text-xs p-2 rounded-lg border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-blue-500/20"
-                                        value={filterSitio}
-                                        onChange={(e) => setFilterSitio(e.target.value)}
+                                        className="text-xs p-2 rounded-lg border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-blue-500/20"
+                                        value={filterState.civilStatus}
+                                        onChange={(e) => handleFilterChange('civilStatus', e.target.value)}
                                     >
-                                        <option value="All">All Sitios / Locations</option>
-                                        {uniqueSitios.map(sitio => (
-                                            <option key={sitio} value={sitio}>{sitio}</option>
+                                        <option value="">All Civil Status</option>
+                                        <option value="Single">Single</option>
+                                        <option value="Married">Married</option>
+                                        <option value="Widowed">Widowed</option>
+                                        <option value="Separated">Separated</option>
+                                    </select>
+                                    <select
+                                        className="text-xs p-2 rounded-lg border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-blue-500/20"
+                                        value={filterState.isVoter}
+                                        onChange={(e) => handleFilterChange('isVoter', e.target.value)}
+                                    >
+                                        <option value="">Voter Status</option>
+                                        <option value="Yes">Registered Voter</option>
+                                        <option value="No">Non-Voter</option>
+                                    </select>
+                                    <select
+                                        className="col-span-2 text-xs p-2 rounded-lg border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-blue-500/20"
+                                        value={filterState.sitio}
+                                        onChange={(e) => handleFilterChange('sitio', e.target.value)}
+                                    >
+                                        <option value="">All Sitios / Locations</option>
+                                        {sitios && sitios.map(s => (
+                                            <option key={s.sitio_id} value={s.sitio_id}>{s.sitio_name}</option>
                                         ))}
                                     </select>
                                 </div>
