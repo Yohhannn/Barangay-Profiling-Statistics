@@ -70,7 +70,7 @@ class CitizenController extends Controller
                 'status' => $info->is_deceased ? 'Deceased' : 'Active',
 
                 // Personal
-                'dob' => $info->date_of_birth,
+                'dob' => $info->date_of_birth ? Carbon::parse($info->date_of_birth)->format('F d, Y') : null,
                 'age' => Carbon::parse($info->date_of_birth)->age,
                 'sex' => $info->sex,
                 'bloodType' => $info->blood_type ?? 'Unknown',
@@ -97,7 +97,7 @@ class CitizenController extends Controller
                 'isDeceased' => (bool) $info->is_deceased,
 
                 // Conditional Data
-                'dateOfDeath' => $info->date_of_death,
+                'dateOfDeath' => $info->date_of_death ? Carbon::parse($info->date_of_death)->format('F d, Y') : null,
                 'causeOfDeath' => $info->cause_of_death,
 
                 'educAttainment' => $demo->educationStatus->education_level ?? 'N/A',
@@ -118,9 +118,9 @@ class CitizenController extends Controller
                 'healthClassification' => $demo->healthRisk->clah_classification_name ?? 'Healthy',
 
                 // Audit
-                'dateEncoded' => Carbon::parse($citizen->date_encoded)->format('F d, Y | g:i A'),
+                'dateEncoded' => Carbon::parse($citizen->date_encoded)->format('F d, Y'),
                 'encodedBy' => $citizen->encodedBy->username ?? 'System',
-                'dateUpdated' => $citizen->date_updated ? Carbon::parse($citizen->date_updated)->format('F d, Y | g:i A') : 'N/A',
+                'dateUpdated' => $citizen->date_updated ? Carbon::parse($citizen->date_updated)->format('F d, Y') : 'N/A',
                 'updatedBy' => $citizen->updatedBy->username ?? 'System',
             ];
         });
