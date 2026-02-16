@@ -237,10 +237,10 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
                                     </div>
 
                                     <div className="flex-1 grid grid-cols-2 gap-4">
-                                        <InputGroup label="First Name" value={data.first_name} onChange={e => setData('first_name', e.target.value)} required error={errors.first_name} className="col-span-2" />
-                                        <InputGroup label="Middle Name" value={data.middle_name} onChange={e => setData('middle_name', e.target.value)} error={errors.middle_name} />
-                                        <InputGroup label="Suffix" value={data.suffix} onChange={e => setData('suffix', e.target.value)} placeholder="e.g. Jr." error={errors.suffix} />
-                                        <InputGroup label="Last Name" value={data.last_name} onChange={e => setData('last_name', e.target.value)} required error={errors.last_name} className="col-span-2" />
+                                        <InputGroup label="First Name" value={data.first_name} placeholder="e.g. John" onChange={e => setData('first_name', e.target.value)} required error={errors.first_name} className="col-span-2" />
+                                        <InputGroup label="Middle Name" value={data.middle_name} placeholder="e.g. Doe" onChange={e => setData('middle_name', e.target.value)} error={errors.middle_name} />
+                                        <InputGroup label="Suffix" value={data.suffix} placeholder="e.g. Jr." onChange={e => setData('suffix', e.target.value)} error={errors.suffix} />
+                                        <InputGroup label="Last Name" value={data.last_name} placeholder="e.g. Doe" onChange={e => setData('last_name', e.target.value)} required error={errors.last_name} className="col-span-2" />
 
                                         <div className="col-span-2 pt-2 border-t border-dashed border-neutral-200 dark:border-neutral-700 mt-2">
                                             <div className="flex gap-6">
