@@ -27,6 +27,8 @@ class CitizenInformation extends Model
         'blood_type',
         'religion',
         'is_deceased',
+        'date_of_death',
+        'cause_of_death',
         'is_registered_voter',
         'is_indigenous',
         'relationship_type',
@@ -39,6 +41,7 @@ class CitizenInformation extends Model
 
     protected $casts = [
         'date_of_birth' => 'date',
+        'date_of_death' => 'date',
         'is_deceased' => 'boolean',
         'is_registered_voter' => 'boolean',
         'is_indigenous' => 'boolean',
