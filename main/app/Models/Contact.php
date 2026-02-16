@@ -18,13 +18,13 @@ class Contact extends Model
     protected $fillable = [
         'email',
         'others',
-        'phone_id',
+    #    'phone_id',
     ];
 
     // Relationships
-    public function phone()
+    public function phones()
     {
-        return $this->belongsTo(Phone::class, 'phone_id', 'phone_id');
+        return $this->hasMany(Phone::class, 'con_id', 'con_id');
     }
 
     public function citizenInformation()

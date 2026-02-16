@@ -35,7 +35,7 @@ class CitizenController extends Controller
         $citizensQuery = Citizen::with([
             'info.sitio',
             'info.employment',
-            'info.contact.phone',
+            'info.contact.phones',
             'info.demographic.socioEconomic',
             'info.demographic.healthRisk',
             'info.demographic.familyPlanning',
@@ -54,9 +54,9 @@ class CitizenController extends Controller
             $demo = $info->demographic;
 
             // Helper to get contact number safely
-            $contactNum = $info->contact && $info->contact->phone
-                ? $info->contact->phone->phone_number
-                : null;
+            $contactNums = $info->contact && $info->contact->phones
+                ? $info->contact->phones->pluck('phone_number')->toArray()
+                : [];
 
             // Helper for System Account Names
             $getSystemName = function($account) {
@@ -90,7 +90,7 @@ class CitizenController extends Controller
 
                 // Contact & Address
                 'email' => $info->contact->email ?? 'N/A',
-                'contact' => $contactNum ? [$contactNum] : [], // Wrap in array for frontend
+                'contact' => $contactNums, // Wrap in array for frontend
                 'fullAddress' => $info->sitio ? $info->sitio->sitio_name . ', Marigondon' : 'N/A',
                 'sitio' => $info->sitio ? $info->sitio->sitio_name : 'Unknown',
 
@@ -200,20 +200,28 @@ class CitizenController extends Controller
                 'is_gov_worker' => $request->boolean('is_gov'),
             ]);
 
-            $primaryPhone = 'N/A';
-            if (!empty($validated['contact_numbers']) && isset($validated['contact_numbers'][0])) {
-                $primaryPhone = $validated['contact_numbers'][0];
-            }
-
-            $phone = Phone::create([
-                'phone_number' => $primaryPhone,
-            ]);
-
             $contact = Contact::create([
                 'email' => $validated['email'] ?? null,
                 'others' => null,
-                'phone_id' => $phone->phone_id,
             ]);
+
+            // Save multiple phone numbers
+            if (!empty($validated['contact_numbers'])) {
+                foreach ($validated['contact_numbers'] as $pNum) {
+                    if (!empty($pNum)) {
+                        Phone::create([
+                            'phone_number' => $pNum,
+                            'con_id' => $contact->con_id,
+                        ]);
+                    }
+                }
+            } else {
+                // Default placeholder if no number provided (optional, depending on requirements)
+                 Phone::create([
+                    'phone_number' => 'N/A',
+                    'con_id' => $contact->con_id,
+                ]);
+            }
 
             $socioEco = SocioEconomicStatus::create([
                 'soec_status' => $validated['socio_economic_class'] ?? 'Non-NHTS',
