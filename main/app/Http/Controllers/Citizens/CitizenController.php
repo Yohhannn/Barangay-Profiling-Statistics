@@ -45,7 +45,7 @@ class CitizenController extends Controller
             'updatedBy'
         ])
             ->where('is_deleted', false) // Only fetch active records
-            ->orderBy('date_encoded', 'desc')
+            ->orderBy('ctz_id', 'desc')
             ->get();
 
         // 2. Transform Data: Map DB structure to Frontend Interface
@@ -57,6 +57,16 @@ class CitizenController extends Controller
             $contactNum = $info->contact && $info->contact->phone
                 ? $info->contact->phone->phone_number
                 : null;
+
+            // Helper for System Account Names
+            $getSystemName = function($account) {
+                if (!$account) return 'System';
+                // Check if relationship loaded and has fields
+                $fname = $account->sys_fname ?? '';
+                $lname = $account->sys_lname ?? '';
+                $fullname = trim("$fname $lname");
+                return $fullname ?: 'System';
+            };
 
             return [
                 'id' => $citizen->ctz_id,
@@ -119,9 +129,9 @@ class CitizenController extends Controller
 
                 // Audit
                 'dateEncoded' => Carbon::parse($citizen->date_encoded)->format('F d, Y'),
-                'encodedBy' => $citizen->encodedBy->username ?? 'System',
+                'encodedBy' => $getSystemName($citizen->encodedBy),
                 'dateUpdated' => $citizen->date_updated ? Carbon::parse($citizen->date_updated)->format('F d, Y') : 'N/A',
-                'updatedBy' => $citizen->updatedBy->username ?? 'System',
+                'updatedBy' => $getSystemName($citizen->updatedBy),
             ];
         });
 
