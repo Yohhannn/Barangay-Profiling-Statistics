@@ -424,8 +424,14 @@ export default function CitizenProfiles({ citizens = [], sitios = [] }: { citize
                                                     <InfoItem label="Status" value={selectedCitizen.fpStatus} />
                                                     <InfoItem label="Method" value={selectedCitizen.fpMethod || 'N/A'} />
                                                     <div className="grid grid-cols-2 gap-2 pt-2 border-t border-purple-200/50">
-                                                        <InfoItem label="Started" value={selectedCitizen.fpDateStarted || 'N/A'} />
-                                                        <InfoItem label="Ended" value={selectedCitizen.fpDateEnded || 'N/A'} />
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wide">Started</span>
+                                                            <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">{selectedCitizen.fpDateStarted || 'N/A'}</span>
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wide">Ended</span>
+                                                            <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">{selectedCitizen.fpDateEnded || 'N/A'}</span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -455,14 +461,18 @@ export default function CitizenProfiles({ citizens = [], sitios = [] }: { citize
                                 </div>
 
                                 {/* 3. Footer Audit Log */}
-                                <div className="p-4 border-t border-sidebar-border/60 bg-neutral-50 dark:bg-neutral-900/50 flex flex-wrap gap-6 text-[10px] text-neutral-400 font-mono">
-                                    <div className="flex gap-2">
-                                        <span className="font-bold text-neutral-500">ENCODED:</span>
-                                        <span>{selectedCitizen.dateEncoded} by {selectedCitizen.encodedBy}</span>
+                                <div className="p-4 border-t border-sidebar-border/60 bg-neutral-50 dark:bg-neutral-900/50 grid grid-cols-2 gap-4 text-xs font-mono">
+                                    <div className="flex flex-col gap-1">
+                                        <span className="font-bold text-neutral-500 uppercase tracking-wider text-[10px]">Date Encoded:</span>
+                                        <span className="text-neutral-700 dark:text-neutral-300 font-bold">{selectedCitizen.dateEncoded}</span>
+                                        <span className="font-bold text-neutral-500 uppercase tracking-wider text-[10px] mt-1">Encoded By:</span>
+                                        <span className="text-neutral-700 dark:text-neutral-300">{selectedCitizen.encodedBy}</span>
                                     </div>
-                                    <div className="flex gap-2">
-                                        <span className="font-bold text-neutral-500">UPDATED:</span>
-                                        <span>{selectedCitizen.dateUpdated} by {selectedCitizen.updatedBy}</span>
+                                    <div className="flex flex-col gap-1 border-l border-sidebar-border/50 pl-4">
+                                        <span className="font-bold text-neutral-500 uppercase tracking-wider text-[10px]">Date Updated:</span>
+                                        <span className="text-neutral-700 dark:text-neutral-300 font-bold">{selectedCitizen.dateUpdated}</span>
+                                        <span className="font-bold text-neutral-500 uppercase tracking-wider text-[10px] mt-1">Updated By:</span>
+                                        <span className="text-neutral-700 dark:text-neutral-300">{selectedCitizen.updatedBy}</span>
                                     </div>
                                 </div>
                             </div>
