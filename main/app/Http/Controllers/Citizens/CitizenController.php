@@ -26,6 +26,7 @@ use App\Models\Philhealth;
 use App\Models\Sitio;
 use App\Models\HouseholdInfo;
 
+
 class CitizenController extends Controller
 {
     public function index()
