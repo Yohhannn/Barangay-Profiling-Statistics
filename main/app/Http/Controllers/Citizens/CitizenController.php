@@ -126,7 +126,7 @@ class CitizenController extends Controller
         });
 
         // 3. Pass data to React
-        return Inertia::render('Main/CitizenRecords/Index', [
+        return Inertia::render('main/CitizenPanel/citizen-profiles', [
             'citizens' => $mappedCitizens,
             'sitios' => Sitio::select('sitio_id', 'sitio_name')->orderBy('sitio_name')->get()
         ]);

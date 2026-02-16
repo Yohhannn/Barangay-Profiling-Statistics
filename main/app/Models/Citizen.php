@@ -63,6 +63,11 @@ class Citizen extends Model
         return $this->belongsTo(SystemAccount::class, 'encoded_by', 'sys_id');
     }
 
+    // Alias for controller compat
+    public function encodedBy() { return $this->encodedByAccount(); }
+    public function updatedBy() { return $this->updatedByAccount(); }
+    public function info() { return $this->citizenInformation(); }
+
     public function citizenInformation()
     {
         return $this->belongsTo(CitizenInformation::class, 'ctz_info_id', 'ctz_info_id');
