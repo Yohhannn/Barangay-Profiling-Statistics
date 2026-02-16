@@ -105,8 +105,8 @@ class CitizenController extends Controller
 
                 'fpStatus' => $demo->familyPlanning->status ?? 'N/A',
                 'fpMethod' => $demo->familyPlanning->method ?? 'N/A',
-                'fpDateStarted' => $demo->familyPlanning->start_date ?? null,
-                'fpDateEnded' => $demo->familyPlanning->end_date ?? null,
+                'fpDateStarted' => $demo->familyPlanning->start_date ? Carbon::parse($demo->familyPlanning->start_date)->format('F d, Y') : null,
+                'fpDateEnded' => $demo->familyPlanning->end_date ? Carbon::parse($demo->familyPlanning->end_date)->format('F d, Y') : null,
 
                 // System IDs
                 'nhtsNumber' => $demo->socioEconomic->soec_number,
@@ -118,9 +118,9 @@ class CitizenController extends Controller
                 'healthClassification' => $demo->healthRisk->clah_classification_name ?? 'Healthy',
 
                 // Audit
-                'dateEncoded' => Carbon::parse($citizen->date_encoded)->format('Y-m-d'),
+                'dateEncoded' => Carbon::parse($citizen->date_encoded)->format('F d, Y | g:i A'),
                 'encodedBy' => $citizen->encodedBy->username ?? 'System',
-                'dateUpdated' => $citizen->date_updated ? Carbon::parse($citizen->date_updated)->format('Y-m-d') : 'N/A',
+                'dateUpdated' => $citizen->date_updated ? Carbon::parse($citizen->date_updated)->format('F d, Y | g:i A') : 'N/A',
                 'updatedBy' => $citizen->updatedBy->username ?? 'System',
             ];
         });
