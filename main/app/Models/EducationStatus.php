@@ -32,6 +32,9 @@ class EducationStatus extends Model
         return $this->belongsTo(EduHistory::class, 'edu_hist', 'edu_hist');
     }
 
+    // Alias
+    public function educationHistory() { return $this->eduHistory(); }
+
     public function demographics()
     {
         return $this->hasMany(Demographic::class, 'edu_id', 'edu_id');

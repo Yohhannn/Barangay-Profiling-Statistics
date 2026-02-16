@@ -79,204 +79,16 @@ interface Citizen {
 }
 
 // --- 2. 20 Example Data Entries ---
-const mockCitizens: Citizen[] = [
-    {
-        id: 1, firstName: 'Roberto', middleName: 'Jose', lastName: 'Cadulang', suffix: 'Jr.', citizenId: 'CIT-2025-001', status: 'Active',
-        dob: '1980-05-12', age: 45, sex: 'Male', bloodType: 'O+', civilStatus: 'Married', religion: 'Roman Catholic', pob: 'Cebu City',
-        email: 'roberto@email.com', contact: ['09171234567', '09987654321'], fullAddress: 'House 123, Cadulang 2, Marigondon', sitio: 'Cadulang 2',
-        employmentStatus: 'Employed', occupation: 'Carpenter', socioEconomicStatus: 'Low Income',
-        isGovWorker: false, isStudent: false, isVoter: true, isIp: false, isDeceased: false,
-        fpStatus: 'Active', fpMethod: 'Condoms', fpDateStarted: '2023-01-01',
-        nhtsNumber: 'NHTS-10001', householdId: 'HH-001', relationship: 'Head', philhealthCategory: 'Indigent', philhealthId: '12-0000001-0', membershipType: 'Member', healthClassification: 'Healthy',
-        dateEncoded: '2024-01-15', encodedBy: 'ADMIN', dateUpdated: '2025-08-15', updatedBy: 'Ian N. Majica'
-    },
-    {
-        id: 2, firstName: 'Maria', middleName: 'Anne', lastName: 'Santos', suffix: '', citizenId: 'CIT-2025-002', status: 'Active',
-        dob: '2003-02-20', age: 22, sex: 'Female', bloodType: 'A+', civilStatus: 'Single', religion: 'Roman Catholic', pob: 'Davao City',
-        email: 'maria.s@email.com', contact: ['09123456789'], fullAddress: 'Lot 4, Chocolate Hills, Marigondon', sitio: 'Chocolate Hills',
-        employmentStatus: 'Unemployed', occupation: 'Student', socioEconomicStatus: 'Middle Income',
-        isGovWorker: false, isStudent: true, isVoter: true, isIp: false, isDeceased: false,
-        educAttainment: 'College Level', schoolName: 'Cebu Normal University',
-        householdId: 'HH-005', relationship: 'Daughter', philhealthCategory: 'Dependent', philhealthId: 'N/A', membershipType: 'N/A', healthClassification: 'Healthy',
-        dateEncoded: '2024-02-20', encodedBy: 'ADMIN', dateUpdated: '2025-09-13', updatedBy: 'ADMIN'
-    },
-    {
-        id: 3, firstName: 'Juan', middleName: 'Dela', lastName: 'Gonzales', suffix: '', citizenId: 'CIT-2025-003', status: 'Deceased',
-        dob: '1950-11-01', age: 75, sex: 'Male', bloodType: 'B-', civilStatus: 'Widowed', religion: 'Iglesia ni Cristo', pob: 'Manila',
-        email: 'N/A', contact: [], fullAddress: 'Blk 1, Marigondon Proper', sitio: 'Marigondon Proper',
-        employmentStatus: 'Retired', occupation: 'Retired Teacher', socioEconomicStatus: 'Pensioner',
-        isGovWorker: true, isStudent: false, isVoter: true, isIp: false, isDeceased: true,
-        dateOfDeath: '2025-01-01', causeOfDeath: 'Cardiac Arrest',
-        householdId: 'HH-010', relationship: 'Head', philhealthCategory: 'Senior Citizen', philhealthId: '02-1234567-8', membershipType: 'Member', healthClassification: 'Hypertensive',
-        dateEncoded: '2023-11-01', encodedBy: 'ADMIN', dateUpdated: '2025-01-02', updatedBy: 'System'
-    },
-    {
-        id: 4, firstName: 'Elena', middleName: 'Cruz', lastName: 'Bautista', suffix: '', citizenId: 'CIT-2025-004', status: 'Active',
-        dob: '1990-07-15', age: 35, sex: 'Female', bloodType: 'AB+', civilStatus: 'Married', religion: 'Roman Catholic', pob: 'Lapu-Lapu City',
-        email: 'elena.b@gmail.com', contact: ['09225556666'], fullAddress: 'Purok 3, Suba-Basbas', sitio: 'Suba-Basbas',
-        employmentStatus: 'Employed', occupation: 'Government Employee', socioEconomicStatus: 'Middle Income',
-        isGovWorker: true, isStudent: false, isVoter: true, isIp: false, isDeceased: false,
-        fpStatus: 'Active', fpMethod: 'Pills', fpDateStarted: '2020-05-10',
-        householdId: 'HH-022', relationship: 'Wife', philhealthCategory: 'Formal Economy', philhealthId: '10-2223334-5', membershipType: 'Member', healthClassification: 'Healthy',
-        dateEncoded: '2024-03-10', encodedBy: 'STAFF_01', dateUpdated: '2025-02-01', updatedBy: 'ADMIN'
-    },
-    {
-        id: 5, firstName: 'Pedro', middleName: 'Penduko', lastName: 'Magtanggol', suffix: '', citizenId: 'CIT-2025-005', status: 'Active',
-        dob: '1975-08-30', age: 50, sex: 'Male', bloodType: 'O-', civilStatus: 'Separated', religion: 'Born Again', pob: 'Leyte',
-        email: 'pedro.m@yahoo.com', contact: ['09181112222', '09203334444'], fullAddress: 'Sitio Kawayan, Marigondon', sitio: 'Kawayan',
-        employmentStatus: 'Self-Employed', occupation: 'Tricycle Driver', socioEconomicStatus: 'Low Income',
-        isGovWorker: false, isStudent: false, isVoter: true, isIp: false, isDeceased: false,
-        nhtsNumber: 'NHTS-54321', householdId: 'HH-030', relationship: 'Head', philhealthCategory: 'Informal Economy', philhealthId: '11-3334445-6', membershipType: 'Member', healthClassification: 'Smoker',
-        dateEncoded: '2024-01-20', encodedBy: 'ADMIN', dateUpdated: '2025-06-15', updatedBy: 'STAFF_02'
-    },
-    {
-        id: 6, firstName: 'Linda', middleName: 'Reyes', lastName: 'Lim', suffix: '', citizenId: 'CIT-2025-006', status: 'Active',
-        dob: '1960-12-25', age: 65, sex: 'Female', bloodType: 'A-', civilStatus: 'Widowed', religion: 'Buddhist', pob: 'Cebu City',
-        email: 'linda.lim@gmail.com', contact: ['09178889999'], fullAddress: 'Villa del Rio, Marigondon', sitio: 'Villa del Rio',
-        employmentStatus: 'Retired', occupation: 'Business Owner', socioEconomicStatus: 'High Income',
-        isGovWorker: false, isStudent: false, isVoter: true, isIp: false, isDeceased: false,
-        householdId: 'HH-045', relationship: 'Head', philhealthCategory: 'Senior Citizen', philhealthId: '08-5556667-8', membershipType: 'Lifetime', healthClassification: 'Diabetic',
-        dateEncoded: '2023-12-05', encodedBy: 'ADMIN', dateUpdated: '2025-01-10', updatedBy: 'ADMIN'
-    },
-    {
-        id: 7, firstName: 'Miguel', middleName: 'Santos', lastName: 'Tan', suffix: '', citizenId: 'CIT-2025-007', status: 'Active',
-        dob: '2015-06-01', age: 10, sex: 'Male', bloodType: 'B+', civilStatus: 'Single', religion: 'Roman Catholic', pob: 'Lapu-Lapu City',
-        email: 'N/A', contact: [], fullAddress: 'Sitio Bankal, Marigondon', sitio: 'Bankal',
-        employmentStatus: 'N/A', occupation: 'Student', socioEconomicStatus: 'Dependent',
-        isGovWorker: false, isStudent: true, isVoter: false, isIp: false, isDeceased: false,
-        educAttainment: 'Elementary', schoolName: 'Marigondon Elementary School',
-        householdId: 'HH-050', relationship: 'Son', philhealthCategory: 'Dependent', philhealthId: 'N/A', membershipType: 'N/A', healthClassification: 'Healthy',
-        dateEncoded: '2024-05-15', encodedBy: 'STAFF_01', dateUpdated: '2024-05-15', updatedBy: 'STAFF_01'
-    },
-    {
-        id: 8, firstName: 'Sarah', middleName: 'Jane', lastName: 'Doe', suffix: '', citizenId: 'CIT-2025-008', status: 'Moved',
-        dob: '1995-03-10', age: 30, sex: 'Female', bloodType: 'O+', civilStatus: 'Single', religion: 'Protestant', pob: 'USA',
-        email: 'sarah.doe@email.com', contact: ['09991112222'], fullAddress: 'Sitio Timpolok, Marigondon', sitio: 'Timpolok',
-        employmentStatus: 'Employed', occupation: 'Call Center Agent', socioEconomicStatus: 'Middle Income',
-        isGovWorker: false, isStudent: false, isVoter: false, isIp: false, isDeceased: false,
-        householdId: 'HH-060', relationship: 'Head', philhealthCategory: 'Formal Economy', philhealthId: '14-7778889-0', membershipType: 'Member', healthClassification: 'Healthy',
-        dateEncoded: '2024-04-01', encodedBy: 'ADMIN', dateUpdated: '2025-10-01', updatedBy: 'ADMIN'
-    },
-    {
-        id: 9, firstName: 'Datu', middleName: 'Lapu', lastName: 'Silapulapu', suffix: '', citizenId: 'CIT-2025-009', status: 'Active',
-        dob: '1985-04-27', age: 40, sex: 'Male', bloodType: 'AB-', civilStatus: 'Married', religion: 'Islam', pob: 'Mindanao',
-        email: 'datu@email.com', contact: ['09159990000'], fullAddress: 'Sitio Basak, Marigondon', sitio: 'Basak',
-        employmentStatus: 'Self-Employed', occupation: 'Vendor', socioEconomicStatus: 'Low Income',
-        isGovWorker: false, isStudent: false, isVoter: true, isIp: true, isDeceased: false,
-        nhtsNumber: 'NHTS-99887', householdId: 'HH-070', relationship: 'Head', philhealthCategory: 'Indigent', philhealthId: '15-1112223-4', membershipType: 'Member', healthClassification: 'Healthy',
-        dateEncoded: '2024-02-10', encodedBy: 'STAFF_02', dateUpdated: '2025-07-20', updatedBy: 'STAFF_02'
-    },
-    {
-        id: 10, firstName: 'Baby', middleName: 'Boy', lastName: 'Gomez', suffix: '', citizenId: 'CIT-2025-010', status: 'Active',
-        dob: '2025-01-01', age: 0, sex: 'Male', bloodType: 'Unknown', civilStatus: 'Single', religion: 'Roman Catholic', pob: 'Lapu-Lapu City',
-        email: 'N/A', contact: [], fullAddress: 'Sitio Looc, Marigondon', sitio: 'Looc',
-        employmentStatus: 'N/A', occupation: 'N/A', socioEconomicStatus: 'Dependent',
-        isGovWorker: false, isStudent: false, isVoter: false, isIp: false, isDeceased: false,
-        householdId: 'HH-080', relationship: 'Son', philhealthCategory: 'Dependent', philhealthId: 'N/A', membershipType: 'N/A', healthClassification: 'Infant',
-        dateEncoded: '2025-01-10', encodedBy: 'ADMIN', dateUpdated: '2025-01-10', updatedBy: 'ADMIN'
-    },
-    {
-        id: 11, firstName: 'Carmen', middleName: 'Rosales', lastName: 'Vda de Cruz', suffix: '', citizenId: 'CIT-2025-011', status: 'Active',
-        dob: '1945-09-15', age: 80, sex: 'Female', bloodType: 'B+', civilStatus: 'Widowed', religion: 'Roman Catholic', pob: 'Bohol',
-        email: 'N/A', contact: ['09201239876'], fullAddress: 'Sitio Sangi, Marigondon', sitio: 'Sangi',
-        employmentStatus: 'Retired', occupation: 'None', socioEconomicStatus: 'Pensioner',
-        isGovWorker: false, isStudent: false, isVoter: true, isIp: false, isDeceased: false,
-        householdId: 'HH-090', relationship: 'Head', philhealthCategory: 'Senior Citizen', philhealthId: '01-2223334-5', membershipType: 'Lifetime', healthClassification: 'Hypertensive',
-        dateEncoded: '2023-10-05', encodedBy: 'STAFF_01', dateUpdated: '2025-03-12', updatedBy: 'ADMIN'
-    },
-    {
-        id: 12, firstName: 'Rico', middleName: 'J.', lastName: 'Puno', suffix: '', citizenId: 'CIT-2025-012', status: 'Deceased',
-        dob: '1955-02-14', age: 68, sex: 'Male', bloodType: 'O+', civilStatus: 'Married', religion: 'Roman Catholic', pob: 'Manila',
-        email: 'N/A', contact: [], fullAddress: 'Sitio Crossing, Marigondon', sitio: 'Crossing',
-        employmentStatus: 'Retired', occupation: 'Musician', socioEconomicStatus: 'High Income',
-        isGovWorker: false, isStudent: false, isVoter: true, isIp: false, isDeceased: true,
-        dateOfDeath: '2023-10-30', causeOfDeath: 'Heart Failure',
-        householdId: 'HH-100', relationship: 'Head', philhealthCategory: 'Senior Citizen', philhealthId: '03-4445556-7', membershipType: 'Member', healthClassification: 'Deceased',
-        dateEncoded: '2023-01-15', encodedBy: 'ADMIN', dateUpdated: '2023-11-01', updatedBy: 'ADMIN'
-    },
-    {
-        id: 13, firstName: 'Jasmine', middleName: 'Lee', lastName: 'Ong', suffix: '', citizenId: 'CIT-2025-013', status: 'Active',
-        dob: '1998-11-11', age: 27, sex: 'Female', bloodType: 'A+', civilStatus: 'Single', religion: 'Christian', pob: 'Cebu City',
-        email: 'jasmine.ong@gmail.com', contact: ['09175554444'], fullAddress: 'Agro-Macro Subdivision, Marigondon', sitio: 'Agro-Macro',
-        employmentStatus: 'Employed', occupation: 'Nurse', socioEconomicStatus: 'High Income',
-        isGovWorker: false, isStudent: false, isVoter: true, isIp: false, isDeceased: false,
-        fpStatus: 'N/A',
-        householdId: 'HH-110', relationship: 'Daughter', philhealthCategory: 'Formal Economy', philhealthId: '16-8889990-1', membershipType: 'Member', healthClassification: 'Healthy',
-        dateEncoded: '2024-06-20', encodedBy: 'ADMIN', dateUpdated: '2025-08-01', updatedBy: 'STAFF_02'
-    },
-    {
-        id: 14, firstName: 'Antonio', middleName: 'B.', lastName: 'Luna', suffix: '', citizenId: 'CIT-2025-014', status: 'Active',
-        dob: '1982-10-29', age: 43, sex: 'Male', bloodType: 'AB+', civilStatus: 'Married', religion: 'Roman Catholic', pob: 'Ilocos',
-        email: 'antonio.luna@email.com', contact: ['09187776666'], fullAddress: 'Sitio Ibabao, Marigondon', sitio: 'Ibabao',
-        employmentStatus: 'Employed', occupation: 'Police Officer', socioEconomicStatus: 'Middle Income',
-        isGovWorker: true, isStudent: false, isVoter: true, isIp: false, isDeceased: false,
-        householdId: 'HH-120', relationship: 'Head', philhealthCategory: 'Formal Economy', philhealthId: '17-2221110-9', membershipType: 'Member', healthClassification: 'Healthy',
-        dateEncoded: '2024-03-15', encodedBy: 'ADMIN', dateUpdated: '2025-04-10', updatedBy: 'ADMIN'
-    },
-    {
-        id: 15, firstName: 'Teresa', middleName: 'M.', lastName: 'Magbanua', suffix: '', citizenId: 'CIT-2025-015', status: 'Active',
-        dob: '1970-05-05', age: 55, sex: 'Female', bloodType: 'O+', civilStatus: 'Separated', religion: 'Roman Catholic', pob: 'Iloilo',
-        email: 'teresa.m@gmail.com', contact: ['09193332222'], fullAddress: 'Sitio Suba-Panas, Marigondon', sitio: 'Suba-Panas',
-        employmentStatus: 'Self-Employed', occupation: 'Sari-sari Store Owner', socioEconomicStatus: 'Low Income',
-        isGovWorker: false, isStudent: false, isVoter: true, isIp: false, isDeceased: false,
-        nhtsNumber: 'NHTS-66778', householdId: 'HH-130', relationship: 'Head', philhealthCategory: 'Indigent', philhealthId: '18-4443332-1', membershipType: 'Member', healthClassification: 'Healthy',
-        dateEncoded: '2023-12-12', encodedBy: 'STAFF_02', dateUpdated: '2025-02-14', updatedBy: 'STAFF_01'
-    },
-    {
-        id: 16, firstName: 'Chris', middleName: 'P.', lastName: 'Bacon', suffix: '', citizenId: 'CIT-2025-016', status: 'Active',
-        dob: '2000-01-01', age: 25, sex: 'Male', bloodType: 'A+', civilStatus: 'Single', religion: 'Agnostic', pob: 'USA',
-        email: 'chris.bacon@email.com', contact: ['09228881111'], fullAddress: 'Collinwood Subdivision, Marigondon', sitio: 'Collinwood',
-        employmentStatus: 'Employed', occupation: 'Freelancer', socioEconomicStatus: 'Middle Income',
-        isGovWorker: false, isStudent: false, isVoter: false, isIp: false, isDeceased: false,
-        householdId: 'HH-140', relationship: 'Son', philhealthCategory: 'Formal Economy', philhealthId: '19-5554443-2', membershipType: 'Member', healthClassification: 'Healthy',
-        dateEncoded: '2024-07-01', encodedBy: 'ADMIN', dateUpdated: '2025-01-20', updatedBy: 'ADMIN'
-    },
-    {
-        id: 17, firstName: 'Gabriela', middleName: 'S.', lastName: 'Silang', suffix: '', citizenId: 'CIT-2025-017', status: 'Active',
-        dob: '1988-03-19', age: 37, sex: 'Female', bloodType: 'B+', civilStatus: 'Married', religion: 'Roman Catholic', pob: 'Ilocos Sur',
-        email: 'gabriela@email.com', contact: ['09170001111', '09180002222'], fullAddress: 'Sitio Tumoy, Marigondon', sitio: 'Tumoy',
-        employmentStatus: 'Employed', occupation: 'Social Worker', socioEconomicStatus: 'Middle Income',
-        isGovWorker: true, isStudent: false, isVoter: true, isIp: false, isDeceased: false,
-        fpStatus: 'Active', fpMethod: 'IUD', fpDateStarted: '2021-06-15',
-        householdId: 'HH-150', relationship: 'Wife', philhealthCategory: 'Formal Economy', philhealthId: '20-6667778-9', membershipType: 'Member', healthClassification: 'Healthy',
-        dateEncoded: '2024-01-30', encodedBy: 'STAFF_01', dateUpdated: '2025-05-05', updatedBy: 'ADMIN'
-    },
-    {
-        id: 18, firstName: 'Lapu', middleName: 'Lapu', lastName: 'Dimagiba', suffix: '', citizenId: 'CIT-2025-018', status: 'Active',
-        dob: '1990-04-27', age: 35, sex: 'Male', bloodType: 'O-', civilStatus: 'Single', religion: 'Animism', pob: 'Mactan',
-        email: 'N/A', contact: ['09234445555'], fullAddress: 'Sitio Mactan, Marigondon', sitio: 'Mactan',
-        employmentStatus: 'Self-Employed', occupation: 'Fisherman', socioEconomicStatus: 'Low Income',
-        isGovWorker: false, isStudent: false, isVoter: true, isIp: true, isDeceased: false,
-        nhtsNumber: 'NHTS-33221', householdId: 'HH-160', relationship: 'Head', philhealthCategory: 'Indigent', philhealthId: '21-9998887-6', membershipType: 'Member', healthClassification: 'Healthy',
-        dateEncoded: '2023-11-20', encodedBy: 'ADMIN', dateUpdated: '2025-08-25', updatedBy: 'STAFF_02'
-    },
-    {
-        id: 19, firstName: 'Melchora', middleName: 'A.', lastName: 'Aquino', suffix: '', citizenId: 'CIT-2025-019', status: 'Active',
-        dob: '1930-01-06', age: 95, sex: 'Female', bloodType: 'A+', civilStatus: 'Widowed', religion: 'Roman Catholic', pob: 'Caloocan',
-        email: 'N/A', contact: [], fullAddress: 'Sitio Tandang Sora, Marigondon', sitio: 'Tandang Sora',
-        employmentStatus: 'Retired', occupation: 'None', socioEconomicStatus: 'Pensioner',
-        isGovWorker: false, isStudent: false, isVoter: true, isIp: false, isDeceased: false,
-        householdId: 'HH-170', relationship: 'Grandmother', philhealthCategory: 'Senior Citizen', philhealthId: '22-1110009-8', membershipType: 'Lifetime', healthClassification: 'Bedridden',
-        dateEncoded: '2023-09-10', encodedBy: 'ADMIN', dateUpdated: '2025-01-15', updatedBy: 'ADMIN'
-    },
-    {
-        id: 20, firstName: 'Andres', middleName: 'B.', lastName: 'Bonifacio', suffix: '', citizenId: 'CIT-2025-020', status: 'Moved',
-        dob: '1992-11-30', age: 32, sex: 'Male', bloodType: 'AB-', civilStatus: 'Married', religion: 'Roman Catholic', pob: 'Manila',
-        email: 'andres.b@email.com', contact: ['09152223333'], fullAddress: 'Sitio Katipunan, Marigondon', sitio: 'Katipunan',
-        employmentStatus: 'Employed', occupation: 'Factory Worker', socioEconomicStatus: 'Low Income',
-        isGovWorker: false, isStudent: false, isVoter: true, isIp: false, isDeceased: false,
-        householdId: 'HH-180', relationship: 'Head', philhealthCategory: 'Formal Economy', philhealthId: '23-4445551-2', membershipType: 'Member', healthClassification: 'Healthy',
-        dateEncoded: '2024-02-25', encodedBy: 'STAFF_01', dateUpdated: '2025-09-01', updatedBy: 'STAFF_01'
-    }
-];
+// Mock data removed.
+
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Citizen Panel', href: '/citizen-panel' },
     { title: 'Citizen Profiles', href: '/citizen-panel/citizen-profile' },
 ];
 
-export default function CitizenProfiles() {
-    const [selectedCitizen, setSelectedCitizen] = useState<Citizen | null>(mockCitizens[0]);
+export default function CitizenProfiles({ citizens = [], sitios = [] }: { citizens?: Citizen[], sitios?: { sitio_id: number, sitio_name: string }[] }) {
+    const [selectedCitizen, setSelectedCitizen] = useState<Citizen | null>(citizens.length > 0 ? citizens[0] : null);
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilters, setShowFilters] = useState(false);
 
@@ -290,12 +102,15 @@ export default function CitizenProfiles() {
 
     // Get unique Sitios for dropdown
     const uniqueSitios = useMemo(() => {
-        return Array.from(new Set(mockCitizens.map(c => c.sitio))).sort();
-    }, []);
+        if (sitios && sitios.length > 0) {
+            return sitios.map(s => s.sitio_name);
+        }
+        return Array.from(new Set(citizens.map(c => c.sitio))).sort();
+    }, [citizens, sitios]);
 
     // Derived State for Filtered List
     const filteredCitizens = useMemo(() => {
-        return mockCitizens.filter(citizen => {
+        return citizens.filter(citizen => {
             const matchesSearch =
                 citizen.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 citizen.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||

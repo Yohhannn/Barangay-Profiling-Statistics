@@ -34,6 +34,10 @@ class demographic extends Model
         return $this->belongsTo(ClassificationHealthRisk::class, 'clah_id', 'clah_id');
     }
 
+    // Alias
+    public function socioEconomic() { return $this->socioEconomicStatus(); }
+    public function healthRisk() { return $this->classificationHealthRisk(); }
+
     public function familyPlanning()
     {
         return $this->belongsTo(FamilyPlanning::class, 'fp_id', 'fp_id');

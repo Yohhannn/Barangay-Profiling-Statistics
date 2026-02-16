@@ -29,9 +29,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('citizen-panel');
 
     // Sub-modules
-    Route::get('citizen-panel/citizen-profile', function () {
-        return Inertia::render('main/CitizenPanel/citizen-profiles');
-    })->name('citizen-profile');
+    Route::get('citizen-panel/citizen-profile', [CitizenController::class, 'index'])->name('citizen-profile');
 
     Route::get('citizen-panel/household-profile', function () {
         return Inertia::render('main/CitizenPanel/household-profiles');
