@@ -29,7 +29,7 @@ use App\Models\HouseholdInfo;
 
 class CitizenController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         // 1. Fetch Citizens with ALL relationships to avoid N+1 query performance issues
         $citizensQuery = Citizen::with([
@@ -44,9 +44,60 @@ class CitizenController extends Controller
             'encodedBy',
             'updatedBy'
         ])
-            ->where('is_deleted', false) // Only fetch active records
-            ->orderBy('ctz_id', 'desc')
-            ->get();
+            ->where('is_deleted', false); // Only fetch active records
+
+        // --- FILTERS ---
+
+        // Search (Name)
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $citizensQuery->whereHas('info', function ($q) use ($search) {
+                $q->where(function ($sub) use ($search) {
+                    $sub->where('first_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhere('middle_name', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        // Sitio
+        if ($request->filled('sitio')) {
+            $citizensQuery->whereHas('info', function ($q) use ($request) {
+                $q->where('sitio_id', $request->input('sitio'));
+            });
+        }
+
+        // Sex
+        if ($request->filled('sex') && $request->input('sex') !== 'All') {
+             $citizensQuery->whereHas('info', function ($q) use ($request) {
+                $q->where('sex', $request->input('sex'));
+            });
+        }
+
+        // Civil Status
+        if ($request->filled('civilStatus') && $request->input('civilStatus') !== 'All') {
+             $citizensQuery->whereHas('info', function ($q) use ($request) {
+                $q->where('civil_status', $request->input('civilStatus'));
+            });
+        }
+
+        // Employment Status
+        if ($request->filled('employmentStatus') && $request->input('employmentStatus') !== 'All') {
+             $citizensQuery->whereHas('info.employment', function ($q) use ($request) {
+                $q->where('status', $request->input('employmentStatus'));
+            });
+        }
+
+         // Voter Status
+         if ($request->filled('isVoter') && $request->input('isVoter') !== 'All') {
+            $isVoter = $request->input('isVoter') === 'Yes';
+            $citizensQuery->whereHas('info', function ($q) use ($isVoter) {
+               $q->where('is_registered_voter', $isVoter);
+           });
+       }
+
+        // Sort and Execute
+        $citizensQuery = $citizensQuery->orderBy('ctz_id', 'desc')->get();
 
         // 2. Transform Data: Map DB structure to Frontend Interface
         $mappedCitizens = $citizensQuery->map(function ($citizen) {
@@ -138,7 +189,8 @@ class CitizenController extends Controller
         // 3. Pass data to React
         return Inertia::render('main/CitizenPanel/citizen-profiles', [
             'citizens' => $mappedCitizens,
-            'sitios' => Sitio::select('sitio_id', 'sitio_name')->orderBy('sitio_name')->get()
+            'sitios' => Sitio::select('sitio_id', 'sitio_name')->orderBy('sitio_name')->get(),
+            'filters' => $request->only(['search', 'sitio', 'sex', 'civilStatus', 'employmentStatus', 'isVoter'])
         ]);
     }
 
@@ -288,6 +340,8 @@ class CitizenController extends Controller
                 'blood_type' => $validated['blood_type'],
                 'religion' => $validated['religion'],
                 'is_deceased' => $request->boolean('is_deceased'),
+                'date_of_death' => $validated['date_of_death'] ?? null,
+                'cause_of_death' => $validated['cause_of_death'] ?? null,
                 'is_registered_voter' => $request->boolean('is_voter'),
                 'is_indigenous' => $request->boolean('is_ip'),
                 'relationship_type' => $validated['relationship_to_head'] ?? null,
