@@ -18,10 +18,16 @@ class Phone extends Model
     protected $fillable = [
     #    'phone_type',
         'phone_number',
+        'con_id',
   #      'network_name',
     ];
 
     // Relationships
+    public function citizenInformation()
+    {
+        return $this->hasMany(CitizenInformation::class, 'con_id', 'con_id');
+    }
+
     public function contact()
     {
         return $this->hasOne(Contact::class, 'phone_id', 'phone_id');

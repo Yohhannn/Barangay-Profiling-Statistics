@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id('con_id');
             $table->string('email')->nullable();
             $table->string('others')->nullable();
-            $table->foreignId('phone_id')->constrained('phones','phone_id')->onDelete('cascade')->onUpdate('cascade');
+       #     $table->foreignId('phone_id')->constrained('phones','phone_id')->onDelete('cascade')->onUpdate('cascade');
         });
     }
 
