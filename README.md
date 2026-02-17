@@ -23,12 +23,15 @@ All commands should be executed from within the **_/main_** directory of the rep
 2. composer run setup
 3. Open the .env file in the root of the /main directory and update your PostgreSQL credentials
 
-```DB_CONNECTION=pgsql
+```'
+
+DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
 DB_PORT=5432
 DB_DATABASE=DB_BarangayProfilingStatistics
 DB_USERNAME=your_username
 DB_PASSWORD=your_password
+
 ```
 
 4. php artisan key:generate
