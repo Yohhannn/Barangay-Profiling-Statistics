@@ -550,11 +550,16 @@ class CitizenController extends Controller
         }
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
+        $validated = $request->validate([
+            'deleted_reason' => 'required|string|max:1000'
+        ]);
+
         try {
             $citizen = Citizen::findOrFail($id);
             $citizen->is_deleted = true;
+            $citizen->deleted_reason = $validated['deleted_reason'];
             $citizen->date_updated = now();
             $citizen->updated_by = Auth::id() ?? 1;
             $citizen->save();
