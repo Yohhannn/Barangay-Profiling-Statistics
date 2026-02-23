@@ -3,7 +3,9 @@ import {
     FileText, Link as LinkIcon, Camera, Upload, Image as ImageIcon,
     Crosshair
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useForm, router } from '@inertiajs/react';
+import Swal from 'sweetalert2';
 
 interface HouseholdCreationProps {
     isOpen: boolean;
@@ -12,25 +14,84 @@ interface HouseholdCreationProps {
 
 export default function HouseholdCreation({ isOpen, onClose }: HouseholdCreationProps) {
     const [showMap, setShowMap] = useState(false);
-    const [coordinates, setCoordinates] = useState('');
-    const [googleLink, setGoogleLink] = useState('');
+    const [sitioOptions, setSitioOptions] = useState<string[]>([]);
+
+    // Inertia form handler
+    const { data, setData, post, processing, errors, reset } = useForm({
+        house_number: '',
+        home_address: '',
+        sitio: '',
+        ownership_status: '',
+        home_link: '',
+        water_type: '',
+        toilet_type: '',
+        date_visited: '',
+        interviewer_name: '',
+        reviewer_name: '',
+        
+        // Unused fields as per request, but keeping state if needed
+        coordinates: '',
+    });
+
+    useEffect(() => {
+        if (isOpen) {
+            fetch('/api/sitio-list')
+                .then(res => res.json())
+                .then(data => {
+                    const names = data.map((s: any) => s.sitio_name);
+                    // Filter out duplicates using Set
+                    const uniqueNames = [...new Set(names)] as string[];
+                    setSitioOptions(uniqueNames.sort());
+                })
+                .catch(err => console.error("Failed to fetch sitios", err));
+        }
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Household Form Submitted");
-        onClose();
+        
+        post('/households/store', {
+            preserveScroll: true,
+            onSuccess: (page) => {
+                // The backend flashes 'success' with the Household Code
+                const flash = page.props.flash as Record<string, any>;
+                const msg = flash?.success || 'Household Record Created!';
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: msg as string,
+                });
+                reset();
+                
+                // Force an Inertia reload on the current page to retrieve fresh database records
+                router.reload({
+                    only: ['households', 'citizens'], // Reloading relevant props
+                    onFinish: () => {
+                        onClose();
+                    }
+                });
+            },
+            onError: (err) => {
+                console.error(err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error',
+                    text: 'Please check the form for errors.',
+                });
+            }
+        });
     };
 
     const handleLocationSelect = (coords: string) => {
-        setCoordinates(coords);
+        setData('coordinates', coords);
         setShowMap(false);
     };
 
     return (
         <>
-            {/* Map Picker Modal (Overlay) */}
+            {/* Map Picker Modal (Overlay) - Ignoring for now but keeping functionality */}
             {showMap && (
                 <LocationPicker
                     onClose={() => setShowMap(false)}
@@ -76,21 +137,40 @@ export default function HouseholdCreation({ isOpen, onClose }: HouseholdCreation
                                 <SectionLabel icon={<Home className="size-4" />} label="Home Information" color="text-orange-600" />
 
                                 <div className="bg-white dark:bg-[#1e293b] p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm space-y-4">
-                                    <InputGroup label="Home Number" placeholder="Input House / Home Number" />
-                                    <InputGroup label="Home Address" placeholder="Input House / Home Address" required />
+                                    <InputGroup 
+                                        label="Home Number" 
+                                        placeholder="Input House / Home Number" 
+                                        value={data.house_number}
+                                        onChange={e => setData('house_number', e.target.value)}
+                                        error={errors.house_number}
+                                    />
+                                    <InputGroup 
+                                        label="Home Address" 
+                                        placeholder="Input House / Home Address" 
+                                        required 
+                                        value={data.home_address}
+                                        onChange={e => setData('home_address', e.target.value)}
+                                        error={errors.home_address}
+                                    />
 
                                     <div className="pt-2">
                                         <SelectGroup
                                             label="Specific Sitio"
                                             required
-                                            options={['Ylaya', 'Suba-Basbas', 'Bankal', 'Kawayan', 'Crossing', 'Sangi', 'Agro-Macro', 'Ibabao', 'Mactan', 'Tandang Sora']}
+                                            options={sitioOptions}
+                                            value={data.sitio}
+                                            onChange={e => setData('sitio', e.target.value)}
+                                            error={errors.sitio}
                                         />
                                     </div>
 
                                     <SelectGroup
                                         label="Ownership Status"
                                         required
-                                        options={['Owned', 'Rented', 'Shared', 'Caretaker', 'Informal Settler']}
+                                        options={['Owned', 'Rented', 'Leased', 'Informal Settler']}
+                                        value={data.ownership_status}
+                                        onChange={e => setData('ownership_status', e.target.value)}
+                                        error={errors.ownership_status}
                                     />
                                 </div>
                             </div>
@@ -99,17 +179,19 @@ export default function HouseholdCreation({ isOpen, onClose }: HouseholdCreation
                             <div className="space-y-6">
                                 <SectionLabel icon={<ImageIcon className="size-4" />} label="Household Image & Location" color="text-orange-600" />
 
-                                <div className="bg-white dark:bg-[#1e293b] p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm space-y-4">
+                                <div className="bg-white dark:bg-[#1e293b] p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm space-y-4 opacity-60">
+                                    <p className="text-xs text-orange-600 dark:text-orange-400 font-bold mb-2">Note: Photo & GPS Upload currently disabled.</p>
+                                    
                                     {/* Photo Upload Area */}
-                                    <div className="w-full aspect-video bg-neutral-100 dark:bg-black/20 rounded-lg border-2 border-dashed border-neutral-300 dark:border-neutral-600 flex flex-col items-center justify-center text-neutral-400 gap-2 hover:border-orange-400 transition-colors cursor-pointer group">
-                                        <Camera className="size-8 group-hover:text-orange-500 transition-colors" />
+                                    <div className="w-full aspect-video bg-neutral-100 dark:bg-black/20 rounded-lg border-2 border-dashed border-neutral-300 dark:border-neutral-600 flex flex-col items-center justify-center text-neutral-400 gap-2 cursor-not-allowed group">
+                                        <Camera className="size-8 transition-colors" />
                                         <span className="text-[10px] font-medium uppercase tracking-wide">Add Household Photo</span>
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
-                                        <button className="flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white p-2.5 rounded-lg transition-colors shadow-sm text-xs font-bold uppercase tracking-wide">
+                                        <button disabled className="cursor-not-allowed flex items-center justify-center gap-2 bg-orange-600/50 text-white p-2.5 rounded-lg shadow-sm text-xs font-bold uppercase tracking-wide">
                                             <Camera className="size-3.5" /> Take Photo
                                         </button>
-                                        <button className="flex items-center justify-center gap-2 bg-white border border-neutral-300 hover:bg-neutral-50 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white p-2.5 rounded-lg transition-colors shadow-sm text-xs font-bold uppercase tracking-wide">
+                                        <button disabled className="cursor-not-allowed flex items-center justify-center gap-2 bg-white/50 border border-neutral-300 dark:bg-neutral-800/50 dark:border-neutral-600 dark:text-white p-2.5 rounded-lg shadow-sm text-xs font-bold uppercase tracking-wide">
                                             <Upload className="size-3.5" /> Upload
                                         </button>
                                     </div>
@@ -122,15 +204,15 @@ export default function HouseholdCreation({ isOpen, onClose }: HouseholdCreation
                                                 <InputGroup
                                                     label="Geographic Coordinates"
                                                     placeholder="Lat, Long (Pin on Map)"
-                                                    value={coordinates}
+                                                    value={data.coordinates}
                                                     readOnly
-                                                    icon={<MapPin className="size-3.5 text-orange-500" />}
+                                                    disabled
+                                                    icon={<MapPin className="size-3.5 text-neutral-400" />}
                                                 />
                                             </div>
                                             <button
-                                                onClick={() => setShowMap(true)}
-                                                className="mb-[1px] p-2.5 bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-300 rounded-lg transition-colors border border-orange-200 dark:border-orange-800"
-                                                title="Pin Location on Map"
+                                                disabled
+                                                className="mb-[1px] cursor-not-allowed p-2.5 bg-neutral-100 text-neutral-400 dark:bg-neutral-900/30 dark:text-neutral-500 rounded-lg border border-neutral-200 dark:border-neutral-800"
                                             >
                                                 <Crosshair className="size-4" />
                                             </button>
@@ -139,10 +221,12 @@ export default function HouseholdCreation({ isOpen, onClose }: HouseholdCreation
                                         {/* 2. Google Home Link (Manual Paste) */}
                                         <InputGroup
                                             label="Google Maps Link"
-                                            placeholder="Paste Google Maps URL here..."
-                                            value={googleLink}
-                                            onChange={(e) => setGoogleLink(e.target.value)}
+                                            placeholder="Paste Google Maps URL here... (e.g., https://goo.gl/maps/...)"
+                                            value={data.home_link}
+                                            onChange={(e) => setData('home_link', e.target.value)}
                                             icon={<LinkIcon className="size-3.5 text-blue-500" />}
+                                            error={errors.home_link}
+                                            disabled={false} // Enabling this field explicitly
                                         />
                                     </div>
                                 </div>
@@ -160,12 +244,18 @@ export default function HouseholdCreation({ isOpen, onClose }: HouseholdCreation
                                     <SelectGroup
                                         label="Type of Water Source"
                                         required
-                                        options={['Deep Well', 'MCWD', 'Community Faucet', 'Shared Pump', 'Refilling Station', 'Spring/River']}
+                                        options={['Level 1 - Point Source', 'Level 2 - Communal Faucet', 'Level 3 - Individual Connection']}
+                                        value={data.water_type}
+                                        onChange={e => setData('water_type', e.target.value)}
+                                        error={errors.water_type}
                                     />
                                     <SelectGroup
                                         label="Toilet Type"
                                         required
-                                        options={['Water-sealed (Exclusive)', 'Water-sealed (Shared)', 'Flush', 'Antipolo', 'Open Pit', 'None']}
+                                        options={['A - Pour/flush type connected to septic tank', 'A - Pour/flush toilet connected to Sewerage System', 'C - Ventilated Pit (VIP) latrine', 'D - Water-sealed toilet', 'E - G - Without toilet', 'E - Overhung latrine', 'F - Open pit latrine']}
+                                        value={data.toilet_type}
+                                        onChange={e => setData('toilet_type', e.target.value)}
+                                        error={errors.toilet_type}
                                     />
                                 </div>
                             </div>
@@ -177,12 +267,30 @@ export default function HouseholdCreation({ isOpen, onClose }: HouseholdCreation
                                 <div className="bg-white dark:bg-[#1e293b] p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm space-y-4">
                                     <div className="flex items-center gap-4">
                                         <div className="flex-1">
-                                            <InputGroup label="Date of Visit" type="date" />
+                                            <InputGroup 
+                                                label="Date of Visit" 
+                                                type="date" 
+                                                value={data.date_visited}
+                                                onChange={e => setData('date_visited', e.target.value)}
+                                                error={errors.date_visited}
+                                            />
                                         </div>
                                         <span className="text-[10px] text-neutral-400 italic mt-6">Date of Interview</span>
                                     </div>
-                                    <InputGroup label="Interviewed By" placeholder="Full Name" />
-                                    <InputGroup label="Reviewed By" placeholder="Full Name" />
+                                    <InputGroup 
+                                        label="Interviewed By" 
+                                        placeholder="Full Name" 
+                                        value={data.interviewer_name}
+                                        onChange={e => setData('interviewer_name', e.target.value)}
+                                        error={errors.interviewer_name}
+                                    />
+                                    <InputGroup 
+                                        label="Reviewed By" 
+                                        placeholder="Full Name" 
+                                        value={data.reviewer_name}
+                                        onChange={e => setData('reviewer_name', e.target.value)}
+                                        error={errors.reviewer_name}
+                                    />
 
                                     <p className="text-[10px] text-neutral-400 italic text-center mt-2 border-t border-dashed border-neutral-200 dark:border-neutral-700 pt-2">
                                         Note: Additional member details can be added in the Citizen Profile module.
@@ -197,9 +305,10 @@ export default function HouseholdCreation({ isOpen, onClose }: HouseholdCreation
                     <div className="p-5 bg-white dark:bg-[#0f172a] border-t border-neutral-200 dark:border-neutral-800 flex justify-end items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] shrink-0">
                         <button
                             onClick={handleSubmit}
-                            className="flex items-center gap-2 px-8 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-orange-600/20 active:scale-95"
+                            disabled={processing}
+                            className={`flex items-center gap-2 px-8 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-orange-600/20 active:scale-95 ${processing ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
-                            <CheckCircle className="size-4" /> Confirm and Save
+                            <CheckCircle className="size-4" /> {processing ? 'Saving...' : 'Confirm and Save'}
                         </button>
                     </div>
 
@@ -273,9 +382,10 @@ function SectionLabel({ icon, label, color = "text-neutral-700" }: { icon: React
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     label?: string;
     icon?: React.ReactNode;
+    error?: string;
 }
 
-function InputGroup({ label, className, icon, required, ...props }: InputProps) {
+function InputGroup({ label, className, icon, required, error, ...props }: InputProps) {
     return (
         <div className={`space-y-1.5 w-full ${className}`}>
             {label && (
@@ -285,11 +395,12 @@ function InputGroup({ label, className, icon, required, ...props }: InputProps) 
             )}
             <div className="relative group">
                 <input
-                    className="w-full text-xs p-2.5 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                    className={`w-full text-xs p-2.5 rounded-lg border ${error ? 'border-red-500' : 'border-neutral-300 dark:border-neutral-600'} bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all`}
                     {...props}
                 />
                 {icon && <div className="absolute right-3 top-2.5 text-neutral-400 group-focus-within:text-orange-500 transition-colors">{icon}</div>}
             </div>
+            {error && <p className="text-[10px] text-red-500 mt-1">{error}</p>}
         </div>
     );
 }
@@ -298,9 +409,10 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
     label?: string;
     options: string[];
     required?: boolean;
+    error?: string;
 }
 
-function SelectGroup({ label, options, required, ...props }: SelectProps) {
+function SelectGroup({ label, options, required, error, ...props }: SelectProps) {
     return (
         <div className="space-y-1.5 w-full">
             <label className="text-[10px] font-bold uppercase text-neutral-500 tracking-wide">
@@ -308,7 +420,7 @@ function SelectGroup({ label, options, required, ...props }: SelectProps) {
             </label>
             <div className="relative">
                 <select
-                    className="w-full text-xs p-2.5 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none appearance-none transition-all cursor-pointer hover:border-orange-300"
+                    className={`w-full text-xs p-2.5 rounded-lg border ${error ? 'border-red-500' : 'border-neutral-300 dark:border-neutral-600'} bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none appearance-none transition-all cursor-pointer hover:border-orange-300`}
                     {...props}
                 >
                     <option value="">Select Option</option>
@@ -318,6 +430,7 @@ function SelectGroup({ label, options, required, ...props }: SelectProps) {
                     <svg className="w-3 h-3 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
                 </div>
             </div>
+            {error && <p className="text-[10px] text-red-500 mt-1">{error}</p>}
         </div>
     );
 }

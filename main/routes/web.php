@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Models\Sitio;
 use App\Http\Controllers\Citizens\CitizenController;
+use App\Http\Controllers\Citizens\HouseholdController;
 use Inertia\Inertia;
 
 // Root route
@@ -31,9 +32,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Sub-modules
     Route::get('citizen-panel/citizen-profile', [CitizenController::class, 'index'])->name('citizen-profile');
 
-    Route::get('citizen-panel/household-profile', function () {
-        return Inertia::render('main/CitizenPanel/household-profiles');
-    })->name('household-profile');
+    Route::get('citizen-panel/household-profile', [HouseholdController::class, 'index'])->name('household-profile');
 
     // --- CITIZEN RECORDS ---
     Route::get('citizen-records', function () {
@@ -144,6 +143,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/citizens/store', [CitizenController::class, 'store']);
     Route::put('/citizens/{id}', [CitizenController::class, 'update']);
     Route::delete('/citizens/{id}', [CitizenController::class, 'destroy']);
+
+    // Households
+    Route::post('/households/store', [HouseholdController::class, 'store']);
 
 
     Route::get('/api/sitio-list', function () {
