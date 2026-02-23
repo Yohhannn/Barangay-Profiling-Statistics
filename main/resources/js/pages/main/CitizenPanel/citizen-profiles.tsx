@@ -9,7 +9,7 @@ import {
     Filter, X, SlidersHorizontal, Edit3, ScanFace
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
-// IMPORT THE MODAL COMPONENT
+import Swal from 'sweetalert2';
 import CitizenCreation from './popup/citizen-creation';
 import CitizenEdit from './popup/citizen-edit';
 
@@ -152,18 +152,40 @@ export default function CitizenProfiles({ citizens = [], sitios = [] }: { citize
 
     const handleDelete = (e: React.MouseEvent, id: number) => {
         e.stopPropagation();
-        if (confirm('Are you sure you want to move this citizen to archives?')) {
-            router.delete(`/citizens/${id}`, {
-                preserveScroll: true,
-                onSuccess: () => {
-                    console.log('Citizen archived successfully');
-                },
-                onError: (errors) => {
-                    console.error('Error archiving citizen:', errors);
-                    alert('Failed to archive citizen.');
+        Swal.fire({
+            title: 'Archive Citizen',
+            text: 'Are you sure you want to move this citizen to archives? Please provide a reason.',
+            icon: 'warning',
+            input: 'textarea',
+            inputPlaceholder: 'Reason for archiving...',
+            inputAttributes: {
+                'aria-label': 'Reason for archiving'
+            },
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, archive it!',
+            preConfirm: (reason) => {
+                if (!reason) {
+                    Swal.showValidationMessage('A reason is required to archive a citizen');
                 }
-            });
-        }
+                return reason;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.delete(`/citizens/${id}`, {
+                    data: { deleted_reason: result.value },
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        setSelectedCitizen(null);
+                        Swal.fire('Archived!', 'The citizen has been moved to archives.', 'success');
+                    },
+                    onError: (errors: any) => {
+                        Swal.fire('Error', errors?.error || 'Failed to archive citizen.', 'error');
+                    }
+                });
+            }
+        });
     };
 
     return (
