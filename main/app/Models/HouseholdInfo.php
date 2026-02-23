@@ -21,6 +21,7 @@ class HouseholdInfo extends Model
         'ownership_status',
         'home_photo',
         'home_map',
+        'home_link',
         'interviewer_name',
         'reviewer_name',
         'date_visited',
@@ -46,7 +47,7 @@ class HouseholdInfo extends Model
 
     /**
      * The "booted" method of the model.
-     * Automatically generates the HH-UUID (e.g., HH-042) before creating a record.
+     * Automatically generates the HH-UUID (e.g., HH-0042) before creating a record.
      */
     protected static function booted()
     {
@@ -58,9 +59,8 @@ class HouseholdInfo extends Model
 
                 // Loop to ensure the random number is unique in the database
                 while (!$unique) {
-                    // Generate random 3 digit number (000-999)
-                    // str_pad ensures '5' becomes '005'
-                    $number = str_pad(mt_rand(0, 999), 4, '0', STR_PAD_LEFT);
+                    // Generate random 4 digit number (0000-9999)
+                    $number = str_pad(mt_rand(0, 9999), 4, '0', STR_PAD_LEFT);
                     $code = 'HH-' . $number;
 
                     // Check database if this specific code exists
