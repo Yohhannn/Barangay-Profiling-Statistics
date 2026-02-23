@@ -33,6 +33,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('citizen-panel/citizen-profile', [CitizenController::class, 'index'])->name('citizen-profile');
 
     Route::get('citizen-panel/household-profile', [HouseholdController::class, 'index'])->name('household-profile');
+    Route::delete('/households/{id}', [HouseholdController::class, 'destroy']);
 
     // --- CITIZEN RECORDS ---
     Route::get('citizen-records', function () {
