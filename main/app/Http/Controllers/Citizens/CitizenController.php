@@ -380,4 +380,19 @@ class CitizenController extends Controller
             return redirect()->back()->withErrors(['error' => 'Error creating record: ' . $e->getMessage()]);
         }
     }
+
+    public function destroy($id)
+    {
+        try {
+            $citizen = Citizen::findOrFail($id);
+            $citizen->is_deleted = true;
+            $citizen->date_updated = now();
+            $citizen->updated_by = Auth::id() ?? 1;
+            $citizen->save();
+
+            return redirect()->back()->with('success', 'Citizen moved to archives successfully!');
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors(['error' => 'Error archiving citizen: ' . $e->getMessage()]);
+        }
+    }
 }

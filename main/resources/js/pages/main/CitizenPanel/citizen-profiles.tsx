@@ -151,7 +151,16 @@ export default function CitizenProfiles({ citizens = [], sitios = [] }: { citize
     const handleDelete = (e: React.MouseEvent, id: number) => {
         e.stopPropagation();
         if (confirm('Are you sure you want to move this citizen to archives?')) {
-            console.log('Deleted citizen:', id);
+            router.delete(`/citizens/${id}`, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    console.log('Citizen archived successfully');
+                },
+                onError: (errors) => {
+                    console.error('Error archiving citizen:', errors);
+                    alert('Failed to archive citizen.');
+                }
+            });
         }
     };
 
