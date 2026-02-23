@@ -51,48 +51,16 @@ interface Household {
     updatedBy: string;
 }
 
-// --- Mock Data ---
-const mockHouseholds: Household[] = [
-    {
-        id: 1, householdId: 'HH-001', householdNumber: '1001-A', sitio: 'Ylaya',
-        ownershipStatus: 'Owned', interviewedBy: 'Staff A', reviewedBy: 'Admin', dateOfVisit: '2025-07-10',
-        waterSource: 'Deep Well', toiletType: 'Water-sealed', homeAddress: 'Blk 5 Lot 2, Ylaya, Marigondon', homeLink: '10.234, 123.456',
-        members: [
-            { id: 101, firstName: 'Roberto', lastName: 'Cadulang', relationship: 'Head' },
-            { id: 102, firstName: 'Maria', lastName: 'Cadulang', relationship: 'Wife' },
-            { id: 103, firstName: 'Junior', lastName: 'Cadulang', relationship: 'Son' },
-        ],
-        dateEncoded: 'July 10, 2025 | 7:06 PM', encodedBy: 'ADMIN', dateUpdated: 'N/A', updatedBy: 'N/A'
-    },
-    {
-        id: 2, householdId: 'HH-002', householdNumber: '1002-B', sitio: 'Suba-Basbas',
-        ownershipStatus: 'Rented', interviewedBy: 'Staff B', reviewedBy: 'Admin', dateOfVisit: '2025-07-11',
-        waterSource: 'MCWD', toiletType: 'Flush', homeAddress: 'Purok 3, Suba-Basbas', homeLink: '10.235, 123.457',
-        members: [
-            { id: 201, firstName: 'Elena', lastName: 'Bautista', relationship: 'Head' },
-            { id: 202, firstName: 'Jose', lastName: 'Bautista', relationship: 'Husband' },
-        ],
-        dateEncoded: 'July 11, 2025 | 9:30 AM', encodedBy: 'STAFF_01', dateUpdated: 'Aug 01, 2025', updatedBy: 'ADMIN'
-    },
-    {
-        id: 3, householdId: 'HH-003', householdNumber: '1003-C', sitio: 'Bankal',
-        ownershipStatus: 'Shared', interviewedBy: 'Staff C', reviewedBy: 'Admin', dateOfVisit: '2025-07-12',
-        waterSource: 'Community Faucet', toiletType: 'Antipolo', homeAddress: 'Sitio Bankal, Marigondon', homeLink: '10.236, 123.458',
-        members: [
-            { id: 301, firstName: 'Miguel', lastName: 'Tan', relationship: 'Son' },
-            { id: 302, firstName: 'Clara', lastName: 'Tan', relationship: 'Head' },
-        ],
-        dateEncoded: 'July 12, 2025 | 2:15 PM', encodedBy: 'STAFF_02', dateUpdated: 'N/A', updatedBy: 'N/A'
-    },
-];
+// --- Mock Data --- (Removed)
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Citizen Panel', href: '/citizen-panel' },
     { title: 'Household', href: '/households' },
 ];
 
-export default function HouseholdProfiles() {
-    const [selectedHousehold, setSelectedHousehold] = useState<Household | null>(mockHouseholds[0]);
+export default function HouseholdProfiles({ households = [] }: { households: Household[] }) {
+    // If households array is empty, default selectedHousehold to null
+    const [selectedHousehold, setSelectedHousehold] = useState<Household | null>(households.length > 0 ? households[0] : null);
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilters, setShowFilters] = useState(false);
     const [filterSitio, setFilterSitio] = useState('All');
@@ -101,11 +69,11 @@ export default function HouseholdProfiles() {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
 
     const uniqueSitios = useMemo(() => {
-        return Array.from(new Set(mockHouseholds.map(h => h.sitio))).sort();
-    }, []);
+        return Array.from(new Set(households.map(h => h.sitio))).sort();
+    }, [households]);
 
     const filteredHouseholds = useMemo(() => {
-        return mockHouseholds.filter(hh => {
+        return households.filter(hh => {
             const matchesSearch =
                 hh.householdId.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 hh.sitio.toLowerCase().includes(searchQuery.toLowerCase());
@@ -114,7 +82,7 @@ export default function HouseholdProfiles() {
 
             return matchesSearch && matchesSitio;
         });
-    }, [searchQuery, filterSitio]);
+    }, [households, searchQuery, filterSitio]);
 
     const handleDelete = (e: React.MouseEvent, id: number) => {
         e.stopPropagation();
