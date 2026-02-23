@@ -1,13 +1,14 @@
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft, Search, Plus, Trash2,
     Home, MapPin, Droplets, Link as LinkIcon,
     UserCheck, FileText, Edit3, X, SlidersHorizontal, Hash
 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
 import HouseholdCreation from './popup/household-creation'; // IMPORTED
 
 // --- Types ---
@@ -58,37 +59,84 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Household', href: '/households' },
 ];
 
-export default function HouseholdProfiles({ households = [] }: { households: Household[] }) {
+export default function HouseholdProfiles({ households = [], filters = {} }: { households: Household[], filters: any }) {
     // If households array is empty, default selectedHousehold to null
     const [selectedHousehold, setSelectedHousehold] = useState<Household | null>(households.length > 0 ? households[0] : null);
-    const [searchQuery, setSearchQuery] = useState('');
+    
+    // --- Filters State ---
+    const [searchQuery, setSearchQuery] = useState(filters.search || '');
     const [showFilters, setShowFilters] = useState(false);
-    const [filterSitio, setFilterSitio] = useState('All');
+    const [filterSitio, setFilterSitio] = useState(filters.sitio || 'All');
+    const [filterWater, setFilterWater] = useState(filters.water_type || 'All');
+    const [filterToilet, setFilterToilet] = useState(filters.toilet_type || 'All');
+    const [filterOwnership, setFilterOwnership] = useState(filters.ownership_status || 'All');
 
-    // --- NEW: Modal State ---
+    // --- NEW: Modal State & Dynamic Options ---
     const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [sitioOptions, setSitioOptions] = useState<string[]>([]);
 
-    const uniqueSitios = useMemo(() => {
-        return Array.from(new Set(households.map(h => h.sitio))).sort();
-    }, [households]);
+    useEffect(() => {
+        // Fetch Sitios for the filter dropdown
+        fetch('/api/sitio-list')
+            .then(res => res.json())
+            .then(data => {
+                const names = data.map((s: any) => s.sitio_name);
+                const uniqueNames = [...new Set(names)] as string[];
+                setSitioOptions(uniqueNames.sort());
+            })
+            .catch(err => console.error("Failed to fetch sitios", err));
+    }, []);
 
-    const filteredHouseholds = useMemo(() => {
-        return households.filter(hh => {
-            const matchesSearch =
-                hh.householdId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                hh.sitio.toLowerCase().includes(searchQuery.toLowerCase());
+    // Server-side searching triggered through inertia's router.get
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            router.get('/citizen-panel/household-profile', {
+                search: searchQuery,
+                sitio: filterSitio,
+                water_type: filterWater,
+                toilet_type: filterToilet,
+                ownership_status: filterOwnership
+            }, { preserveState: true, replace: true });
+        }, 500);
 
-            const matchesSitio = filterSitio === 'All' || hh.sitio === filterSitio;
-
-            return matchesSearch && matchesSitio;
-        });
-    }, [households, searchQuery, filterSitio]);
+        return () => clearTimeout(timeoutId);
+    }, [searchQuery, filterSitio, filterWater, filterToilet, filterOwnership]);
 
     const handleDelete = (e: React.MouseEvent, id: number) => {
         e.stopPropagation();
-        if (confirm('Are you sure you want to move this household to archives?')) {
-            console.log('Deleted household:', id);
-        }
+        Swal.fire({
+            title: 'Archive Household',
+            text: 'Are you sure you want to move this household to archives? Please provide a reason.',
+            icon: 'warning',
+            input: 'textarea',
+            inputPlaceholder: 'Reason for archiving...',
+            inputAttributes: {
+                'aria-label': 'Reason for archiving'
+            },
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, archive it!',
+            preConfirm: (reason) => {
+                if (!reason) {
+                    Swal.showValidationMessage('A reason is required to archive a household');
+                }
+                return reason;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.delete(`/households/${id}`, {
+                    data: { delete_reason: result.value },
+                    onSuccess: () => {
+                        setSelectedHousehold(null);
+                        Swal.fire('Archived!', 'The household has been moved to archives.', 'success');
+                    },
+                    onError: (errors: any) => {
+                        Swal.fire('Error', errors?.error || 'Failed to archive household.', 'error');
+                    }
+                });
+            }
+        });
     };
 
     return (
@@ -132,7 +180,7 @@ export default function HouseholdProfiles({ households = [] }: { households: Hou
                                     </button>
                                 </div>
                                 <span className="text-[10px] text-neutral-400 font-mono">
-                                    TOTAL: {filteredHouseholds.length}
+                                    TOTAL: {households.length}
                                 </span>
                             </div>
 
@@ -156,16 +204,37 @@ export default function HouseholdProfiles({ households = [] }: { households: Hou
                             </div>
 
                             {showFilters && (
-                                <div className="pt-2 border-t border-sidebar-border/50 animate-in slide-in-from-top-2">
-                                    <select
-                                        className="w-full text-xs p-2 rounded-lg border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-orange-500/20"
-                                        value={filterSitio}
-                                        onChange={(e) => setFilterSitio(e.target.value)}
-                                    >
+                                <div className="pt-2 border-t border-sidebar-border/50 animate-in slide-in-from-top-2 grid gap-2">
+                                    <select className="w-full text-xs p-2 rounded-lg border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-orange-500/20"
+                                        value={filterSitio} onChange={(e) => setFilterSitio(e.target.value)}>
                                         <option value="All">All Sitios</option>
-                                        {uniqueSitios.map(sitio => (
-                                            <option key={sitio} value={sitio}>{sitio}</option>
-                                        ))}
+                                        {sitioOptions.map(sitio => (<option key={sitio} value={sitio}>{sitio}</option>))}
+                                    </select>
+                                    <select className="w-full text-xs p-2 rounded-lg border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-orange-500/20"
+                                        value={filterOwnership} onChange={(e) => setFilterOwnership(e.target.value)}>
+                                        <option value="All">All Ownership</option>
+                                        <option value="Owned">Owned</option>
+                                        <option value="Rented">Rented</option>
+                                        <option value="Leased">Leased</option>
+                                        <option value="Informal Settler">Informal Settler</option>
+                                    </select>
+                                    <select className="w-full text-xs p-2 rounded-lg border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-orange-500/20"
+                                        value={filterWater} onChange={(e) => setFilterWater(e.target.value)}>
+                                        <option value="All">All Water Sources</option>
+                                        <option value="Level 1 - Point Source">Level 1 - Point Source</option>
+                                        <option value="Level 2 - Communal Faucet">Level 2 - Communal Faucet</option>
+                                        <option value="Level 3 - Individual Connection">Level 3 - Individual Connection</option>
+                                    </select>
+                                    <select className="w-full text-xs p-2 rounded-lg border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-orange-500/20"
+                                        value={filterToilet} onChange={(e) => setFilterToilet(e.target.value)}>
+                                        <option value="All">All Toilet Types</option>
+                                        <option value="A - Pour/flush type connected to septic tank">A - Pour/flush type connected to septic tank</option>
+                                        <option value="A - Pour/flush toilet connected to Sewerage System">A - Pour/flush toilet connected to Sewerage System</option>
+                                        <option value="C - Ventilated Pit (VIP) latrine">C - Ventilated Pit (VIP) latrine</option>
+                                        <option value="D - Water-sealed toilet">D - Water-sealed toilet</option>
+                                        <option value="E - G - Without toilet">E - G - Without toilet</option>
+                                        <option value="E - Overhung latrine">E - Overhung latrine</option>
+                                        <option value="F - Open pit latrine">F - Open pit latrine</option>
                                     </select>
                                 </div>
                             )}
@@ -181,7 +250,7 @@ export default function HouseholdProfiles({ households = [] }: { households: Hou
                                 </tr>
                                 </thead>
                                 <tbody className="divide-y divide-sidebar-border/50">
-                                {filteredHouseholds.map((hh) => (
+                                {households.map((hh: Household) => (
                                     <tr
                                         key={hh.id}
                                         onClick={() => setSelectedHousehold(hh)}

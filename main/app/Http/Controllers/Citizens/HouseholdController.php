@@ -14,9 +14,34 @@ class HouseholdController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $households = HouseholdInfo::with(['sitio', 'encodedByAccount', 'updatedByAccount'])->get()->map(function($hh) {
+        $query = HouseholdInfo::with(['sitio', 'encodedByAccount', 'updatedByAccount'])
+            ->where('is_deleted', false);
+
+        // Search by Household ID
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where('hh_uuid', 'ilike', '%' . $search . '%');
+        }
+
+        // Apply specific filters
+        if ($request->filled('sitio') && $request->sitio !== 'All') {
+            $query->whereHas('sitio', function ($q) use ($request) {
+                $q->where('sitio_name', $request->sitio);
+            });
+        }
+        if ($request->filled('water_type') && $request->water_type !== 'All') {
+            $query->where('water_type', $request->water_type);
+        }
+        if ($request->filled('toilet_type') && $request->toilet_type !== 'All') {
+            $query->where('toilet_type', $request->toilet_type);
+        }
+        if ($request->filled('ownership_status') && $request->ownership_status !== 'All') {
+            $query->where('ownership_status', $request->ownership_status);
+        }
+
+        $households = $query->orderBy('date_encoded', 'desc')->get()->map(function($hh) {
             $encodedByName = $hh->encodedByAccount ? trim($hh->encodedByAccount->sys_fname . ' ' . $hh->encodedByAccount->sys_lname) : 'Unknown User';
             
             // Default updatedBy to encodedBy if not explicitly set
@@ -44,7 +69,14 @@ class HouseholdController extends Controller
         });
 
         return \Inertia\Inertia::render('main/CitizenPanel/household-profiles', [
-            'households' => $households
+            'households' => $households,
+            'filters' => [
+                'search' => $request->search ?? '',
+                'sitio' => $request->sitio ?? 'All',
+                'water_type' => $request->water_type ?? 'All',
+                'toilet_type' => $request->toilet_type ?? 'All',
+                'ownership_status' => $request->ownership_status ?? 'All',
+            ]
         ]);
     }
 
@@ -132,8 +164,27 @@ class HouseholdController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(HouseholdInfo $householdInfo)
+    public function destroy(Request $request, string $id)
     {
-        //
+        $validated = $request->validate([
+            'delete_reason' => 'required|string|max:1000'
+        ]);
+
+        try {
+            DB::beginTransaction();
+            
+            // Find the household by ID
+            $household = HouseholdInfo::where('hh_id', $id)->firstOrFail();
+            $household->is_deleted = true;
+            $household->delete_reason = $validated['delete_reason'];
+            $household->save();
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'Household successfully moved to archive.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->withErrors(['error' => 'Error archiving household: ' . $e->getMessage()]);
+        }
     }
 }
