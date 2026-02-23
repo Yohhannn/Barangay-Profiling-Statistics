@@ -142,6 +142,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
     Route::post('/citizens/store', [CitizenController::class, 'store']);
+    Route::delete('/citizens/{id}', [CitizenController::class, 'destroy']);
 
 
     Route::get('/api/sitio-list', function () {
