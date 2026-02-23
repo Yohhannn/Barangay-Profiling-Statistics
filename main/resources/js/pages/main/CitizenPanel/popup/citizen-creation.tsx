@@ -344,9 +344,27 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
                                             <div className="relative group">
                                                 <input
                                                     className={`w-full text-xs p-2.5 pl-9 rounded-lg border ${householdInfo ? 'border-green-500' : 'border-neutral-300'} dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:ring-2 focus:ring-indigo-500/20 outline-none`}
-                                                    placeholder="e.g. HH-001"
+                                                    placeholder="HH-1234"
                                                     value={searchHHQuery}
-                                                    onChange={e => setSearchHHQuery(e.target.value)}
+                                                    onChange={e => {
+                                                        let val = e.target.value.toUpperCase();
+                                                        // Ensure HH- prefix
+                                                        if (!val.startsWith('HH-')) {
+                                                            if (val.startsWith('H')) val = 'HH-';
+                                                            else val = 'HH-' + val.replace(/^HH-?/i, '');
+                                                        }
+                                                        
+                                                        // Extract digits after HH-
+                                                        const digits = val.substring(3).replace(/\D/g, '');
+                                                        
+                                                        // Limit to e.g. 4 numbers (or however many normally expected)
+                                                        if (digits.length <= 6) { 
+                                                            setSearchHHQuery('HH-' + digits);
+                                                        }
+                                                    }}
+                                                    onFocus={() => {
+                                                        if (!searchHHQuery) setSearchHHQuery('HH-');
+                                                    }}
                                                 />
                                                 <div className="absolute left-2.5 top-2.5 text-neutral-400">
                                                     {isSearchingHH ? <Loader2 className="size-3.5 animate-spin" /> : householdInfo ? <CheckCircle className="size-3.5 text-green-500" /> : <Search className="size-3.5" />}

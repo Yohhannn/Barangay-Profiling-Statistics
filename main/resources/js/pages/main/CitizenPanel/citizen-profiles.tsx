@@ -11,6 +11,7 @@ import {
 import { useState, useMemo, useEffect } from 'react';
 // IMPORT THE MODAL COMPONENT
 import CitizenCreation from './popup/citizen-creation';
+import CitizenEdit from './popup/citizen-edit';
 
 // --- 1. Comprehensive Type Definition ---
 interface Citizen {
@@ -92,6 +93,7 @@ export default function CitizenProfiles({ citizens = [], sitios = [] }: { citize
     const [selectedCitizen, setSelectedCitizen] = useState<Citizen | null>(citizens.length > 0 ? citizens[0] : null);
     const [showFilters, setShowFilters] = useState(false);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [isEditOpen, setIsEditOpen] = useState(false);
 
     // --- Filter State ---
     // Initialize from props to persist state on reload
@@ -170,6 +172,18 @@ export default function CitizenProfiles({ citizens = [], sitios = [] }: { citize
 
             {/* --- MOUNT THE MODAL HERE --- */}
             <CitizenCreation isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
+            <CitizenEdit 
+                isOpen={isEditOpen} 
+                onClose={() => setIsEditOpen(false)} 
+                citizen={selectedCitizen} 
+                onSuccess={() => {
+                    // Force a full reload to get fresh data
+                    router.get('/citizen-panel/citizen-profile');
+                    // We don't preserve state so it completely refreshes the data.
+                    // The selectedCitizen might reset to null or the first one depending on initial state,
+                    // which matches creation behavior
+                }}
+            />
 
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
 
@@ -369,7 +383,7 @@ export default function CitizenProfiles({ citizens = [], sitios = [] }: { citize
                                                     </div>
                                                 </div>
                                                 {/* UPDATE BUTTON ADDED HERE */}
-                                                <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all hover:shadow-md">
+                                                <button onClick={() => setIsEditOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all hover:shadow-md">
                                                     <Edit3 className="size-3.5" /> Edit Profile
                                                 </button>
                                             </div>

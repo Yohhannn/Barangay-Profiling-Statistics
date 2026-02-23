@@ -233,8 +233,8 @@ class CitizenController extends Controller
             'is_voter' => 'boolean',
             'is_ip' => 'boolean',
             'is_deceased' => 'boolean',
-            'date_of_death' => 'nullable|date',
-            'cause_of_death' => 'nullable|string',
+            'date_of_death' => 'nullable|required_if:is_deceased,true|date',
+            'cause_of_death' => 'nullable|required_if:is_deceased,true|string',
             'fp_method' => 'nullable|string',
             'fp_status' => 'nullable|string',
             'fp_start_date' => 'nullable|date',
@@ -378,6 +378,175 @@ class CitizenController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->withErrors(['error' => 'Error creating record: ' . $e->getMessage()]);
+        }
+    }
+
+    public function update(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
+            'suffix' => 'nullable|string|max:10',
+            'sex' => 'required|in:Male,Female',
+            'date_of_birth' => 'required|date',
+            'place_of_birth' => 'nullable|string|max:255',
+            'civil_status' => 'nullable|string',
+            'religion' => 'nullable|string',
+            'blood_type' => 'nullable|string',
+            'contact_numbers' => 'nullable|array',
+            'contact_numbers.*' => 'nullable|string',
+            'email' => 'nullable|email|max:255',
+            'sitio' => 'nullable|exists:sitios,sitio_name',
+            'household_id' => 'nullable|string',
+            'relationship_to_head' => 'nullable|string',
+            'socio_economic_class' => 'nullable|string',
+            'nhts_number' => 'nullable|string',
+            'employment_status' => 'nullable|string',
+            'occupation' => 'nullable|string',
+            'is_gov' => 'boolean',
+            'philhealth_id' => 'nullable|string',
+            'philhealth_category' => 'nullable|string',
+            'philhealth_membership' => 'nullable|string',
+            'is_studying' => 'boolean',
+            'school_name' => 'nullable|string',
+            'current_level' => 'nullable|string',
+            'elementary_name' => 'nullable|string',
+            'highschool_name' => 'nullable|string',
+            'senior_high_name' => 'nullable|string',
+            'college_name' => 'nullable|string',
+            'health_classification' => 'nullable|string',
+            'is_voter' => 'boolean',
+            'is_ip' => 'boolean',
+            'is_deceased' => 'boolean',
+            'date_of_death' => 'nullable|required_if:is_deceased,true|date',
+            'cause_of_death' => 'nullable|required_if:is_deceased,true|string',
+            'fp_method' => 'nullable|string',
+            'fp_status' => 'nullable|string',
+            'fp_start_date' => 'nullable|date',
+            'fp_end_date' => 'nullable|date',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $citizen = Citizen::with('info')->findOrFail($id);
+            $info = $citizen->info;
+
+            $demographic = Demographic::findOrFail($info->demo_id);
+            $employment = Employment::findOrFail($info->emp_id);
+            $contact = Contact::findOrFail($info->con_id);
+            $socioEco = SocioEconomicStatus::findOrFail($demographic->soec_id);
+            $healthRisk = ClassificationHealthRisk::findOrFail($demographic->clah_id);
+            $familyPlanning = FamilyPlanning::findOrFail($demographic->fp_id);
+            $eduStatus = EducationStatus::findOrFail($demographic->edu_id);
+            $philhealth = Philhealth::findOrFail($demographic->phea_id);
+
+            // Update Employment
+            $employment->update([
+                'status' => $validated['employment_status'] ?? 'Unemployed',
+                'occupation' => $validated['occupation'] ?? null,
+                'is_gov_worker' => $request->boolean('is_gov'),
+            ]);
+
+            // Update Contact & Phones
+            $contact->update(['email' => $validated['email'] ?? null]);
+            
+            // Re-sync phones
+            Phone::where('con_id', $contact->con_id)->delete();
+            if (!empty($validated['contact_numbers'])) {
+                foreach ($validated['contact_numbers'] as $pNum) {
+                    if (!empty($pNum)) {
+                        Phone::create(['phone_number' => $pNum, 'con_id' => $contact->con_id]);
+                    }
+                }
+            } else {
+                 Phone::create(['phone_number' => 'N/A', 'con_id' => $contact->con_id]);
+            }
+
+            // Update SocioEco
+            $socioEco->update([
+                'soec_status' => $validated['socio_economic_class'] ?? 'Non-NHTS',
+                'soec_number' => $validated['nhts_number'] ?? null,
+            ]);
+
+            // Update Health Risk
+            $healthRisk->update([
+                'clah_classification_name' => $validated['health_classification'] ?? 'Healthy',
+            ]);
+
+            // Update Family Planning
+            $familyPlanning->update([
+                'start_date' => $validated['fp_start_date'] ?? null,
+                'end_date' => $validated['fp_end_date'] ?? null,
+                'status' => $validated['fp_status'] ?? null,
+                'method' => $validated['fp_method'] ?? null,
+            ]);
+
+            // Update PhilHealth
+            $philhealth->update([
+                'philhealth_id_number' => $validated['philhealth_id'] ?? null,
+                'category_name' => $validated['philhealth_category'] ?? null,
+                'phea_membership_type' => $validated['philhealth_membership'] ?? null,
+            ]);
+
+            // Update Education Status & History (simplifying history update by recreating logic similar to store)
+            if ($eduStatus->edu_hist) {
+               EduHistory::where('edu_hist', $eduStatus->edu_hist)->update([
+                   'elementary_name' => $validated['elementary_name'],
+                   'highschool_name' => $validated['highschool_name'],
+                   'sr_highschool_name' => $validated['senior_high_name'],
+               ]);
+            }
+
+            $eduStatus->update([
+                'is_current_student' => $request->boolean('is_studying'),
+                'institution_name' => $validated['school_name'],
+                'education_level' => $validated['current_level'] ?? null,
+            ]);
+
+            // Sitios logic
+            $sitioId = null;
+            if (!empty($validated['sitio'])) {
+                $sitioObj = Sitio::where('sitio_name', $validated['sitio'])->first();
+                if ($sitioObj) $sitioId = $sitioObj->sitio_id;
+            }
+
+            // Update info
+            $info->update([
+                'first_name' => $validated['first_name'],
+                'last_name' => $validated['last_name'],
+                'middle_name' => $validated['middle_name'],
+                'suffix' => $validated['suffix'],
+                'date_of_birth' => $validated['date_of_birth'],
+                'place_of_birth' => $validated['place_of_birth'] ?? null,
+                'sex' => $validated['sex'],
+                'civil_status' => $validated['civil_status'] ?? 'Single',
+                'blood_type' => $validated['blood_type'],
+                'religion' => $validated['religion'],
+                'is_deceased' => $request->boolean('is_deceased'),
+                'date_of_death' => $validated['date_of_death'] ?? null,
+                'cause_of_death' => $validated['cause_of_death'] ?? null,
+                'is_registered_voter' => $request->boolean('is_voter'),
+                'is_indigenous' => $request->boolean('is_ip'),
+                'relationship_type' => $validated['relationship_to_head'] ?? null,
+                'hh_id' => $validated['household_id'],
+                'sitio_id' => $sitioId,
+            ]);
+
+            // Update Citizen aggregate record meta
+            $citizen->update([
+                'date_updated' => now(),
+                'updated_by' => Auth::id() ?? 1,
+            ]);
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'Citizen Record Updated Successfully!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->withErrors(['error' => 'Error updating record: ' . $e->getMessage()]);
         }
     }
 
