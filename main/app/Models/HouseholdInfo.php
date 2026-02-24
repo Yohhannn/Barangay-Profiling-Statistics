@@ -34,6 +34,7 @@ class HouseholdInfo extends Model
         'sitio_id',
         'encoded_by',
         'updated_by',
+        'coordinates',
     ];
 
     protected $casts = [

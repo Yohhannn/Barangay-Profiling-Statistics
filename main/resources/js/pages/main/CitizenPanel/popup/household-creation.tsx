@@ -7,6 +7,22 @@ import { useState, useEffect } from 'react';
 import { useForm, router } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix Leaflet marker icon issue in React
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+let DefaultIcon = L.icon({
+    iconUrl: icon,
+    shadowUrl: iconShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41]
+});
+L.Marker.prototype.options.icon = DefaultIcon;
+
 interface HouseholdCreationProps {
     isOpen: boolean;
     onClose: () => void;
@@ -206,27 +222,28 @@ export default function HouseholdCreation({ isOpen, onClose }: HouseholdCreation
                                                     placeholder="Lat, Long (Pin on Map)"
                                                     value={data.coordinates}
                                                     readOnly
-                                                    disabled
                                                     icon={<MapPin className="size-3.5 text-neutral-400" />}
                                                 />
                                             </div>
                                             <button
-                                                disabled
-                                                className="mb-[1px] cursor-not-allowed p-2.5 bg-neutral-100 text-neutral-400 dark:bg-neutral-900/30 dark:text-neutral-500 rounded-lg border border-neutral-200 dark:border-neutral-800"
+                                                type="button"
+                                                onClick={() => setShowMap(true)}
+                                                className="mb-[1px] p-2.5 bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700 rounded-lg border border-neutral-200 dark:border-neutral-700 transition-colors"
+                                                title="Open Map Picker"
                                             >
                                                 <Crosshair className="size-4" />
                                             </button>
                                         </div>
 
-                                        {/* 2. Google Home Link (Manual Paste) */}
+                                        {/* 2. Google Home Link (Map Embed Link) */}
                                         <InputGroup
-                                            label="Google Maps Link"
-                                            placeholder="Paste Google Maps URL here... (e.g., https://goo.gl/maps/...)"
+                                            label="Google Maps Embed Link"
+                                            placeholder="Paste Google Maps Embed URL here... (e.g., https://www.google.com/maps/embed?...)"
                                             value={data.home_link}
                                             onChange={(e) => setData('home_link', e.target.value)}
                                             icon={<LinkIcon className="size-3.5 text-blue-500" />}
                                             error={errors.home_link}
-                                            disabled={false} // Enabling this field explicitly
+                                            disabled={false}
                                         />
                                     </div>
                                 </div>
@@ -318,46 +335,73 @@ export default function HouseholdCreation({ isOpen, onClose }: HouseholdCreation
     );
 }
 
-// --- Map Picker Component (Simulated) ---
+// --- Map Picker Component (Leaflet) ---
 function LocationPicker({ onClose, onSelect }: { onClose: () => void, onSelect: (coords: string) => void }) {
-    const handleMapClick = () => {
-        const randomLat = (10.2 + Math.random() * 0.1).toFixed(6);
-        const randomLng = (123.9 + Math.random() * 0.1).toFixed(6);
-        onSelect(`${randomLat}, ${randomLng}`);
+    const [position, setPosition] = useState<[number, number] | null>(null);
+
+    function MapClickHandler() {
+        useMapEvents({
+            click(e) {
+                setPosition([e.latlng.lat, e.latlng.lng]);
+            },
+        });
+        return position ? <Marker position={position} /> : null;
+    }
+
+    const handleConfirm = () => {
+        if (position) {
+            onSelect(`${position[0].toFixed(6)}, ${position[1].toFixed(6)}`);
+        }
     };
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-            <div className="bg-white dark:bg-[#1e293b] w-full max-w-2xl rounded-xl overflow-hidden shadow-2xl border border-white/20 flex flex-col h-[600px]">
+            <div className="bg-white dark:bg-[#1e293b] w-full max-w-4xl rounded-xl overflow-hidden shadow-2xl border border-white/20 flex flex-col h-[75vh]">
                 <div className="p-4 bg-orange-700 text-white flex justify-between items-center shrink-0">
                     <h3 className="text-sm font-bold uppercase tracking-wide flex items-center gap-2">
-                        <MapPin className="size-4" /> Pin Location
+                        <MapPin className="size-4" /> Pick Location on Map
                     </h3>
                     <button onClick={onClose} className="hover:bg-white/20 p-1 rounded-full"><X className="size-5" /></button>
                 </div>
 
-                <div
-                    className="flex-1 bg-neutral-200 dark:bg-neutral-800 relative cursor-crosshair group"
-                    onClick={handleMapClick}
-                >
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-neutral-400 pointer-events-none">
-                        <MapPin className="size-12 mb-2 opacity-50" />
-                        <p className="text-xs font-bold uppercase">Click anywhere to pin location</p>
-                        <p className="text-[10px] opacity-70">(Map View Simulation)</p>
-                    </div>
-
-                    <div className="absolute inset-0 opacity-10 pointer-events-none"
-                         style={{
-                             backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)',
-                             backgroundSize: '40px 40px'
-                         }}
-                    />
+                <div className="flex-1 bg-neutral-200 dark:bg-neutral-800 relative w-full h-full z-0">
+                    <MapContainer 
+                        center={[10.3157, 123.8854]} 
+                        zoom={13} 
+                        scrollWheelZoom={true} 
+                        style={{ height: "100%", width: "100%", zIndex: 0 }}
+                    >
+                        <TileLayer
+                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                        <MapClickHandler />
+                    </MapContainer>
                 </div>
 
-                <div className="p-4 bg-white dark:bg-[#1e293b] text-center border-t border-neutral-200 dark:border-neutral-700 shrink-0">
-                    <p className="text-xs text-neutral-500">
-                        Use the map to pinpoint the exact household location.
-                    </p>
+                <div className="p-4 bg-white dark:bg-[#1e293b] flex flex-col md:flex-row items-center justify-between gap-4 border-t border-neutral-200 dark:border-neutral-700 shrink-0">
+                    <div className="flex-1 text-xs text-neutral-500">
+                        <p className="font-bold text-orange-600 dark:text-orange-400 mb-1">Instructions:</p>
+                        <p>1. Scroll and zoom to find the household location.</p>
+                        <p>2. Click on the map to drop a pin.</p>
+                        <p>3. Once pinned, click Confirm PIN.</p>
+                    </div>
+                    <div className="flex items-center gap-2 w-full md:w-auto">
+                        <input
+                            type="text"
+                            placeholder="Select a location to get coords"
+                            className="flex-1 md:w-64 text-xs p-2.5 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none"
+                            value={position ? `${position[0].toFixed(6)}, ${position[1].toFixed(6)}` : ''}
+                            readOnly
+                        />
+                        <button
+                            onClick={handleConfirm}
+                            disabled={!position}
+                            className="px-4 py-2.5 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold uppercase tracking-wider rounded-lg transition-colors"
+                        >
+                            Confirm PIN
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

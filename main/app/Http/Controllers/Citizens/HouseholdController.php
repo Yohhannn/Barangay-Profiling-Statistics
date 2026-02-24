@@ -60,6 +60,7 @@ class HouseholdController extends Controller
                 'toiletType' => $hh->toilet_type,
                 'homeAddress' => $hh->address,
                 'homeLink' => $hh->home_link ?? 'N/A',
+                'coordinates' => $hh->coordinates ?? 'N/A',
                 'members' => [], // TODO: Link citizens here
                 'dateEncoded' => $hh->date_encoded ? \Carbon\Carbon::parse($hh->date_encoded)->format('M d, Y | h:i A') : 'N/A',
                 'encodedBy' => $encodedByName,
@@ -104,6 +105,7 @@ class HouseholdController extends Controller
             'date_visited' => 'nullable|date',
             'interviewer_name' => 'nullable|string|max:255',
             'reviewer_name' => 'nullable|string|max:255',
+            'coordinates' => 'nullable|string|max:255',
         ]);
 
         try {
@@ -120,6 +122,7 @@ class HouseholdController extends Controller
                 'home_link' => $validated['home_link'] ?? null,
                 'water_type' => $validated['water_type'],
                 'toilet_type' => $validated['toilet_type'],
+                'coordinates' => $validated['coordinates'] ?? null,
                 'date_visited' => $validated['date_visited'] ?? null,
                 'interviewer_name' => $validated['interviewer_name'] ?? null,
                 'reviewer_name' => $validated['reviewer_name'] ?? null,
