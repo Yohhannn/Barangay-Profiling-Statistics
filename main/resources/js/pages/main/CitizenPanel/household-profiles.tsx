@@ -41,6 +41,7 @@ interface Household {
     // Location
     homeAddress: string;
     homeLink: string; // Coordinates or Google Maps Link
+    coordinates: string;
 
     // Members
     members: HouseholdMember[];
@@ -358,20 +359,64 @@ export default function HouseholdProfiles({ households = [], filters = {} }: { h
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 flex flex-col items-center justify-center text-center">
-                                            <div className="flex items-center gap-2 mb-2 text-neutral-500">
-                                                <LinkIcon className="size-4" />
-                                                <span className="text-xs font-bold uppercase">Home Link</span>
+                                        <div className="bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 flex flex-col items-center justify-center text-center overflow-hidden">
+                                            <div className="flex items-center gap-2 mb-3 text-neutral-500">
+                                                <MapPin className="size-4 text-red-500" />
+                                                <span className="text-xs font-bold uppercase">Household Location</span>
                                             </div>
-                                            <div className="bg-white dark:bg-neutral-800 px-4 py-2 rounded border border-sidebar-border font-mono text-xs text-blue-600">
-                                                [{selectedHousehold.homeLink}]
-                                            </div>
+                                            
+                                            {selectedHousehold.homeLink && selectedHousehold.homeLink !== 'N/A' ? (
+                                                <div className="w-full flex flex-col gap-3">
+                                                    {selectedHousehold.homeLink.includes('<iframe') || selectedHousehold.homeLink.includes('/embed') ? (
+                                                        <div className="w-full h-32 rounded-lg overflow-hidden border border-sidebar-border bg-neutral-200">
+                                                            {/* If they pasted a direct raw embed URL rather than the iframe code */}
+                                                            {selectedHousehold.homeLink.startsWith('http') ? (
+                                                                <iframe 
+                                                                    src={selectedHousehold.homeLink}
+                                                                    width="100%" 
+                                                                    height="100%" 
+                                                                    style={{ border: 0 }} 
+                                                                    allowFullScreen 
+                                                                    loading="lazy" 
+                                                                    referrerPolicy="no-referrer-when-downgrade"
+                                                                />
+                                                            ) : (
+                                                                /* If they pasted the HTML iframe tag */
+                                                                <div 
+                                                                    dangerouslySetInnerHTML={{ __html: selectedHousehold.homeLink }} 
+                                                                    className="w-full h-full [&>iframe]:w-full [&>iframe]:h-full"
+                                                                />
+                                                            )}
+                                                        </div>
+                                                    ) : null}
+
+                                                    <a 
+                                                        href={selectedHousehold.homeLink}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center justify-center gap-2 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 px-4 py-2 rounded-lg border border-sidebar-border text-xs font-bold uppercase tracking-wider text-blue-600 transition-colors cursor-pointer w-full"
+                                                    >
+                                                        <LinkIcon className="size-3.5" />
+                                                        Open in Google Maps
+                                                    </a>
+                                                </div>
+                                            ) : (
+                                                <div className="bg-white dark:bg-neutral-800 px-4 py-3 rounded border border-sidebar-border font-mono text-xs text-neutral-400 w-full">
+                                                    No Location Data Provided
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
-                                    <div className="bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-4 flex items-center gap-4">
-                                        <span className="text-xs font-bold text-neutral-500 uppercase whitespace-nowrap">Home Address:</span>
-                                        <span className="text-sm font-medium truncate">{selectedHousehold.homeAddress}</span>
+                                    <div className="bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-4 flex flex-col md:flex-row gap-4">
+                                        <div className="flex-1 flex items-center gap-4">
+                                            <span className="text-xs font-bold text-neutral-500 uppercase whitespace-nowrap">Home Address:</span>
+                                            <span className="text-sm font-medium truncate">{selectedHousehold.homeAddress}</span>
+                                        </div>
+                                        <div className="flex-1 flex items-center gap-4 border-t md:border-t-0 md:border-l border-sidebar-border pt-3 md:pt-0 md:pl-4">
+                                            <span className="text-xs font-bold text-neutral-500 uppercase whitespace-nowrap">Coordinates:</span>
+                                            <span className="text-sm font-mono text-neutral-600 dark:text-neutral-400">{selectedHousehold.coordinates}</span>
+                                        </div>
                                     </div>
 
                                     <div className="border border-sidebar-border rounded-xl overflow-hidden">
