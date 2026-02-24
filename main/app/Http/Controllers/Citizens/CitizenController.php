@@ -34,6 +34,7 @@ class CitizenController extends Controller
         // 1. Fetch Citizens with ALL relationships to avoid N+1 query performance issues
         $citizensQuery = Citizen::with([
             'info.sitio',
+            'info.householdInfo',
             'info.employment',
             'info.contact.phones',
             'info.demographic.socioEconomic',
@@ -171,7 +172,7 @@ class CitizenController extends Controller
 
                 // System IDs
                 'nhtsNumber' => $demo->socioEconomic->soec_number,
-                'householdId' => $info->hh_id ?? 'N/A',
+                'householdId' => $info->householdInfo->hh_uuid ?? 'N/A',
                 'relationship' => $info->relationship_type ?? 'Head',
                 'philhealthCategory' => $demo->philhealth->category_name ?? 'N/A',
                 'philhealthId' => $demo->philhealth->philhealth_id_number,

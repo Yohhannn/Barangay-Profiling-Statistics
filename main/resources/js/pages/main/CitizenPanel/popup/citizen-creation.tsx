@@ -13,24 +13,6 @@ interface CitizenCreationProps {
     onClose: () => void;
 }
 
-// Mock Data for Household Lookup
-const mockHouseholdData: Record<string, { id: number; members: { name: string; relationship: string; address: string }[], status: string }> = {
-    'HH-001': {
-        id: 1,
-        status: 'Owner',
-        members: [
-            { name: 'Roberto Cadulang', relationship: 'Head', address: 'Block 1, Lot 2, Cadulang 1' },
-            { name: 'Maria Cadulang', relationship: 'Spouse', address: 'Block 1, Lot 2, Cadulang 1' },
-        ]
-    },
-    'HH-002': {
-        id: 2,
-        status: 'Renter',
-        members: [
-            { name: 'Juan Dela Cruz', relationship: 'Head', address: 'Purok 3, Ibabao' },
-        ]
-    }
-};
 
 export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProps) {
 
@@ -124,17 +106,32 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
         const timer = setTimeout(() => {
             if (searchHHQuery.length >= 3) {
                 setIsSearchingHH(true);
-                setTimeout(() => {
-                    const found = mockHouseholdData[searchHHQuery];
-                    if (found) {
-                        setHouseholdInfo(found);
-                        setData('household_id', found.id.toString());
-                    } else {
+                fetch(`/api/household-search?q=${searchHHQuery}`)
+                    .then(res => res.json())
+                    .then((data) => {
+                        if (data && data.length > 0) {
+                            // Require exact match of the hh_uuid to show success
+                            const found = data.find((h: any) => h.hh_id.toLowerCase() === searchHHQuery.toLowerCase());
+                            if (found) {
+                                setHouseholdInfo(found);
+                                setData('household_id', found.id.toString());
+                            } else {
+                                setHouseholdInfo(null);
+                                setData('household_id', '');
+                            }
+                        } else {
+                            setHouseholdInfo(null);
+                            setData('household_id', '');
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Failed to search household:', err);
                         setHouseholdInfo(null);
                         setData('household_id', '');
-                    }
-                    setIsSearchingHH(false);
-                }, 500);
+                    })
+                    .finally(() => {
+                        setIsSearchingHH(false);
+                    });
             } else {
                 setHouseholdInfo(null);
                 setData('household_id', '');

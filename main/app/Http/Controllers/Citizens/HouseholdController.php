@@ -230,4 +230,41 @@ class HouseholdController extends Controller
             return redirect()->back()->withErrors(['error' => 'Error archiving household: ' . $e->getMessage()]);
         }
     }
+
+    public function search(Request $request)
+    {
+        $query = $request->query('q');
+
+        if (!$query || strlen($query) < 3) {
+            return response()->json([]);
+        }
+
+        $households = HouseholdInfo::with(['citizen_informations.citizens'])
+        ->where('hh_uuid', 'like', '%' . $query . '%')
+        ->where('is_deleted', false)
+        ->take(5)
+        ->get();
+
+        $results = $households->map(function ($hh) {
+            $activeMembers = $hh->citizen_informations->filter(function ($info) {
+                return $info->citizens->where('is_deleted', false)->isNotEmpty();
+            });
+
+            $members = $activeMembers->map(function ($info) {
+                return [
+                    'name' => trim(($info->first_name ?? '') . ' ' . ($info->last_name ?? '')),
+                    'relationship' => $info->relationship_type ?? 'Member'
+                ];
+            });
+
+            return [
+                'id' => $hh->hh_id,
+                'hh_id' => $hh->hh_uuid,
+                'status' => $hh->ownership_status,
+                'members' => $members->values()->all()
+            ];
+        });
+
+        return response()->json($results);
+    }
 }
