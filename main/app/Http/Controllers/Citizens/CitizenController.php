@@ -622,4 +622,42 @@ class CitizenController extends Controller
             return redirect()->back()->withErrors(['error' => 'Error archiving citizen: ' . $e->getMessage()]);
         }
     }
+
+    public function searchForHousehold(Request $request)
+    {
+        $query = $request->input('q');
+
+        if (empty($query)) {
+            return response()->json([]);
+        }
+
+        $citizens = Citizen::with('info')
+            ->where('is_deleted', false)
+            ->where(function ($q) use ($query) {
+                $q->where('ctz_uuid', 'like', "%{$query}%")
+                  ->orWhereHas('info', function ($sub) use ($query) {
+                      $sub->where('first_name', 'like', "%{$query}%")
+                          ->orWhere('last_name', 'like', "%{$query}%");
+                  });
+            })
+            ->take(5)
+            ->get()
+            ->map(function ($citizen) {
+                $name = trim(($citizen->info->first_name ?? '') . ' ' . ($citizen->info->last_name ?? ''));
+                $age = $citizen->info->date_of_birth ? \Carbon\Carbon::parse($citizen->info->date_of_birth)->age : null;
+                
+                return [
+                    'id' => $citizen->ctz_id,
+                    'info_id' => $citizen->ctz_info_id,
+                    'uuid' => $citizen->ctz_uuid,
+                    'name' => $name,
+                    'relationship' => $citizen->info->relationship_type ?? 'Member',
+                    'has_household' => !empty($citizen->info->hh_id),
+                    'age' => $age,
+                    'sex' => $citizen->info->sex ?? 'Unknown',
+                ];
+            });
+
+        return response()->json($citizens);
+    }
 }

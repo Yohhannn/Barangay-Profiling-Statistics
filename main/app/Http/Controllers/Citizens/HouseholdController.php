@@ -162,6 +162,8 @@ class HouseholdController extends Controller
             'interviewer_name' => 'nullable|string|max:255',
             'reviewer_name' => 'nullable|string|max:255',
             'coordinates' => 'nullable|string|max:255',
+            'members' => 'nullable|array',
+            'members.*' => 'integer|exists:citizens,ctz_id',
         ]);
 
         try {
@@ -185,6 +187,19 @@ class HouseholdController extends Controller
                 'date_encoded' => now(),
                 'encoded_by' => Auth::id() ?? 1,
             ]);
+
+            // Assign members to this household
+            if (!empty($validated['members'])) {
+                // Get the info IDs for these citizens
+                $infoIds = \App\Models\Citizen::whereIn('ctz_id', $validated['members'])
+                    ->pluck('ctz_info_id')
+                    ->toArray();
+
+                if (!empty($infoIds)) {
+                    \App\Models\CitizenInformation::whereIn('ctz_info_id', $infoIds)
+                        ->update(['hh_id' => $household->hh_id]);
+                }
+            }
 
             DB::commit();
 
@@ -226,6 +241,8 @@ class HouseholdController extends Controller
             'interviewer_name' => 'nullable|string|max:255',
             'reviewer_name' => 'nullable|string|max:255',
             'coordinates' => 'nullable|string|max:255',
+            'members' => 'nullable|array',
+            'members.*' => 'integer|exists:citizens,ctz_id',
         ]);
 
         try {
@@ -249,6 +266,44 @@ class HouseholdController extends Controller
                 'date_updated' => now(),
                 'updated_by' => Auth::id() ?? 1,
             ]);
+
+            // Handle members
+            $currentMembers = $household->citizen_informations()
+                ->whereHas('citizens', function ($query) {
+                    $query->where('is_deleted', false);
+                })
+                ->get()
+                ->map(function ($info) {
+                    return $info->citizens()->where('is_deleted', false)->first()->ctz_id ?? null;
+                })
+                ->filter()
+                ->toArray();
+
+            $newMembers = $validated['members'] ?? [];
+
+            // Find members to remove (in current but not in new)
+            $membersToRemove = array_diff($currentMembers, $newMembers);
+            if (!empty($membersToRemove)) {
+                $infoIdsToRemove = \App\Models\Citizen::whereIn('ctz_id', $membersToRemove)
+                    ->pluck('ctz_info_id')
+                    ->toArray();
+                if (!empty($infoIdsToRemove)) {
+                    \App\Models\CitizenInformation::whereIn('ctz_info_id', $infoIdsToRemove)
+                        ->update(['hh_id' => null]);
+                }
+            }
+
+            // Find members to add (in new but not in current)
+            $membersToAdd = array_diff($newMembers, $currentMembers);
+            if (!empty($membersToAdd)) {
+                $infoIdsToAdd = \App\Models\Citizen::whereIn('ctz_id', $membersToAdd)
+                    ->pluck('ctz_info_id')
+                    ->toArray();
+                if (!empty($infoIdsToAdd)) {
+                    \App\Models\CitizenInformation::whereIn('ctz_info_id', $infoIdsToAdd)
+                        ->update(['hh_id' => $household->hh_id]);
+                }
+            }
 
             DB::commit();
 

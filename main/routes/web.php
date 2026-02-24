@@ -154,6 +154,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::get('/api/household-search', [HouseholdController::class, 'search']);
+    Route::get('/api/citizen-search', [CitizenController::class, 'searchForHousehold']);
 });
 
 require __DIR__.'/settings.php';
