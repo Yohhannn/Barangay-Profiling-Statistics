@@ -1,7 +1,7 @@
 import {
     X, CheckCircle, Home, MapPin, Droplets,
     FileText, Link as LinkIcon, Camera, Upload, Image as ImageIcon,
-    Crosshair
+    Crosshair, Search, Users, Trash2, Plus
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useForm, router } from '@inertiajs/react';
@@ -48,6 +48,35 @@ export default function HouseholdEdit({ isOpen, onClose, household }: HouseholdE
         coordinates: '',
     });
 
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [selectedMembers, setSelectedMembers] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (searchQuery.trim().length > 1) {
+            setIsSearching(true);
+            const debounceTimer = setTimeout(() => {
+                fetch(`/api/citizen-search?q=${encodeURIComponent(searchQuery)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        // Filter out already selected members
+                        const filtered = data.filter((item: any) => !selectedMembers.find(m => m.id === item.id));
+                        setSearchResults(filtered);
+                        setIsSearching(false);
+                    })
+                    .catch(err => {
+                        console.error("Failed to search citizens", err);
+                        setIsSearching(false);
+                    });
+            }, 300);
+            return () => clearTimeout(debounceTimer);
+        } else {
+            setSearchResults([]);
+            setIsSearching(false);
+        }
+    }, [searchQuery]);
+
     useEffect(() => {
         if (isOpen) {
             fetch('/api/sitio-list')
@@ -77,15 +106,40 @@ export default function HouseholdEdit({ isOpen, onClose, household }: HouseholdE
                 reviewer_name: household.reviewedBy !== 'N/A' ? household.reviewedBy : '',
                 coordinates: household.coordinates !== 'N/A' ? household.coordinates : '',
             });
+
+            // Map existing household members to selectedMembers
+            if (household.members) {
+                const mappedMembers = household.members.map((m: any) => ({
+                    id: m.id,
+                    name: `${m.firstName} ${m.lastName}`.trim(),
+                    uuid: m.id // Note: household.members from backend currently doesn't send ctz_uuid in the index projection. It uses ctz_id for ID, but we might just show ID for now.
+                }));
+                setSelectedMembers(mappedMembers);
+            }
         }
     }, [household, isOpen]);
+
+    // Handle resetting states
+    useEffect(() => {
+        if (!isOpen) {
+            setSearchQuery('');
+            setSearchResults([]);
+            setSelectedMembers([]);
+            reset();
+        }
+    }, [isOpen]);
 
     if (!isOpen || !household) return null;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         
-        put(`/households/${household.id}`, {
+        const payload = {
+            ...data,
+            members: selectedMembers.map(m => m.id)
+        };
+        
+        router.put(`/households/${household.id}`, payload, {
             preserveScroll: true,
             onSuccess: (page) => {
                 const flash = page.props.flash as Record<string, any>;
@@ -316,6 +370,125 @@ export default function HouseholdEdit({ isOpen, onClose, household }: HouseholdE
                                         Note: Additional member details can be added in the Citizen Profile module.
                                     </p>
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* SECTION 3: HOUSEHOLD MEMBERS */}
+                        <div className="space-y-6">
+                            <SectionLabel icon={<Users className="size-4" />} label="Household Members Assignment" color="text-purple-600" />
+
+                            <div className="bg-white dark:bg-[#1e293b] p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm space-y-6">
+                                
+                                {/* Search Bar */}
+                                <div className="space-y-1.5 w-full">
+                                    <label className="text-[10px] font-bold uppercase text-neutral-500 tracking-wide">
+                                        Search Citizens
+                                    </label>
+                                    <div className="relative group">
+                                        <input
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            placeholder="Search by name or Citizen ID (e.g. CTZ-0001)..."
+                                            className="w-full text-xs p-2.5 pl-9 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all"
+                                        />
+                                        <div className="absolute left-3 top-2.5 text-neutral-400 group-focus-within:text-purple-500 transition-colors">
+                                            <Search className="size-4" />
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Inline Results List (Not a floating dropdown) */}
+                                    {isSearching && searchResults.length === 0 && (
+                                        <div className="w-full mt-2 p-3 text-xs text-neutral-500 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 rounded-lg">
+                                            Searching...
+                                        </div>
+                                    )}
+                                    {searchResults.length > 0 && (
+                                        <div className="w-full mt-2 bg-neutral-50 dark:bg-neutral-800/30 rounded-lg border border-neutral-200 dark:border-neutral-700 p-2 space-y-2 max-h-64 overflow-y-auto">
+                                            <p className="text-[10px] font-bold uppercase text-neutral-500 px-1 pt-1">Search Results</p>
+                                            {searchResults.map((result) => (
+                                                <div 
+                                                    key={result.id}
+                                                    className="p-3 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-sm flex justify-between items-center transition-all"
+                                                >
+                                                    <div>
+                                                        <span className="font-bold text-neutral-800 dark:text-neutral-200 text-xs">{result.name}</span>
+                                                        <span className="block text-[10px] text-neutral-500 mt-0.5">
+                                                            {result.uuid} • {result.sex || 'Unknown'} {result.age !== null ? `(${result.age} yrs)` : ''}
+                                                        </span>
+                                                    </div>
+                                                    {result.has_household ? (
+                                                        <span className="text-[10px] bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 px-3 py-1.5 rounded font-bold uppercase tracking-wider">
+                                                            Assigned
+                                                        </span>
+                                                    ) : (
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                if (result.has_household) return;
+                                                                setSelectedMembers(prev => {
+                                                                    if (prev.some(m => m.id === result.id)) return prev;
+                                                                    return [...prev, result];
+                                                                });
+                                                                setSearchQuery('');
+                                                                setSearchResults([]);
+                                                            }}
+                                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-purple-600 text-white hover:bg-purple-700 active:scale-95 font-bold uppercase tracking-wider text-[10px] transition-all shadow-sm shadow-purple-600/20"
+                                                        >
+                                                            <Plus className="size-3" /> Add Member
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Selected Members List */}
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold uppercase text-neutral-500 tracking-wide">
+                                        Assigned Members ({selectedMembers.length})
+                                    </label>
+                                    
+                                    {selectedMembers.length === 0 ? (
+                                        <div className="p-4 border-2 border-dashed border-neutral-200 dark:border-neutral-700 rounded-lg text-center text-xs text-neutral-400">
+                                            No members assigned yet. Search and add citizens above.
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {selectedMembers.map(member => (
+                                                <div key={member.id} className="flex justify-between items-center p-3 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50">
+                                                    <div>
+                                                        <p className="text-xs font-bold text-neutral-800 dark:text-neutral-200">{member.name}</p>
+                                                        <p className="text-[10px] text-neutral-500">{member.uuid}</p>
+                                                    </div>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => {
+                                                            Swal.fire({
+                                                                title: "Remove Member?",
+                                                                text: `Are you sure you want to remove ${member.name} from this household?`,
+                                                                icon: "warning",
+                                                                showCancelButton: true,
+                                                                confirmButtonColor: "#d33",
+                                                                cancelButtonColor: "#9ca3af",
+                                                                confirmButtonText: "Yes, remove",
+                                                            }).then((result) => {
+                                                                if (result.isConfirmed) {
+                                                                    setSelectedMembers(prev => prev.filter(m => m.id !== member.id));
+                                                                }
+                                                            });
+                                                        }}
+                                                        className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                                                    >
+                                                        <Trash2 className="size-4" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
                             </div>
                         </div>
 
