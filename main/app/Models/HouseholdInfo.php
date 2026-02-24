@@ -91,9 +91,8 @@ class HouseholdInfo extends Model
         return $this->belongsTo(SystemAccount::class, 'updated_by', 'sys_id');
     }
 
-    public function citizens()
+    public function citizen_informations()
     {
-        // Adjusted to use 'hh_id' as that is your primary key
-        return $this->hasMany(Citizen::class, 'hh_id', 'hh_id');
+        return $this->hasMany(CitizenInformation::class, 'hh_id', 'hh_id');
     }
 }

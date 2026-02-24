@@ -152,6 +152,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/api/sitio-list', function () {
         return Sitio::select('sitio_id', 'sitio_name')->orderBy('sitio_name')->get();
     });
+
+    Route::get('/api/household-search', [HouseholdController::class, 'search']);
 });
 
 require __DIR__.'/settings.php';
