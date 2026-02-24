@@ -6,7 +6,7 @@ import {
     ArrowLeft, Search, Plus, Trash2,
     User, MapPin, Briefcase, UserX, GraduationCap,
     HeartPulse, Baby, Phone, Hash, Home,
-    Filter, X, SlidersHorizontal, Edit3, ScanFace, Check
+    Filter, X, SlidersHorizontal, Edit3, ScanFace, Check, RotateCcw
 } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import Swal from 'sweetalert2';
@@ -178,6 +178,23 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
 
     const handleFilterChange = (key: string, value: any) => {
         setFilterState(prev => ({ ...prev, [key]: value }));
+    };
+
+    const resetFilters = () => {
+        setFilterState({
+            search: '',
+            sitio: '',
+            sex: '',
+            civilStatus: '',
+            employmentStatus: '',
+            isVoter: '',
+            dateEncodedStart: '',
+            dateEncodedEnd: '',
+            dateUpdatedStart: '',
+            dateUpdatedEnd: '',
+            encodedBy: [],
+            updatedBy: [],
+        });
     };
 
     // Get unique Sitios for dropdown
@@ -500,6 +517,15 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                                                 )}
                                             </div>
                                         </div>
+                                    </div>
+                                    <div className="col-span-2 md:col-span-4 flex justify-end mt-2">
+                                        <button 
+                                            onClick={resetFilters}
+                                            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 transition-colors"
+                                        >
+                                            <RotateCcw className="size-3.5" />
+                                            Reset Filters
+                                        </button>
                                     </div>
                                 </div>
                             )}

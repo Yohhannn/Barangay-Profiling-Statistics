@@ -5,7 +5,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft, Search, Plus, Trash2,
     Home, MapPin, Droplets, Link as LinkIcon,
-    UserCheck, FileText, Edit3, X, SlidersHorizontal, Hash, Check
+    UserCheck, FileText, Edit3, X, SlidersHorizontal, Hash, Check, RotateCcw
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import Swal from 'sweetalert2';
@@ -151,6 +151,20 @@ export default function HouseholdProfiles({ households = [], filters = {}, syste
         return () => clearTimeout(timeoutId);
     }, [searchQuery, filterSitio, filterWater, filterToilet, filterOwnership, dateEncodedStart, dateEncodedEnd, dateUpdatedStart, dateUpdatedEnd, encodedBy, updatedBy]);
 
+    const resetFilters = () => {
+        setSearchQuery('');
+        setFilterSitio('');
+        setFilterWater('');
+        setFilterToilet('');
+        setFilterOwnership('');
+        setDateEncodedStart('');
+        setDateEncodedEnd('');
+        setDateUpdatedStart('');
+        setDateUpdatedEnd('');
+        setEncodedBy([]);
+        setUpdatedBy([]);
+    };
+
     const handleDelete = (e: React.MouseEvent, id: number) => {
         e.stopPropagation();
         Swal.fire({
@@ -254,7 +268,7 @@ export default function HouseholdProfiles({ households = [], filters = {}, syste
                             </div>
 
                             {showFilters && (
-                                <div className="pt-2 border-t border-sidebar-border/50 animate-in slide-in-from-top-2 grid gap-2">
+                                <div className="pt-2 border-t border-sidebar-border/50 animate-in slide-in-from-top-2 grid grid-cols-2 gap-2">
                                     <select className="w-full text-xs p-2 rounded-lg border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-orange-500/20"
                                         value={filterSitio} onChange={(e) => setFilterSitio(e.target.value)}>
                                         <option value="All">All Sitios</option>
@@ -288,7 +302,7 @@ export default function HouseholdProfiles({ households = [], filters = {}, syste
                                     </select>
                                     
                                     {/* Advanced Audit Filters */}
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 border-t border-sidebar-border/50 pt-2 mt-2">
+                                    <div className="col-span-2 grid grid-cols-2 md:grid-cols-4 gap-2 border-t border-sidebar-border/50 pt-2 mt-2">
                                         <div className="flex flex-col gap-1">
                                             <span className="text-[10px] text-neutral-500 uppercase tracking-wider">Date Encoded</span>
                                             <div className="flex flex-col gap-1">
@@ -423,6 +437,15 @@ export default function HouseholdProfiles({ households = [], filters = {}, syste
                                                 )}
                                             </div>
                                         </div>
+                                    </div>
+                                    <div className="col-span-2 flex justify-end mt-2">
+                                        <button 
+                                            onClick={resetFilters}
+                                            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 transition-colors"
+                                        >
+                                            <RotateCcw className="size-3.5" />
+                                            Reset Filters
+                                        </button>
                                     </div>
                                 </div>
                             )}
