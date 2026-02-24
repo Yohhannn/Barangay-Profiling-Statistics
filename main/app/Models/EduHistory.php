@@ -31,3 +31,4 @@ class EduHistory extends Model
         return $this->hasOne(EducationStatus::class, 'edu_hist', 'edu_hist');
     }
 }
+    
