@@ -5,9 +5,9 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft, Search, Plus, Trash2,
     Home, MapPin, Droplets, Link as LinkIcon,
-    UserCheck, FileText, Edit3, X, SlidersHorizontal, Hash
+    UserCheck, FileText, Edit3, X, SlidersHorizontal, Hash, Check
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Swal from 'sweetalert2';
 import HouseholdCreation from './popup/household-creation';
 import HouseholdEdit from './popup/household-edit';
@@ -61,7 +61,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Household', href: '/households' },
 ];
 
-export default function HouseholdProfiles({ households = [], filters = {} }: { households: Household[], filters: any }) {
+export default function HouseholdProfiles({ households = [], filters = {}, systemAccounts = [] }: { households: Household[], filters: any, systemAccounts?: {id: number, name: string}[] }) {
     // If households array is empty, default selectedHousehold to null
     const [selectedHousehold, setSelectedHousehold] = useState<Household | null>(households.length > 0 ? households[0] : null);
 
@@ -84,11 +84,41 @@ export default function HouseholdProfiles({ households = [], filters = {} }: { h
     const [filterWater, setFilterWater] = useState(filters.water_type || 'All');
     const [filterToilet, setFilterToilet] = useState(filters.toilet_type || 'All');
     const [filterOwnership, setFilterOwnership] = useState(filters.ownership_status || 'All');
+    
+    // --- Advanced Audit Filters State ---
+    const [dateEncodedStart, setDateEncodedStart] = useState(filters.dateEncodedRange?.split(' to ')[0] || '');
+    const [dateEncodedEnd, setDateEncodedEnd] = useState(filters.dateEncodedRange?.split(' to ')[1] || '');
+    const [dateUpdatedStart, setDateUpdatedStart] = useState(filters.dateUpdatedRange?.split(' to ')[0] || '');
+    const [dateUpdatedEnd, setDateUpdatedEnd] = useState(filters.dateUpdatedRange?.split(' to ')[1] || '');
+    const [encodedBy, setEncodedBy] = useState<string[]>(filters.encodedBy || []);
+    const [updatedBy, setUpdatedBy] = useState<string[]>(filters.updatedBy || []);
 
-    // --- NEW: Modal State & Dynamic Options ---
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [sitioOptions, setSitioOptions] = useState<string[]>([]);
+    
+    // Multi-select dropdown state
+    const [showEncodedByDropdown, setShowEncodedByDropdown] = useState(false);
+    const [showUpdatedByDropdown, setShowUpdatedByDropdown] = useState(false);
+    const [encodedBySearch, setEncodedBySearch] = useState('');
+    const [updatedBySearch, setUpdatedBySearch] = useState('');
+    
+    const encodedByRef = useRef<HTMLDivElement>(null);
+    const updatedByRef = useRef<HTMLDivElement>(null);
+
+    // Close dropdowns on outside click
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (encodedByRef.current && !encodedByRef.current.contains(event.target as Node)) {
+                setShowEncodedByDropdown(false);
+            }
+            if (updatedByRef.current && !updatedByRef.current.contains(event.target as Node)) {
+                setShowUpdatedByDropdown(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     useEffect(() => {
         // Fetch Sitios for the filter dropdown
@@ -110,12 +140,16 @@ export default function HouseholdProfiles({ households = [], filters = {} }: { h
                 sitio: filterSitio,
                 water_type: filterWater,
                 toilet_type: filterToilet,
-                ownership_status: filterOwnership
+                ownership_status: filterOwnership,
+                dateEncodedRange: dateEncodedStart && dateEncodedEnd ? `${dateEncodedStart} to ${dateEncodedEnd}` : '',
+                dateUpdatedRange: dateUpdatedStart && dateUpdatedEnd ? `${dateUpdatedStart} to ${dateUpdatedEnd}` : '',
+                encodedBy: encodedBy.join(','),
+                updatedBy: updatedBy.join(',')
             }, { preserveState: true, replace: true });
         }, 500);
 
         return () => clearTimeout(timeoutId);
-    }, [searchQuery, filterSitio, filterWater, filterToilet, filterOwnership]);
+    }, [searchQuery, filterSitio, filterWater, filterToilet, filterOwnership, dateEncodedStart, dateEncodedEnd, dateUpdatedStart, dateUpdatedEnd, encodedBy, updatedBy]);
 
     const handleDelete = (e: React.MouseEvent, id: number) => {
         e.stopPropagation();
@@ -252,6 +286,144 @@ export default function HouseholdProfiles({ households = [], filters = {} }: { h
                                         <option value="E - Overhung latrine">E - Overhung latrine</option>
                                         <option value="F - Open pit latrine">F - Open pit latrine</option>
                                     </select>
+                                    
+                                    {/* Advanced Audit Filters */}
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 border-t border-sidebar-border/50 pt-2 mt-2">
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[10px] text-neutral-500 uppercase tracking-wider">Date Encoded</span>
+                                            <div className="flex flex-col gap-1">
+                                                <input type="date" className="text-[10px] p-1.5 rounded-md border border-sidebar-border w-full bg-white dark:bg-neutral-800" value={dateEncodedStart} onChange={e => setDateEncodedStart(e.target.value)} />
+                                                <input type="date" className="text-[10px] p-1.5 rounded-md border border-sidebar-border w-full bg-white dark:bg-neutral-800" value={dateEncodedEnd} onChange={e => setDateEncodedEnd(e.target.value)} />
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[10px] text-neutral-500 uppercase tracking-wider">Date Updated</span>
+                                            <div className="flex flex-col gap-1">
+                                                <input type="date" className="text-[10px] p-1.5 rounded-md border border-sidebar-border w-full bg-white dark:bg-neutral-800" value={dateUpdatedStart} onChange={e => setDateUpdatedStart(e.target.value)} />
+                                                <input type="date" className="text-[10px] p-1.5 rounded-md border border-sidebar-border w-full bg-white dark:bg-neutral-800" value={dateUpdatedEnd} onChange={e => setDateUpdatedEnd(e.target.value)} />
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col gap-1 w-full" ref={encodedByRef}>
+                                            <span className="text-[10px] text-neutral-500 uppercase tracking-wider">Encoded By (Multi)</span>
+                                            <div className="relative">
+                                                <button
+                                                    onClick={() => setShowEncodedByDropdown(!showEncodedByDropdown)}
+                                                    className="w-full text-left text-[10px] p-2 rounded-md border border-sidebar-border bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 flex justify-between items-center"
+                                                >
+                                                    <span className="truncate">
+                                                        {encodedBy.length === 0 ? 'All Users' : `${encodedBy.length} Selected`}
+                                                    </span>
+                                                    <Search className="size-3 text-neutral-400" />
+                                                </button>
+                                                
+                                                {showEncodedByDropdown && (
+                                                    <div className="absolute z-50 mt-1 w-full bg-white dark:bg-neutral-800 border border-sidebar-border rounded-md shadow-lg py-1 max-h-48 flex flex-col">
+                                                        <div className="px-2 py-1 sticky top-0 bg-white dark:bg-neutral-800 border-b border-sidebar-border/50">
+                                                            <input 
+                                                                type="text" 
+                                                                className="w-full text-[10px] p-1.5 bg-neutral-50 dark:bg-neutral-900 border border-sidebar-border rounded focus:outline-none focus:ring-1 focus:ring-orange-500"
+                                                                placeholder="Search users..."
+                                                                value={encodedBySearch}
+                                                                onChange={(e) => setEncodedBySearch(e.target.value)}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            />
+                                                        </div>
+                                                        <div className="overflow-y-auto flex-1 p-1">
+                                                            <div 
+                                                                className="flex items-center gap-2 px-2 py-1.5 text-[10px] hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer rounded"
+                                                                onClick={() => setEncodedBy([])}
+                                                            >
+                                                                <div className={`size-3.5 rounded border flex items-center justify-center ${encodedBy.length === 0 ? 'bg-orange-500 border-orange-500' : 'border-neutral-300 dark:border-neutral-600'}`}>
+                                                                    {encodedBy.length === 0 && <Check className="size-2.5 text-white" />}
+                                                                </div>
+                                                                <span>All Users</span>
+                                                            </div>
+                                                            {systemAccounts?.filter(acc => acc.name.toLowerCase().includes(encodedBySearch.toLowerCase())).map(acc => {
+                                                                const isSelected = encodedBy.includes(acc.id.toString());
+                                                                return (
+                                                                    <div 
+                                                                        key={acc.id}
+                                                                        className="flex items-center gap-2 px-2 py-1.5 text-[10px] hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer rounded"
+                                                                        onClick={() => {
+                                                                            const newSelection = isSelected 
+                                                                                ? encodedBy.filter((id: string) => id !== acc.id.toString())
+                                                                                : [...encodedBy, acc.id.toString()];
+                                                                            setEncodedBy(newSelection);
+                                                                        }}
+                                                                    >
+                                                                        <div className={`size-3.5 rounded border flex flex-shrink-0 items-center justify-center ${isSelected ? 'bg-orange-500 border-orange-500' : 'border-neutral-300 dark:border-neutral-600'}`}>
+                                                                            {isSelected && <Check className="size-2.5 text-white" />}
+                                                                        </div>
+                                                                        <span className="truncate">{acc.name}</span>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col gap-1 w-full" ref={updatedByRef}>
+                                            <span className="text-[10px] text-neutral-500 uppercase tracking-wider">Updated By (Multi)</span>
+                                            <div className="relative">
+                                                <button
+                                                    onClick={() => setShowUpdatedByDropdown(!showUpdatedByDropdown)}
+                                                    className="w-full text-left text-[10px] p-2 rounded-md border border-sidebar-border bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 flex justify-between items-center"
+                                                >
+                                                    <span className="truncate">
+                                                        {updatedBy.length === 0 ? 'All Users' : `${updatedBy.length} Selected`}
+                                                    </span>
+                                                    <Search className="size-3 text-neutral-400" />
+                                                </button>
+                                                
+                                                {showUpdatedByDropdown && (
+                                                    <div className="absolute z-50 mt-1 w-full bg-white dark:bg-neutral-800 border border-sidebar-border rounded-md shadow-lg py-1 max-h-48 flex flex-col">
+                                                        <div className="px-2 py-1 sticky top-0 bg-white dark:bg-neutral-800 border-b border-sidebar-border/50">
+                                                            <input 
+                                                                type="text" 
+                                                                className="w-full text-[10px] p-1.5 bg-neutral-50 dark:bg-neutral-900 border border-sidebar-border rounded focus:outline-none focus:ring-1 focus:ring-orange-500"
+                                                                placeholder="Search users..."
+                                                                value={updatedBySearch}
+                                                                onChange={(e) => setUpdatedBySearch(e.target.value)}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            />
+                                                        </div>
+                                                        <div className="overflow-y-auto flex-1 p-1">
+                                                            <div 
+                                                                className="flex items-center gap-2 px-2 py-1.5 text-[10px] hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer rounded"
+                                                                onClick={() => setUpdatedBy([])}
+                                                            >
+                                                                <div className={`size-3.5 rounded border flex items-center justify-center ${updatedBy.length === 0 ? 'bg-orange-500 border-orange-500' : 'border-neutral-300 dark:border-neutral-600'}`}>
+                                                                    {updatedBy.length === 0 && <Check className="size-2.5 text-white" />}
+                                                                </div>
+                                                                <span>All Users</span>
+                                                            </div>
+                                                            {systemAccounts?.filter(acc => acc.name.toLowerCase().includes(updatedBySearch.toLowerCase())).map(acc => {
+                                                                const isSelected = updatedBy.includes(acc.id.toString());
+                                                                return (
+                                                                    <div 
+                                                                        key={acc.id}
+                                                                        className="flex items-center gap-2 px-2 py-1.5 text-[10px] hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer rounded"
+                                                                        onClick={() => {
+                                                                            const newSelection = isSelected 
+                                                                                ? updatedBy.filter((id: string) => id !== acc.id.toString())
+                                                                                : [...updatedBy, acc.id.toString()];
+                                                                            setUpdatedBy(newSelection);
+                                                                        }}
+                                                                    >
+                                                                        <div className={`size-3.5 rounded border flex flex-shrink-0 items-center justify-center ${isSelected ? 'bg-orange-500 border-orange-500' : 'border-neutral-300 dark:border-neutral-600'}`}>
+                                                                            {isSelected && <Check className="size-2.5 text-white" />}
+                                                                        </div>
+                                                                        <span className="truncate">{acc.name}</span>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                         </div>

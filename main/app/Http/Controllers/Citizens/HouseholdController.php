@@ -16,7 +16,7 @@ class HouseholdController extends Controller
      */
     public function index(Request $request)
     {
-        $query = HouseholdInfo::with(['sitio', 'encodedByAccount', 'updatedByAccount'])
+        $query = HouseholdInfo::with(['sitio', 'encodedByAccount', 'updatedByAccount', 'citizen_informations.citizens'])
             ->where('is_deleted', false);
 
         // Search by Household ID
@@ -41,6 +41,41 @@ class HouseholdController extends Controller
             $query->where('ownership_status', $request->ownership_status);
         }
 
+        // Advanced Audit Filters
+        if ($request->filled('dateEncodedRange')) {
+            $dates = explode(' to ', $request->input('dateEncodedRange'));
+            if (count($dates) == 2) {
+                $query->whereBetween('date_encoded', [
+                    \Carbon\Carbon::parse($dates[0])->startOfDay(),
+                    \Carbon\Carbon::parse($dates[1])->endOfDay()
+                ]);
+            }
+        }
+
+        if ($request->filled('dateUpdatedRange')) {
+            $dates = explode(' to ', $request->input('dateUpdatedRange'));
+            if (count($dates) == 2) {
+                $query->whereBetween('date_updated', [
+                    \Carbon\Carbon::parse($dates[0])->startOfDay(),
+                    \Carbon\Carbon::parse($dates[1])->endOfDay()
+                ]);
+            }
+        }
+
+        if ($request->filled('encodedBy')) {
+            $encodedBy = is_array($request->input('encodedBy')) ? $request->input('encodedBy') : explode(',', $request->input('encodedBy'));
+            if (!in_array('All', $encodedBy) && count($encodedBy) > 0) {
+                $query->whereIn('encoded_by', $encodedBy);
+            }
+        }
+
+        if ($request->filled('updatedBy')) {
+            $updatedBy = is_array($request->input('updatedBy')) ? $request->input('updatedBy') : explode(',', $request->input('updatedBy'));
+            if (!in_array('All', $updatedBy) && count($updatedBy) > 0) {
+                $query->whereIn('updated_by', $updatedBy);
+            }
+        }
+
         $households = $query->orderBy('date_encoded', 'desc')->get()->map(function($hh) {
             $encodedByName = $hh->encodedByAccount ? trim($hh->encodedByAccount->sys_fname . ' ' . $hh->encodedByAccount->sys_lname) : 'Unknown User';
             
@@ -61,7 +96,16 @@ class HouseholdController extends Controller
                 'homeAddress' => $hh->address,
                 'homeLink' => $hh->home_link ?? 'N/A',
                 'coordinates' => $hh->coordinates ?? 'N/A',
-                'members' => [], // TODO: Link citizens here
+                'members' => $hh->citizen_informations->filter(function($info) {
+                    return $info->citizens->where('is_deleted', false)->isNotEmpty();
+                })->map(function($info) {
+                    return [
+                        'id' => $info->ctz_info_id ?? mt_rand(), // Use a random ID if ctz_info_id isn't available
+                        'firstName' => $info->first_name ?? '',
+                        'lastName' => $info->last_name ?? '',
+                        'relationship' => $info->relationship_type ?? 'Member',
+                    ];
+                })->values()->all(),
                 'dateEncoded' => $hh->date_encoded ? \Carbon\Carbon::parse($hh->date_encoded)->format('M d, Y | h:i A') : 'N/A',
                 'encodedBy' => $encodedByName,
                 'dateUpdated' => $hh->date_updated ? \Carbon\Carbon::parse($hh->date_updated)->format('M d, Y | h:i A') : 'N/A',
@@ -71,12 +115,24 @@ class HouseholdController extends Controller
 
         return \Inertia\Inertia::render('main/CitizenPanel/household-profiles', [
             'households' => $households,
+            'systemAccounts' => \App\Models\SystemAccount::select('sys_id', 'sys_fname', 'sys_lname')
+                ->where('is_deleted', false)
+                ->orderBy('sys_fname')->get()->map(function($acc) {
+                    return [
+                        'id' => $acc->sys_id,
+                        'name' => trim(($acc->sys_fname ?? '') . ' ' . ($acc->sys_lname ?? '')) ?: 'System'
+                    ];
+                }),
             'filters' => [
                 'search' => $request->search ?? '',
                 'sitio' => $request->sitio ?? 'All',
                 'water_type' => $request->water_type ?? 'All',
                 'toilet_type' => $request->toilet_type ?? 'All',
                 'ownership_status' => $request->ownership_status ?? 'All',
+                'dateEncodedRange' => $request->dateEncodedRange ?? '',
+                'dateUpdatedRange' => $request->dateUpdatedRange ?? '',
+                'encodedBy' => $request->encodedBy ?? [],
+                'updatedBy' => $request->updatedBy ?? [],
             ]
         ]);
     }

@@ -34,7 +34,7 @@ class CitizenController extends Controller
         // 1. Fetch Citizens with ALL relationships to avoid N+1 query performance issues
         $citizensQuery = Citizen::with([
             'info.sitio',
-            'info.householdInfo',
+            'info.householdInfo.citizen_informations.citizens',
             'info.employment',
             'info.contact.phones',
             'info.demographic.socioEconomic',
@@ -96,6 +96,41 @@ class CitizenController extends Controller
                $q->where('is_registered_voter', $isVoter);
            });
        }
+
+        // Advanced Audit Filters
+        if ($request->filled('dateEncodedRange')) {
+            $dates = explode(' to ', $request->input('dateEncodedRange'));
+            if (count($dates) == 2) {
+                $citizensQuery->whereBetween('date_encoded', [
+                    Carbon::parse($dates[0])->startOfDay(),
+                    Carbon::parse($dates[1])->endOfDay()
+                ]);
+            }
+        }
+
+        if ($request->filled('dateUpdatedRange')) {
+            $dates = explode(' to ', $request->input('dateUpdatedRange'));
+            if (count($dates) == 2) {
+                $citizensQuery->whereBetween('date_updated', [
+                    Carbon::parse($dates[0])->startOfDay(),
+                    Carbon::parse($dates[1])->endOfDay()
+                ]);
+            }
+        }
+
+        if ($request->filled('encodedBy')) {
+            $encodedBy = is_array($request->input('encodedBy')) ? $request->input('encodedBy') : explode(',', $request->input('encodedBy'));
+            if (!in_array('All', $encodedBy) && count($encodedBy) > 0) {
+                $citizensQuery->whereIn('encoded_by', $encodedBy);
+            }
+        }
+
+        if ($request->filled('updatedBy')) {
+            $updatedBy = is_array($request->input('updatedBy')) ? $request->input('updatedBy') : explode(',', $request->input('updatedBy'));
+            if (!in_array('All', $updatedBy) && count($updatedBy) > 0) {
+                $citizensQuery->whereIn('updated_by', $updatedBy);
+            }
+        }
 
         // Sort and Execute
         $citizensQuery = $citizensQuery->orderBy('ctz_id', 'desc')->get();
@@ -174,6 +209,15 @@ class CitizenController extends Controller
                 'nhtsNumber' => $demo->socioEconomic->soec_number,
                 'householdId' => $info->householdInfo->hh_uuid ?? 'N/A',
                 'relationship' => $info->relationship_type ?? 'Head',
+                'householdMembers' => $info->householdInfo ? $info->householdInfo->citizen_informations->filter(function($hhInfo) use ($info) {
+                    return $hhInfo->ctz_info_id !== $info->ctz_info_id && $hhInfo->citizens->where('is_deleted', false)->isNotEmpty();
+                })->map(function($hhInfo) {
+                    return [
+                        'id' => $hhInfo->ctz_info_id ?? mt_rand(),
+                        'name' => trim(($hhInfo->first_name ?? '') . ' ' . ($hhInfo->last_name ?? '')),
+                        'relationship' => $hhInfo->relationship_type ?? 'Member',
+                    ];
+                })->values()->all() : [],
                 'philhealthCategory' => $demo->philhealth->category_name ?? 'N/A',
                 'philhealthId' => $demo->philhealth->philhealth_id_number,
                 'membershipType' => $demo->philhealth->phea_membership_type,
@@ -191,7 +235,15 @@ class CitizenController extends Controller
         return Inertia::render('main/CitizenPanel/citizen-profiles', [
             'citizens' => $mappedCitizens,
             'sitios' => Sitio::select('sitio_id', 'sitio_name')->orderBy('sitio_name')->get(),
-            'filters' => $request->only(['search', 'sitio', 'sex', 'civilStatus', 'employmentStatus', 'isVoter'])
+            'systemAccounts' => \App\Models\SystemAccount::select('sys_id', 'sys_fname', 'sys_lname')
+                ->where('is_deleted', false)
+                ->orderBy('sys_fname')->get()->map(function($acc) {
+                    return [
+                        'id' => $acc->sys_id,
+                        'name' => trim(($acc->sys_fname ?? '') . ' ' . ($acc->sys_lname ?? '')) ?: 'System'
+                    ];
+                }),
+            'filters' => $request->only(['search', 'sitio', 'sex', 'civilStatus', 'employmentStatus', 'isVoter', 'dateEncodedRange', 'dateUpdatedRange', 'encodedBy', 'updatedBy'])
         ]);
     }
 
