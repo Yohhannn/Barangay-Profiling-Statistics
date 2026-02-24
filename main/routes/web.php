@@ -147,7 +147,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Households
     Route::post('/households/store', [HouseholdController::class, 'store']);
-
+    Route::put('/households/{id}', [HouseholdController::class, 'update']);
 
     Route::get('/api/sitio-list', function () {
         return Sitio::select('sitio_id', 'sitio_name')->orderBy('sitio_name')->get();
