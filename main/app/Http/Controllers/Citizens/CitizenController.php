@@ -182,7 +182,7 @@ class CitizenController extends Controller
                 'dateEncoded' => Carbon::parse($citizen->date_encoded)->format('M d, Y | h:i A'),
                 'encodedBy' => $getSystemName($citizen->encodedBy),
                 'dateUpdated' => $citizen->date_updated ? Carbon::parse($citizen->date_updated)->format('M d, Y | h:i A') : 'N/A',
-                'updatedBy' => $getSystemName($citizen->updatedBy),
+                'updatedBy' => $citizen->date_updated ? $getSystemName($citizen->updatedBy) : 'N/A',
             ];
         });
 

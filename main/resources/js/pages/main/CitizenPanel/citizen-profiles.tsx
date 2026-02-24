@@ -546,18 +546,26 @@ export default function CitizenProfiles({ citizens = [], sitios = [] }: { citize
                                 </div>
 
                                 {/* 3. Footer Audit Log */}
-                                <div className="p-4 border-t border-sidebar-border/60 bg-neutral-50 dark:bg-neutral-900/50 grid grid-cols-2 gap-4 text-xs font-mono">
-                                    <div className="flex flex-col gap-1">
-                                        <span className="font-bold text-neutral-500 uppercase tracking-wider text-[10px]">Date Encoded:</span>
-                                        <span className="text-neutral-700 dark:text-neutral-300 font-bold">{selectedCitizen.dateEncoded}</span>
-                                        <span className="font-bold text-neutral-500 uppercase tracking-wider text-[10px] mt-1">Encoded By:</span>
-                                        <span className="text-neutral-700 dark:text-neutral-300">{selectedCitizen.encodedBy}</span>
+                                <div className="p-4 border-t border-sidebar-border/60 bg-neutral-50 dark:bg-neutral-900/50 flex flex-col md:flex-row justify-between items-start md:items-center text-[10px] text-neutral-400 font-mono gap-4">
+                                    <div className="space-y-1">
+                                        <div className="flex gap-2">
+                                            <span className="font-bold w-20">DATE ENCODED:</span>
+                                            <span>{selectedCitizen.dateEncoded}</span>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <span className="font-bold w-20">ENCODED BY:</span>
+                                            <span>{selectedCitizen.encodedBy}</span>
+                                        </div>
                                     </div>
-                                    <div className="flex flex-col gap-1 border-l border-sidebar-border/50 pl-4">
-                                        <span className="font-bold text-neutral-500 uppercase tracking-wider text-[10px]">Date Updated:</span>
-                                        <span className="text-neutral-700 dark:text-neutral-300 font-bold">{selectedCitizen.dateUpdated}</span>
-                                        <span className="font-bold text-neutral-500 uppercase tracking-wider text-[10px] mt-1">Updated By:</span>
-                                        <span className="text-neutral-700 dark:text-neutral-300">{selectedCitizen.updatedBy}</span>
+                                    <div className="space-y-1 text-right">
+                                        <div className="flex gap-2 justify-end">
+                                            <span className="font-bold">DATE UPDATED:</span>
+                                            <span>{selectedCitizen.dateUpdated}</span>
+                                        </div>
+                                        <div className="flex gap-2 justify-end">
+                                            <span className="font-bold">UPDATED BY:</span>
+                                            <span>{selectedCitizen.updatedBy}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

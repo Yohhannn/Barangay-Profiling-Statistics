@@ -64,7 +64,7 @@ class HouseholdController extends Controller
                 'dateEncoded' => $hh->date_encoded ? \Carbon\Carbon::parse($hh->date_encoded)->format('M d, Y | h:i A') : 'N/A',
                 'encodedBy' => $encodedByName,
                 'dateUpdated' => $hh->date_updated ? \Carbon\Carbon::parse($hh->date_updated)->format('M d, Y | h:i A') : 'N/A',
-                'updatedBy' => $updatedByName
+                'updatedBy' => $hh->date_updated ? $updatedByName : 'N/A',
             ];
         });
 
