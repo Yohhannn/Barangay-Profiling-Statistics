@@ -48,8 +48,8 @@ class Citizen extends Model
 
     protected $casts = [
         'is_deleted' => 'boolean',
-        'date_encoded' => 'date',
-        'date_updated' => 'date',
+        'date_encoded' => 'datetime',
+        'date_updated' => 'datetime',
     ];
 
     // Relationships

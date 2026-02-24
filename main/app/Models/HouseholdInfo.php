@@ -39,8 +39,8 @@ class HouseholdInfo extends Model
     protected $casts = [
         'date_visited' => 'date',
         'is_deleted' => 'boolean',
-        'date_encoded' => 'date',
-        'date_updated' => 'date',
+        'date_encoded' => 'datetime',
+        'date_updated' => 'datetime',
     ];
 
     public $timestamps = false;

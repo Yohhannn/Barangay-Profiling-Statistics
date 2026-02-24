@@ -179,9 +179,9 @@ class CitizenController extends Controller
                 'healthClassification' => $demo->healthRisk->clah_classification_name ?? 'Healthy',
 
                 // Audit
-                'dateEncoded' => Carbon::parse($citizen->date_encoded)->format('F d, Y'),
+                'dateEncoded' => Carbon::parse($citizen->date_encoded)->format('M d, Y | h:i A'),
                 'encodedBy' => $getSystemName($citizen->encodedBy),
-                'dateUpdated' => $citizen->date_updated ? Carbon::parse($citizen->date_updated)->format('F d, Y') : 'N/A',
+                'dateUpdated' => $citizen->date_updated ? Carbon::parse($citizen->date_updated)->format('M d, Y | h:i A') : 'N/A',
                 'updatedBy' => $getSystemName($citizen->updatedBy),
             ];
         });
