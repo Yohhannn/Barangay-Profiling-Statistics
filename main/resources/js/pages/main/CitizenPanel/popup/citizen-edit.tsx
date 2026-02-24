@@ -228,17 +228,17 @@ export default function CitizenEdit({ isOpen, onClose, citizen, onSuccess }: Cit
                                 setData('household_id', found.id.toString());
                             } else {
                                 setHouseholdInfo(null);
-                                setData('household_id', searchHHQuery); // fallback
+                                setData('household_id', ''); // fallback to empty
                             }
                         } else {
                             setHouseholdInfo(null);
-                            setData('household_id', searchHHQuery); // fallback
+                            setData('household_id', ''); // fallback to empty
                         }
                     })
                     .catch(err => {
                         console.error('Failed to search household:', err);
                         setHouseholdInfo(null);
-                        setData('household_id', searchHHQuery); // fallback
+                        setData('household_id', ''); // fallback to empty
                     })
                     .finally(() => {
                         setIsSearchingHH(false);
@@ -262,6 +262,11 @@ export default function CitizenEdit({ isOpen, onClose, citizen, onSuccess }: Cit
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
+
+        if (searchHHQuery && searchHHQuery !== 'HH-' && !householdInfo) {
+            Swal.fire({ icon: 'error', title: 'Invalid Household ID', text: 'Please enter a valid existing Household ID.' });
+            return;
+        }
 
         const finalData = {
             ...data,
@@ -453,9 +458,27 @@ export default function CitizenEdit({ isOpen, onClose, citizen, onSuccess }: Cit
                                             <div className="relative group">
                                                 <input
                                                     className={`w-full text-xs p-2.5 pl-9 rounded-lg border ${householdInfo ? 'border-green-500' : 'border-neutral-300'} dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:ring-2 focus:ring-indigo-500/20 outline-none`}
-                                                    placeholder="e.g. HH-001"
+                                                    placeholder="HH-1234"
                                                     value={searchHHQuery}
-                                                    onChange={e => setSearchHHQuery(e.target.value)}
+                                                    onChange={e => {
+                                                        let val = e.target.value.toUpperCase();
+                                                        // Ensure HH- prefix
+                                                        if (!val.startsWith('HH-')) {
+                                                            if (val.startsWith('H')) val = 'HH-';
+                                                            else val = 'HH-' + val.replace(/^HH-?/i, '');
+                                                        }
+                                                        
+                                                        // Extract digits after HH-
+                                                        const digits = val.substring(3).replace(/\D/g, '');
+                                                        
+                                                        // Limit to exactly 4 numbers
+                                                        if (digits.length <= 4) { 
+                                                            setSearchHHQuery('HH-' + digits);
+                                                        }
+                                                    }}
+                                                    onFocus={() => {
+                                                        if (!searchHHQuery) setSearchHHQuery('HH-');
+                                                    }}
                                                 />
                                                 <div className="absolute left-2.5 top-2.5 text-neutral-400">
                                                     {isSearchingHH ? <Loader2 className="size-3.5 animate-spin" /> : householdInfo ? <CheckCircle className="size-3.5 text-green-500" /> : <Search className="size-3.5" />}

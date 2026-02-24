@@ -155,13 +155,23 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
 
+        if (searchHHQuery && searchHHQuery !== 'HH-' && !householdInfo) {
+            Swal.fire({ icon: 'error', title: 'Invalid Household ID', text: 'Please enter a valid existing Household ID.' });
+            return;
+        }
+
         const finalData = {
             ...data,
             relationship_to_head: data.relationship_to_head || 'None'
         };
 
+        // Note: Inertia's post method directly sends the useForm data state.
+        // We override the data right before submit using transform() if needed,
+        // or just rely on the pre-filled state. Since we need to ensure relationship_to_head,
+        // a better pattern for Inertia is to set the data first or use transform.
+        setData('relationship_to_head', data.relationship_to_head || 'None');
+
         post('/citizens/store', {
-            data: finalData,
             onSuccess: () => {
                 Swal.fire({ icon: 'success', title: 'Success', text: 'Citizen Record Created!' });
                 reset();
@@ -354,8 +364,8 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
                                                         // Extract digits after HH-
                                                         const digits = val.substring(3).replace(/\D/g, '');
                                                         
-                                                        // Limit to e.g. 4 numbers (or however many normally expected)
-                                                        if (digits.length <= 6) { 
+                                                        // Limit to exactly 4 numbers
+                                                        if (digits.length <= 4) { 
                                                             setSearchHHQuery('HH-' + digits);
                                                         }
                                                     }}
