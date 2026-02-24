@@ -156,12 +156,52 @@ class HouseholdController extends Controller
         //
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, HouseholdInfo $householdInfo)
+    public function update(Request $request, string $id)
     {
-        //
+        $validated = $request->validate([
+            'house_number' => 'nullable|string|max:255',
+            'home_address' => 'required|string|max:500',
+            'sitio' => 'required|exists:sitios,sitio_name',
+            'ownership_status' => 'required|string',
+            'home_link' => 'nullable|string|max:1000',
+            'water_type' => 'required|string',
+            'toilet_type' => 'required|string',
+            'date_visited' => 'nullable|date',
+            'interviewer_name' => 'nullable|string|max:255',
+            'reviewer_name' => 'nullable|string|max:255',
+            'coordinates' => 'nullable|string|max:255',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $household = HouseholdInfo::where('hh_id', $id)->firstOrFail();
+            $sitioObj = Sitio::where('sitio_name', $validated['sitio'])->first();
+
+            $household->update([
+                'house_number' => $validated['house_number'] ?? null,
+                'address' => $validated['home_address'],
+                'sitio_id' => $sitioObj->sitio_id,
+                'ownership_status' => $validated['ownership_status'],
+                'home_link' => $validated['home_link'] ?? null,
+                'water_type' => $validated['water_type'],
+                'toilet_type' => $validated['toilet_type'],
+                'coordinates' => $validated['coordinates'] ?? null,
+                'date_visited' => $validated['date_visited'] ?? null,
+                'interviewer_name' => $validated['interviewer_name'] ?? null,
+                'reviewer_name' => $validated['reviewer_name'] ?? null,
+                'date_updated' => now(),
+                'updated_by' => Auth::id() ?? 1,
+            ]);
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'Household Updated Successfully!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->withErrors(['error' => 'Error updating household: ' . $e->getMessage()]);
+        }
     }
 
     /**

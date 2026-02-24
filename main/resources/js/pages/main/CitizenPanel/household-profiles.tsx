@@ -9,7 +9,8 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
-import HouseholdCreation from './popup/household-creation'; // IMPORTED
+import HouseholdCreation from './popup/household-creation';
+import HouseholdEdit from './popup/household-edit';
 
 // --- Types ---
 interface HouseholdMember {
@@ -63,6 +64,18 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function HouseholdProfiles({ households = [], filters = {} }: { households: Household[], filters: any }) {
     // If households array is empty, default selectedHousehold to null
     const [selectedHousehold, setSelectedHousehold] = useState<Household | null>(households.length > 0 ? households[0] : null);
+
+    // Sync selectedHousehold with latest households data (e.g. after Edit or reload)
+    useEffect(() => {
+        if (selectedHousehold && households.length > 0) {
+            const updated = households.find(h => h.id === selectedHousehold.id);
+            if (updated && JSON.stringify(updated) !== JSON.stringify(selectedHousehold)) {
+                setSelectedHousehold(updated);
+            }
+        } else if (!selectedHousehold && households.length > 0) {
+            setSelectedHousehold(households[0]);
+        }
+    }, [households]);
     
     // --- Filters State ---
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
@@ -74,6 +87,7 @@ export default function HouseholdProfiles({ households = [], filters = {} }: { h
 
     // --- NEW: Modal State & Dynamic Options ---
     const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [isEditOpen, setIsEditOpen] = useState(false);
     const [sitioOptions, setSitioOptions] = useState<string[]>([]);
 
     useEffect(() => {
@@ -146,6 +160,7 @@ export default function HouseholdProfiles({ households = [], filters = {} }: { h
 
             {/* --- MOUNT THE MODAL --- */}
             <HouseholdCreation isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
+            <HouseholdEdit isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} household={selectedHousehold} />
 
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
 
@@ -300,7 +315,10 @@ export default function HouseholdProfiles({ households = [], filters = {} }: { h
                                                 </div>
                                             </div>
                                         </div>
-                                        <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all hover:shadow-md">
+                                        <button 
+                                            onClick={() => setIsEditOpen(true)}
+                                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all hover:shadow-md"
+                                        >
                                             <Edit3 className="size-3.5" /> Edit Household
                                         </button>
                                     </div>
