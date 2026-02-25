@@ -41,9 +41,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('citizen-records');
 
     // Sub-modules
-    Route::get('citizen-records/citizen-history', function () {
-        return Inertia::render('main/CitizenRecords/citizen-history');
-    })->name('citizen-history');
+    Route::get('citizen-records/citizen-history', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'index'])->name('citizen-history');
+    Route::post('citizen-records/citizen-history', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'store']);
+    Route::put('citizen-records/citizen-history/{id}', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'update']);
+    Route::delete('citizen-records/citizen-history/{id}', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'destroy']);
 
     Route::get('citizen-records/medical-history', function () {
         return Inertia::render('main/CitizenRecords/medical-history');
