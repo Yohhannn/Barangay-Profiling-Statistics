@@ -9,17 +9,21 @@ import {
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import CitizenHistoryCreation from './popup/citizen-history-creation'; // IMPORTED
+import CitizenHistoryEdit from './popup/citizen-history-edit'; // IMPORTED
+import { router } from '@inertiajs/react';
 
 // --- Types ---
-interface HistoryRecord {
+export interface HistoryRecord {
     id: number;
     citizenId: string;
+    ctz_id: number | null;
     firstName: string;
+    middleName: string;
     lastName: string;
-    type: 'Violation' | 'Complaint' | 'Commendation' | 'Other';
+    type: string;
     title: string;
     description: string;
-    status: 'Resolved' | 'Pending' | 'Active';
+    status: string;
     dateRecorded: string;
 
     // Audit
@@ -29,62 +33,24 @@ interface HistoryRecord {
     updatedBy: string;
 }
 
-// --- Mock Data ---
-const mockHistory: HistoryRecord[] = [
-    {
-        id: 1, citizenId: 'CIT-2025-001', firstName: 'Roberto', lastName: 'Gonzales',
-        type: 'Complaint', title: 'Noise Complaint',
-        description: 'Resident reported loud videoke session past 10 PM on a weeknight. First warning issued.',
-        status: 'Resolved', dateRecorded: '2025-06-15',
-        dateEncoded: '2025-06-16 | 08:30 AM', encodedBy: 'STAFF_01', dateUpdated: '2025-06-17', updatedBy: 'ADMIN'
-    },
-    {
-        id: 2, citizenId: 'CIT-2025-001', firstName: 'Roberto', lastName: 'Gonzales',
-        type: 'Violation', title: 'Traffic Violation',
-        description: 'Caught driving motorcycle without a helmet within barangay premises. Ticket issued.',
-        status: 'Pending', dateRecorded: '2025-08-20',
-        dateEncoded: '2025-08-20 | 09:15 AM', encodedBy: 'Tanod A', dateUpdated: 'N/A', updatedBy: 'N/A'
-    },
-    {
-        id: 3, citizenId: 'CIT-2025-005', firstName: 'Pedro', lastName: 'Magtanggol',
-        type: 'Commendation', title: 'Community Service',
-        description: 'Volunteered for the coastal cleanup drive and donated cleaning materials.',
-        status: 'Active', dateRecorded: '2025-09-01',
-        dateEncoded: '2025-09-02 | 10:00 AM', encodedBy: 'ADMIN', dateUpdated: 'N/A', updatedBy: 'N/A'
-    },
-    {
-        id: 4, citizenId: 'CIT-2025-014', firstName: 'Antonio', lastName: 'Luna',
-        type: 'Other', title: 'Lost ID Affidavit',
-        description: 'Filed an affidavit of loss for a government ID.',
-        status: 'Resolved', dateRecorded: '2025-07-10',
-        dateEncoded: '2025-07-10 | 02:00 PM', encodedBy: 'STAFF_02', dateUpdated: '2025-07-11', updatedBy: 'STAFF_02'
-    },
-    {
-        id: 5, citizenId: 'CIT-2025-009', firstName: 'Datu', lastName: 'Silapulapu',
-        type: 'Violation', title: 'Curfew Violation',
-        description: 'Found loitering outside during curfew hours (minor). Parents notified.',
-        status: 'Resolved', dateRecorded: '2025-05-05',
-        dateEncoded: '2025-05-05 | 11:45 PM', encodedBy: 'Tanod B', dateUpdated: '2025-05-06', updatedBy: 'ADMIN'
-    }
-];
-
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Citizen Records', href: '/citizen-records' },
     { title: 'Citizen History', href: '/citizen-records/citizen-history' },
 ];
 
-export default function CitizenHistory() {
-    const [selectedHistory, setSelectedHistory] = useState<HistoryRecord | null>(mockHistory[0]);
+export default function CitizenHistory({ histories = [] }: { histories?: HistoryRecord[] }) {
+    const [selectedHistory, setSelectedHistory] = useState<HistoryRecord | null>(histories.length > 0 ? histories[0] : null);
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilters, setShowFilters] = useState(false);
     const [filterType, setFilterType] = useState('All');
 
     // --- NEW: Modal State ---
     const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [isEditOpen, setIsEditOpen] = useState(false);
 
     // Filter Logic
     const filteredHistory = useMemo(() => {
-        return mockHistory.filter(record => {
+        return histories.filter(record => {
             const matchesSearch =
                 record.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 record.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -94,12 +60,20 @@ export default function CitizenHistory() {
 
             return matchesSearch && matchesType;
         });
-    }, [searchQuery, filterType]);
+    }, [searchQuery, filterType, histories]);
 
     const handleDelete = (e: React.MouseEvent, id: number) => {
         e.stopPropagation();
-        if (confirm('Are you sure you want to delete this record?')) {
-            console.log('Deleted history record:', id);
+        const reason = prompt('Please enter a reason for archiving this record:');
+        if (reason) {
+            router.delete(`/citizen-records/citizen-history/${id}`, {
+                data: { delete_reason: reason },
+                onSuccess: () => {
+                    if (selectedHistory?.id === id) {
+                        setSelectedHistory(null);
+                    }
+                }
+            });
         }
     };
 
@@ -109,6 +83,7 @@ export default function CitizenHistory() {
 
             {/* --- MOUNT THE MODAL HERE --- */}
             <CitizenHistoryCreation isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
+            <CitizenHistoryEdit isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} historyData={selectedHistory} />
 
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
 
@@ -270,7 +245,7 @@ export default function CitizenHistory() {
                                             </div>
                                         </div>
                                         {/* EDIT BUTTON MOVED HERE */}
-                                        <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all hover:shadow-md">
+                                        <button onClick={() => setIsEditOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all hover:shadow-md">
                                             <Edit3 className="size-3.5" /> Edit History
                                         </button>
                                     </div>

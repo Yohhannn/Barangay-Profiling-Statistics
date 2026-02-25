@@ -2,80 +2,123 @@ import {
     X, CheckCircle, FileClock, User,
     Activity, Tag, Search, Loader2, UserCheck, UserX
 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useForm } from '@inertiajs/react';
+import Swal from 'sweetalert2';
 
 interface CitizenHistoryCreationProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
-// Mock Database of Citizens
-const mockCitizensData = [
-    { id: '2025-001', first: 'Roberto', middle: 'A.', last: 'Gonzales' },
-    { id: '2025-002', first: 'Maria', middle: 'B.', last: 'Santos' },
-    { id: '2025-005', first: 'Pedro', middle: 'C.', last: 'Magtanggol' },
-    { id: '2025-014', first: 'Antonio', middle: 'L.', last: 'Luna' },
-    { id: '2025-020', first: 'Juan', middle: 'D.', last: 'Dela Cruz' },
-];
-
 export default function CitizenHistoryCreation({ isOpen, onClose }: CitizenHistoryCreationProps) {
     // --- Form State ---
-    const [firstName, setFirstName] = useState('');
-    const [middleName, setMiddleName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [citizenId, setCitizenId] = useState(''); // Hidden/Internal ID storage
+    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
+        citizen_id: null as number | null,
+        first_name: '',
+        middle_name: '',
+        last_name: '',
+        type: '',
+        title: '',
+        description: '',
+        status: 'Pending',
+    });
 
     // --- Search State ---
     const [searchQuery, setSearchQuery] = useState('');
-    const [showResults, setShowResults] = useState(false);
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
     const [isLocked, setIsLocked] = useState(false); // Controls if fields are editable
 
-    // Filter Logic
-    const filteredCitizens = useMemo(() => {
-        if (!searchQuery) return [];
-        const lowerQuery = searchQuery.toLowerCase();
-        return mockCitizensData.filter(c =>
-            c.first.toLowerCase().includes(lowerQuery) ||
-            c.last.toLowerCase().includes(lowerQuery) ||
-            c.middle.toLowerCase().includes(lowerQuery)
-        );
-    }, [searchQuery]);
-
-    if (!isOpen) return null;
+    // Live Search Effect
+    useEffect(() => {
+        if (searchQuery.trim().length > 1 && !isLocked) {
+            setIsSearching(true);
+            const debounceTimer = setTimeout(() => {
+                fetch(`/api/citizen-search?q=${encodeURIComponent(searchQuery)}`)
+                    .then(res => res.json())
+                    .then(resData => {
+                        setSearchResults(resData);
+                        setIsSearching(false);
+                    })
+                    .catch(err => {
+                        console.error("Failed to search citizens", err);
+                        setIsSearching(false);
+                    });
+            }, 300);
+            return () => clearTimeout(debounceTimer);
+        } else {
+            setSearchResults([]);
+            setIsSearching(false);
+        }
+    }, [searchQuery, isLocked]);
 
     // Handle Selecting a Citizen
-    const handleSelectCitizen = (citizen: typeof mockCitizensData[0]) => {
-        setCitizenId(citizen.id);
-        setFirstName(citizen.first);
-        setMiddleName(citizen.middle);
-        setLastName(citizen.last);
+    const handleSelectCitizen = (citizen: any) => {
+        setData(prev => ({
+            ...prev,
+            citizen_id: citizen.id,
+            first_name: citizen.name.split(' ')[0] || '', // Basic split, can be refined based on actual backend data
+            last_name: citizen.name.split(' ').slice(1).join(' ') || '',
+            middle_name: '' // The search endpoint might not return middle name separately
+        }));
+        
+        // Let's do a better parsing if we have the full citizen object
+        // For now, assuming standard name format
+        
         setIsLocked(true); // Lock fields
-
         setSearchQuery(''); // Clear search query visually
-        setShowResults(false);
+        setSearchResults([]);
+        clearErrors();
     };
 
     // Cancel Selection / Unlock
     const handleCancelSelection = () => {
-        setCitizenId('');
-        setFirstName('');
-        setMiddleName('');
-        setLastName('');
+        setData(prev => ({
+            ...prev,
+            citizen_id: null,
+            first_name: '',
+            middle_name: '',
+            last_name: ''
+        }));
         setIsLocked(false); // Unlock fields
         setSearchQuery('');
+        setSearchResults([]);
     };
+
+    // Cleanup on close
+    useEffect(() => {
+        if (!isOpen) {
+            reset();
+            handleCancelSelection();
+            clearErrors();
+        }
+    }, [isOpen]);
+
+    if (!isOpen) return null;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("History Record Submitted", {
-            citizenId: citizenId ? `CTZ-${citizenId}` : 'Manual Entry',
-            firstName,
-            middleName,
-            lastName
+        
+        post('/citizen-records/citizen-history', {
+            preserveScroll: true,
+            onSuccess: () => {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: 'Citizen history record added successfully.',
+                });
+                onClose();
+            },
+            onError: (err) => {
+                console.error(err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error',
+                    text: 'Please check the form for errors.',
+                });
+            }
         });
-        onClose();
-        // Reset
-        handleCancelSelection();
     };
 
     return (
@@ -101,6 +144,7 @@ export default function CitizenHistoryCreation({ isOpen, onClose }: CitizenHisto
                     <button
                         onClick={onClose}
                         className="z-10 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-all text-white"
+                        type="button"
                     >
                         <X className="size-5" />
                     </button>
@@ -124,44 +168,52 @@ export default function CitizenHistoryCreation({ isOpen, onClose }: CitizenHisto
                                     <div className="relative group">
                                         <input
                                             className="w-full text-xs p-2.5 pl-9 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all"
-                                            placeholder="Search by Name..."
+                                            placeholder="Search by Name or CTZ ID..."
                                             value={searchQuery}
-                                            onChange={(e) => {
-                                                setSearchQuery(e.target.value);
-                                                setShowResults(true);
-                                            }}
-                                            onFocus={() => setShowResults(true)}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
                                         />
                                         <div className="absolute left-3 top-2.5 text-neutral-400">
-                                            <Search className="size-4" />
+                                            {isSearching ? <Loader2 className="size-4 animate-spin" /> : <Search className="size-4" />}
                                         </div>
                                     </div>
 
-                                    {/* RESULTS DROPDOWN */}
-                                    {showResults && searchQuery.length > 0 && (
-                                        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700 shadow-xl max-h-48 overflow-y-auto z-50">
-                                            {filteredCitizens.length > 0 ? (
-                                                filteredCitizens.map((citizen) => (
+                                    {/* RESULTS DROPDOWN (Inline List) */}
+                                    {searchQuery.length > 1 && (
+                                        <div className="mt-2 flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+                                            {searchResults.length > 0 ? (
+                                                searchResults.map((result) => (
                                                     <button
-                                                        key={citizen.id}
-                                                        onClick={() => handleSelectCitizen(citizen)}
-                                                        className="w-full text-left px-4 py-3 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors flex items-center justify-between group border-b border-neutral-100 dark:border-neutral-700/50 last:border-0"
+                                                        type="button"
+                                                        key={result.id}
+                                                        onMouseDown={(e) => {
+                                                            e.preventDefault();
+                                                            handleSelectCitizen(result);
+                                                        }}
+                                                        className="w-full p-3 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-sm flex items-center justify-between hover:border-purple-300 dark:hover:border-purple-500 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-all text-left group"
                                                     >
                                                         <div>
-                                                            <p className="text-xs font-bold text-neutral-800 dark:text-neutral-200 group-hover:text-purple-700 dark:group-hover:text-purple-300">
-                                                                {citizen.last}, {citizen.first} {citizen.middle}
-                                                            </p>
-                                                            <p className="text-[10px] text-neutral-400 font-mono mt-0.5">
-                                                                ID: CTZ-{citizen.id}
-                                                            </p>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100 group-hover:text-purple-700 dark:group-hover:text-purple-400">
+                                                                    {result.name}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 mt-1">
+                                                                <span className="text-[10px] bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-neutral-500 px-1.5 py-0.5 rounded font-mono">
+                                                                    {result.uuid}
+                                                                </span>
+                                                            </div>
                                                         </div>
-                                                        <UserCheck className="size-4 text-neutral-300 group-hover:text-purple-500" />
+                                                        <div className="p-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-md text-neutral-400 group-hover:bg-purple-100 dark:group-hover:bg-purple-900/50 group-hover:text-purple-600 dark:group-hover:text-purple-400">
+                                                            <UserCheck className="size-4" />
+                                                        </div>
                                                     </button>
                                                 ))
                                             ) : (
-                                                <div className="p-4 text-center text-xs text-neutral-400 italic">
-                                                    No citizens found.
-                                                </div>
+                                                !isSearching && (
+                                                    <div className="p-3 bg-neutral-50 dark:bg-neutral-800/50 border border-dashed border-neutral-300 dark:border-neutral-700 rounded-lg text-center">
+                                                        <span className="text-xs text-neutral-500">No citizens found matching "{searchQuery}"</span>
+                                                    </div>
+                                                )
                                             )}
                                         </div>
                                     )}
@@ -179,12 +231,13 @@ export default function CitizenHistoryCreation({ isOpen, onClose }: CitizenHisto
                                             <p className="text-[10px] font-bold uppercase text-purple-500 dark:text-purple-400 tracking-wide">
                                                 Citizen Selected
                                             </p>
-                                            <p className="text-xs font-medium text-purple-900 dark:text-purple-100 font-mono">
-                                                ID: CTZ-{citizenId}
+                                            <p className="text-xs font-medium text-purple-900 dark:text-purple-100 font-mono flex items-center gap-1 mt-0.5">
+                                                {data.first_name} {data.last_name}
                                             </p>
                                         </div>
                                     </div>
                                     <button
+                                        type="button"
                                         onClick={handleCancelSelection}
                                         className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-black/20 border border-neutral-200 dark:border-neutral-700 hover:border-red-300 hover:text-red-500 dark:hover:border-red-800 dark:hover:text-red-400 rounded text-[10px] font-bold uppercase tracking-wider text-neutral-500 transition-all shadow-sm"
                                     >
@@ -202,16 +255,16 @@ export default function CitizenHistoryCreation({ isOpen, onClose }: CitizenHisto
                                     label="First Name"
                                     placeholder="First Name"
                                     required
-                                    value={firstName}
-                                    onChange={(e) => setFirstName(e.target.value)}
+                                    value={data.first_name}
+                                    onChange={(e) => setData('first_name', e.target.value)}
                                     readOnly={isLocked}
                                     className={isLocked ? 'bg-neutral-50/80 dark:bg-neutral-900/50 text-neutral-500 cursor-not-allowed border-neutral-200' : ''}
                                 />
                                 <InputGroup
                                     label="Middle Name"
                                     placeholder="Middle Name"
-                                    value={middleName}
-                                    onChange={(e) => setMiddleName(e.target.value)}
+                                    value={data.middle_name}
+                                    onChange={(e) => setData('middle_name', e.target.value)}
                                     readOnly={isLocked}
                                     className={isLocked ? 'bg-neutral-50/80 dark:bg-neutral-900/50 text-neutral-500 cursor-not-allowed border-neutral-200' : ''}
                                 />
@@ -219,14 +272,18 @@ export default function CitizenHistoryCreation({ isOpen, onClose }: CitizenHisto
                                     label="Last Name"
                                     placeholder="Last Name"
                                     required
-                                    value={lastName}
-                                    onChange={(e) => setLastName(e.target.value)}
+                                    value={data.last_name}
+                                    onChange={(e) => setData('last_name', e.target.value)}
                                     readOnly={isLocked}
                                     className={isLocked ? 'bg-neutral-50/80 dark:bg-neutral-900/50 text-neutral-500 cursor-not-allowed border-neutral-200' : ''}
                                 />
                             </div>
+                            
+                            {(errors.first_name || errors.last_name) && (
+                                <p className="text-[10px] text-red-500 font-medium">First Name and Last Name are required.</p>
+                            )}
 
-                            <p className="text-[10px] text-right text-neutral-400 italic">
+                            <p className="text-[10px] text-right text-neutral-400 italic mt-2">
                                 {isLocked
                                     ? "Fields are locked because a registered citizen is selected."
                                     : "Enter names manually if citizen is not in the database."}
@@ -241,16 +298,37 @@ export default function CitizenHistoryCreation({ isOpen, onClose }: CitizenHisto
                         <div className="bg-white dark:bg-[#1e293b] p-5 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm space-y-4">
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <SelectGroup
-                                    label="Select History Type"
-                                    options={['Violation', 'Complaint', 'Commendation', 'Other']}
+                                <div>
+                                    <SelectGroup
+                                        label="Select History Type"
+                                        options={['Violation', 'Complaint', 'Commendation', 'Other']}
+                                        required
+                                        value={data.type}
+                                        onChange={(e) => setData('type', e.target.value)}
+                                    />
+                                    {errors.type && <p className="text-[10px] text-red-500 mt-1">{errors.type}</p>}
+                                </div>
+                                <div>
+                                    <SelectGroup
+                                        label="Status"
+                                        options={['Resolved', 'Pending', 'Active', 'Dismissed']}
+                                        required
+                                        value={data.status}
+                                        onChange={(e) => setData('status', e.target.value)}
+                                    />
+                                    {errors.status && <p className="text-[10px] text-red-500 mt-1">{errors.status}</p>}
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <InputGroup
+                                    label="Record Title"
+                                    placeholder="e.g. Noise Complaint or Traffic Violation"
                                     required
+                                    value={data.title}
+                                    onChange={(e) => setData('title', e.target.value)}
                                 />
-                                <SelectGroup
-                                    label="Status"
-                                    options={['Resolved', 'Pending', 'Active', 'Dismissed']}
-                                    required
-                                />
+                                {errors.title && <p className="text-[10px] text-red-500 mt-1">{errors.title}</p>}
                             </div>
 
                             <div className="space-y-1.5">
@@ -260,7 +338,10 @@ export default function CitizenHistoryCreation({ isOpen, onClose }: CitizenHisto
                                 <textarea
                                     className="w-full text-xs p-3 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all resize-none h-32"
                                     placeholder="What is it about?"
+                                    value={data.description}
+                                    onChange={(e) => setData('description', e.target.value)}
                                 ></textarea>
+                                {errors.description && <p className="text-[10px] text-red-500 mt-1">{errors.description}</p>}
                             </div>
                         </div>
                     </div>
@@ -273,9 +354,11 @@ export default function CitizenHistoryCreation({ isOpen, onClose }: CitizenHisto
 
                     <button
                         onClick={handleSubmit}
-                        className="flex items-center gap-2 px-8 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-green-600/20 active:scale-95"
+                        disabled={processing}
+                        className="flex items-center gap-2 px-8 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-green-600/20 active:scale-95"
                     >
-                        <CheckCircle className="size-4" /> Confirm and Save
+                        {processing ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle className="size-4" />} 
+                        {processing ? 'Saving...' : 'Confirm and Save'}
                     </button>
                 </div>
 
