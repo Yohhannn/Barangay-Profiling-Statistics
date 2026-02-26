@@ -15,6 +15,7 @@ class CitizenHistory extends Model
     public $incrementing = true;
 
     protected $fillable = [
+        'cihi_uuid',
         'first_name',
         'last_name',
         'middle_name',
@@ -39,6 +40,17 @@ class CitizenHistory extends Model
 
     const UPDATED_AT = 'date_updated';
     const CREATED_AT = 'date_created';
+
+    protected static function booted()
+    {
+        static::creating(function ($history) {
+            do {
+                $uuid = 'CIHI-' . str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+            } while (self::where('cihi_uuid', $uuid)->exists());
+
+            $history->cihi_uuid = $uuid;
+        });
+    }
 
     // Relationships
     public function encodedByAccount()

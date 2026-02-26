@@ -7,7 +7,7 @@ import {
     FileClock, User, Calendar, FileText,
     Download, Edit3, X, SlidersHorizontal, Activity, Tag
 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import CitizenHistoryCreation from './popup/citizen-history-creation'; // IMPORTED
 import CitizenHistoryEdit from './popup/citizen-history-edit'; // IMPORTED
 import { router } from '@inertiajs/react';
@@ -15,6 +15,7 @@ import { router } from '@inertiajs/react';
 // --- Types ---
 export interface HistoryRecord {
     id: number;
+    cihi_uuid: string;
     citizenId: string;
     ctz_id: number | null;
     firstName: string;
@@ -47,6 +48,16 @@ export default function CitizenHistory({ histories = [] }: { histories?: History
     // --- NEW: Modal State ---
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
+    const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+    // Keep selectedHistory synced with prop updates
+    useEffect(() => {
+        setSelectedHistory(prev => {
+            if (!prev) return histories.length > 0 ? histories[0] : null;
+            const updated = histories.find(h => h.id === prev.id);
+            return updated || (histories.length > 0 ? histories[0] : null);
+        });
+    }, [histories]);
 
     // Filter Logic
     const filteredHistory = useMemo(() => {
@@ -61,6 +72,33 @@ export default function CitizenHistory({ histories = [] }: { histories?: History
             return matchesSearch && matchesType;
         });
     }, [searchQuery, filterType, histories]);
+
+    // Grouping Logic
+    const groupedHistory = useMemo(() => {
+        const groups: Record<string, HistoryRecord[]> = {};
+        filteredHistory.forEach(rec => {
+            const key = rec.ctz_id ? `CTZ-${rec.ctz_id}` : `EXT-${rec.firstName.trim().toLowerCase()}-${rec.lastName.trim().toLowerCase()}`;
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(rec);
+        });
+        
+        return Object.entries(groups).map(([key, records]) => ({
+            key,
+            ctz_id: records[0].ctz_id,
+            firstName: records[0].firstName,
+            lastName: records[0].lastName,
+            records,
+        })).sort((a, b) => a.lastName.localeCompare(b.lastName));
+    }, [filteredHistory]);
+
+    const toggleGroup = (key: string) => {
+        setExpandedGroups(prev => {
+            const next = new Set(prev);
+            if (next.has(key)) next.delete(key);
+            else next.add(key);
+            return next;
+        });
+    };
 
     const handleDelete = (e: React.MouseEvent, id: number) => {
         e.stopPropagation();
@@ -175,44 +213,75 @@ export default function CitizenHistory({ histories = [] }: { histories?: History
                             <table className="w-full text-sm text-left">
                                 <thead className="text-[10px] text-neutral-500 uppercase bg-neutral-50 dark:bg-neutral-800/50 sticky top-0 z-10 backdrop-blur-sm">
                                 <tr>
-                                    <th className="px-4 py-3 font-semibold border-b border-sidebar-border w-16">ID</th>
-                                    <th className="px-4 py-3 font-semibold border-b border-sidebar-border">Citizen Name</th>
-                                    <th className="px-4 py-3 font-semibold border-b border-sidebar-border text-right">Type</th>
+                                    <th className="px-4 py-3 font-semibold border-b border-sidebar-border">Citizen / Record ID</th>
+                                    <th className="px-4 py-3 font-semibold border-b border-sidebar-border">Title & Description</th>
+                                    <th className="px-4 py-3 font-semibold border-b border-sidebar-border text-right">Type & Actions</th>
                                 </tr>
                                 </thead>
-                                <tbody className="divide-y divide-sidebar-border/50">
-                                {filteredHistory.map((rec) => (
-                                    <tr
-                                        key={rec.id}
-                                        onClick={() => setSelectedHistory(rec)}
-                                        className={`
-                                                cursor-pointer transition-all hover:bg-purple-50 dark:hover:bg-purple-900/10
-                                                ${selectedHistory?.id === rec.id ? 'bg-purple-50 dark:bg-purple-900/20 border-l-4 border-l-purple-500' : 'border-l-4 border-l-transparent'}
-                                            `}
-                                    >
-                                        <td className="px-4 py-3 font-mono text-xs text-neutral-500">{rec.id}</td>
-                                        <td className="px-4 py-3">
-                                            <div className="font-bold text-neutral-900 dark:text-neutral-100">{rec.firstName} {rec.lastName}</div>
-                                            <div className="text-[10px] text-neutral-500">{rec.title}</div>
-                                        </td>
-                                        <td className="px-4 py-3 text-right">
-                                            <div className="flex flex-col items-end gap-1">
-                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${getTypeColor(rec.type)}`}>
-                                                        {rec.type}
-                                                    </span>
-                                                {/* TRASH ICON ADDED HERE */}
-                                                <button
-                                                    onClick={(e) => handleDelete(e, rec.id)}
-                                                    className="text-neutral-300 hover:text-red-500 transition-colors p-1"
-                                                    title="Delete Record"
-                                                >
-                                                    <Trash2 className="size-3" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                {groupedHistory.map(group => (
+                                    <tbody key={group.key} className="divide-y divide-sidebar-border/50">
+                                        <tr 
+                                            onClick={() => toggleGroup(group.key)}
+                                            className="bg-neutral-100/50 dark:bg-neutral-800/80 cursor-pointer hover:bg-neutral-200/60 dark:hover:bg-neutral-700/60 transition-colors"
+                                        >
+                                            <td colSpan={3} className="px-4 py-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <User className="size-4 text-purple-600 dark:text-purple-400" />
+                                                        <span className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wide">
+                                                            {group.firstName} {group.lastName}
+                                                        </span>
+                                                        {group.ctz_id && (
+                                                            <span className="text-[10px] font-mono bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded ml-2 shadow-sm border border-purple-200 dark:border-purple-800">
+                                                                ID: {group.ctz_id}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-300 bg-white dark:bg-black/20 px-2 py-1 rounded-md border border-neutral-200 dark:border-neutral-700 shadow-sm">
+                                                            {group.records.length} Record{group.records.length !== 1 ? 's' : ''}
+                                                        </span>
+                                                        <div className={`p-1 rounded-md bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 shadow-sm text-neutral-500 transition-transform duration-200 ${expandedGroups.has(group.key) ? 'rotate-180' : ''}`}>
+                                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" /></svg>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {expandedGroups.has(group.key) && group.records.map((rec) => (
+                                            <tr
+                                                key={rec.id}
+                                                onClick={() => setSelectedHistory(rec)}
+                                                className={`
+                                                        cursor-pointer transition-all hover:bg-purple-50 dark:hover:bg-purple-900/10
+                                                        ${selectedHistory?.id === rec.id ? 'bg-purple-50 dark:bg-purple-900/20 border-l-4 border-l-purple-500' : 'border-l-4 border-transparent'}
+                                                    `}
+                                            >
+                                                <td className="px-4 py-3 font-mono text-xs text-neutral-500 pl-8 relative border-l-[3px] border-l-purple-300/30 dark:border-l-purple-700/30">
+                                                    #{rec.cihi_uuid || rec.id}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="font-bold text-neutral-900 dark:text-neutral-100">{rec.title}</div>
+                                                    <div className="text-[10px] text-neutral-500 truncate max-w-xs">{rec.description}</div>
+                                                </td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <div className="flex flex-col items-end gap-1.5">
+                                                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${getTypeColor(rec.type)}`}>
+                                                            {rec.type}
+                                                        </span>
+                                                        <button
+                                                            onClick={(e) => handleDelete(e, rec.id)}
+                                                            className="text-neutral-300 hover:text-red-500 transition-colors p-1 bg-white dark:bg-neutral-800 rounded border border-transparent hover:border-red-200 dark:hover:border-red-900"
+                                                            title="Delete Record"
+                                                        >
+                                                            <Trash2 className="size-3" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
                                 ))}
-                                </tbody>
                             </table>
                         </div>
                     </div>
@@ -255,7 +324,7 @@ export default function CitizenHistory({ histories = [] }: { histories?: History
 
                                     {/* Info Grid */}
                                     <div className="grid grid-cols-2 gap-x-8 gap-y-4 bg-white dark:bg-sidebar border border-sidebar-border rounded-xl p-5 shadow-sm">
-                                        <InfoRow label="History ID" value={String(selectedHistory.id).padStart(4, '0')} highlight />
+                                        <InfoRow label="History ID" value={selectedHistory.cihi_uuid || String(selectedHistory.id).padStart(4, '0')} highlight />
                                         <InfoRow label="Date Recorded" value={selectedHistory.dateRecorded} />
                                         <InfoRow label="History Type" value={selectedHistory.type}
                                                  className={getTypeText(selectedHistory.type)}
