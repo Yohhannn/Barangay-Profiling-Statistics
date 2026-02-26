@@ -37,7 +37,7 @@ DB_PASSWORD=your_password
 4. php artisan key:generate
 5. php artisan migrate --seed
 6. npm install
-7. npm install three @types/three @react-three/fiber @react-three/drei next-themes lucide-react sweetalert2
+7. npm install three @types/three @react-three/fiber @react-three/drei next-themes lucide-react sweetalert2 react-leaflet leaflet @types/leaflet
 8. composer run dev
 
 ```

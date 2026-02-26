@@ -182,13 +182,13 @@ class CitizenController extends Controller
                 'sitio' => $info->sitio ? $info->sitio->sitio_name : 'Unknown',
 
                 // Socio-Economic
-                'employmentStatus' => $info->employment->status ?? 'N/A',
-                'occupation' => $info->employment->occupation ?? 'N/A',
-                'socioEconomicStatus' => $demo->socioEconomic->soec_status ?? 'N/A',
+                'employmentStatus' => $info->employment?->status ?? 'N/A',
+                'occupation' => $info->employment?->occupation ?? 'N/A',
+                'socioEconomicStatus' => $demo?->socioEconomic?->soec_status ?? 'N/A',
 
                 // Flags
-                'isGovWorker' => (bool) ($info->employment->is_gov_worker ?? false),
-                'isStudent' => (bool) ($demo->educationStatus->is_current_student ?? false),
+                'isGovWorker' => (bool) ($info->employment?->is_gov_worker ?? false),
+                'isStudent' => (bool) ($demo?->educationStatus?->is_current_student ?? false),
                 'isVoter' => (bool) $info->is_registered_voter,
                 'isIp' => (bool) $info->is_indigenous,
                 'isDeceased' => (bool) $info->is_deceased,
@@ -197,17 +197,17 @@ class CitizenController extends Controller
                 'dateOfDeath' => $info->date_of_death ? Carbon::parse($info->date_of_death)->format('F d, Y') : null,
                 'causeOfDeath' => $info->cause_of_death,
 
-                'educAttainment' => $demo->educationStatus->education_level ?? 'N/A',
-                'schoolName' => $demo->educationStatus->institution_name ?? 'N/A',
+                'educAttainment' => $demo?->educationStatus?->education_level ?? 'N/A',
+                'schoolName' => $demo?->educationStatus?->institution_name ?? 'N/A',
 
-                'fpStatus' => $demo->familyPlanning->status ?? 'N/A',
-                'fpMethod' => $demo->familyPlanning->method ?? 'N/A',
-                'fpDateStarted' => $demo->familyPlanning->start_date ? Carbon::parse($demo->familyPlanning->start_date)->format('F d, Y') : null,
-                'fpDateEnded' => $demo->familyPlanning->end_date ? Carbon::parse($demo->familyPlanning->end_date)->format('F d, Y') : null,
+                'fpStatus' => $demo?->familyPlanning?->status ?? 'N/A',
+                'fpMethod' => $demo?->familyPlanning?->method ?? 'N/A',
+                'fpDateStarted' => $demo?->familyPlanning?->start_date ? Carbon::parse($demo?->familyPlanning?->start_date)->format('F d, Y') : null,
+                'fpDateEnded' => $demo?->familyPlanning?->end_date ? Carbon::parse($demo?->familyPlanning?->end_date)->format('F d, Y') : null,
 
                 // System IDs
-                'nhtsNumber' => $demo->socioEconomic->soec_number,
-                'householdId' => $info->householdInfo->hh_uuid ?? 'N/A',
+                'nhtsNumber' => $demo?->socioEconomic?->soec_number,
+                'householdId' => $info->householdInfo?->hh_uuid ?? 'N/A',
                 'relationship' => $info->relationship_type ?? 'Head',
                 'householdMembers' => $info->householdInfo ? $info->householdInfo->citizen_informations->filter(function($hhInfo) use ($info) {
                     return $hhInfo->ctz_info_id !== $info->ctz_info_id && $hhInfo->citizens->where('is_deleted', false)->isNotEmpty();
@@ -218,10 +218,10 @@ class CitizenController extends Controller
                         'relationship' => $hhInfo->relationship_type ?? 'Member',
                     ];
                 })->values()->all() : [],
-                'philhealthCategory' => $demo->philhealth->category_name ?? 'N/A',
-                'philhealthId' => $demo->philhealth->philhealth_id_number,
-                'membershipType' => $demo->philhealth->phea_membership_type,
-                'healthClassification' => $demo->healthRisk->clah_classification_name ?? 'Healthy',
+                'philhealthCategory' => $demo?->philhealth?->category_name ?? 'N/A',
+                'philhealthId' => $demo?->philhealth?->philhealth_id_number,
+                'membershipType' => $demo?->philhealth?->phea_membership_type,
+                'healthClassification' => $demo?->healthRisk?->clah_classification_name ?? 'Healthy',
 
                 // Audit
                 'dateEncoded' => Carbon::parse($citizen->date_encoded)->format('M d, Y | h:i A'),
@@ -265,8 +265,8 @@ class CitizenController extends Controller
             'contact_numbers.*' => 'nullable|string',
             'email' => 'nullable|email|max:255',
             'sitio' => 'nullable|exists:sitios,sitio_name',
-            'household_id' => 'nullable|exists:household_infos,hh_id',
-            'relationship_to_head' => 'nullable|required_with:household_id|string',
+            'household_id' => 'nullable|string',
+            'relationship_to_head' => 'nullable|string',
             'socio_economic_class' => 'nullable|string',
             'nhts_number' => 'nullable|string',
             'employment_status' => 'nullable|string',
@@ -381,6 +381,14 @@ class CitizenController extends Controller
                 if ($sitioObj) $sitioId = $sitioObj->sitio_id;
             }
 
+            $hhId = $validated['household_id'] ?? null;
+            if (!empty($hhId) && !is_numeric($hhId)) {
+                $hhObj = \App\Models\HouseholdInfo::where('hh_uuid', $hhId)->first();
+                $hhId = $hhObj ? $hhObj->hh_id : null;
+            } elseif (empty($hhId)) {
+                $hhId = null;
+            }
+
             $citizenInfo = CitizenInformation::create([
                 'first_name' => $validated['first_name'],
                 'last_name' => $validated['last_name'],
@@ -399,7 +407,7 @@ class CitizenController extends Controller
                 'is_indigenous' => $request->boolean('is_ip'),
                 'relationship_type' => $validated['relationship_to_head'] ?? null,
 
-                'hh_id' => $validated['household_id'],
+                'hh_id' => $hhId,
                 'sitio_id' => $sitioId,
                 'emp_id' => $employment->emp_id,
                 'con_id' => $contact->con_id,
@@ -565,6 +573,15 @@ class CitizenController extends Controller
                 if ($sitioObj) $sitioId = $sitioObj->sitio_id;
             }
 
+            // Household Logic (Frontend often sends the UUID string instead of the integer ID)
+            $hhId = $validated['household_id'] ?? null;
+            if (!empty($hhId) && !is_numeric($hhId)) {
+                $hhObj = \App\Models\HouseholdInfo::where('hh_uuid', $hhId)->first();
+                $hhId = $hhObj ? $hhObj->hh_id : null;
+            } elseif (empty($hhId)) {
+                $hhId = null;
+            }
+
             // Update info
             $info->update([
                 'first_name' => $validated['first_name'],
@@ -583,7 +600,7 @@ class CitizenController extends Controller
                 'is_registered_voter' => $request->boolean('is_voter'),
                 'is_indigenous' => $request->boolean('is_ip'),
                 'relationship_type' => $validated['relationship_to_head'] ?? null,
-                'hh_id' => $validated['household_id'],
+                'hh_id' => $hhId,
                 'sitio_id' => $sitioId,
             ]);
 
