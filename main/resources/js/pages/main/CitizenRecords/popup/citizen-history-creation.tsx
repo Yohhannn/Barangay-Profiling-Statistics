@@ -1,8 +1,8 @@
 import {
     X, CheckCircle, FileClock, User,
-    Activity, Tag, Search, Loader2, UserCheck, UserX
+    Activity, Tag, Search, Loader2, UserCheck, UserX, Plus, Trash2
 } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 
@@ -12,86 +12,18 @@ interface CitizenHistoryCreationProps {
 }
 
 export default function CitizenHistoryCreation({ isOpen, onClose }: CitizenHistoryCreationProps) {
-    // --- Form State ---
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
-        citizen_id: null as number | null,
-        first_name: '',
-        middle_name: '',
-        last_name: '',
-        type: '',
-        title: '',
-        description: '',
-        status: 'Pending',
+        citizens: [{ citizen_id: null as number | null, first_name: '', middle_name: '', last_name: '' }],
+        histories: [{ type: '', title: '', description: '', status: 'Pending' }]
     });
 
-    // --- Search State ---
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<any[]>([]);
-    const [isSearching, setIsSearching] = useState(false);
-    const [isLocked, setIsLocked] = useState(false); // Controls if fields are editable
+    const [resetKey, setResetKey] = useState(0);
 
-    // Live Search Effect
-    useEffect(() => {
-        if (searchQuery.trim().length > 1 && !isLocked) {
-            setIsSearching(true);
-            const debounceTimer = setTimeout(() => {
-                fetch(`/api/citizen-search?q=${encodeURIComponent(searchQuery)}`)
-                    .then(res => res.json())
-                    .then(resData => {
-                        setSearchResults(resData);
-                        setIsSearching(false);
-                    })
-                    .catch(err => {
-                        console.error("Failed to search citizens", err);
-                        setIsSearching(false);
-                    });
-            }, 300);
-            return () => clearTimeout(debounceTimer);
-        } else {
-            setSearchResults([]);
-            setIsSearching(false);
-        }
-    }, [searchQuery, isLocked]);
-
-    // Handle Selecting a Citizen
-    const handleSelectCitizen = (citizen: any) => {
-        setData(prev => ({
-            ...prev,
-            citizen_id: citizen.id,
-            first_name: citizen.name.split(' ')[0] || '', // Basic split, can be refined based on actual backend data
-            last_name: citizen.name.split(' ').slice(1).join(' ') || '',
-            middle_name: '' // The search endpoint might not return middle name separately
-        }));
-        
-        // Let's do a better parsing if we have the full citizen object
-        // For now, assuming standard name format
-        
-        setIsLocked(true); // Lock fields
-        setSearchQuery(''); // Clear search query visually
-        setSearchResults([]);
-        clearErrors();
-    };
-
-    // Cancel Selection / Unlock
-    const handleCancelSelection = () => {
-        setData(prev => ({
-            ...prev,
-            citizen_id: null,
-            first_name: '',
-            middle_name: '',
-            last_name: ''
-        }));
-        setIsLocked(false); // Unlock fields
-        setSearchQuery('');
-        setSearchResults([]);
-    };
-
-    // Cleanup on close
     useEffect(() => {
         if (!isOpen) {
             reset();
-            handleCancelSelection();
             clearErrors();
+            setResetKey(prev => prev + 1);
         }
     }, [isOpen]);
 
@@ -103,10 +35,13 @@ export default function CitizenHistoryCreation({ isOpen, onClose }: CitizenHisto
         post('/citizen-records/citizen-history', {
             preserveScroll: true,
             onSuccess: () => {
+                reset();
+                clearErrors();
+                setResetKey(prev => prev + 1);
                 Swal.fire({
                     icon: 'success',
                     title: 'Success!',
-                    text: 'Citizen history record added successfully.',
+                    text: 'Citizen history records created successfully.',
                 });
                 onClose();
             },
@@ -115,15 +50,51 @@ export default function CitizenHistoryCreation({ isOpen, onClose }: CitizenHisto
                 Swal.fire({
                     icon: 'error',
                     title: 'Validation Error',
-                    text: 'Please check the form for errors.',
+                    text: 'Please check the valid inputs for all blocks.',
                 });
             }
         });
     };
 
+    const addCitizen = () => {
+        setData('citizens', [...data.citizens, { citizen_id: null, first_name: '', middle_name: '', last_name: '' }]);
+    };
+
+    const removeCitizen = (index: number) => {
+        if (data.citizens.length > 1) {
+            setData('citizens', data.citizens.filter((_, i) => i !== index));
+        }
+    };
+
+    const updateCitizen = (index: number, field: string, value: any) => {
+        setData(data => {
+            const newCitizens = [...data.citizens];
+            newCitizens[index] = { ...newCitizens[index], [field]: value };
+            return { ...data, citizens: newCitizens };
+        });
+    };
+
+    const addHistory = () => {
+        setData('histories', [...data.histories, { type: '', title: '', description: '', status: 'Pending' }]);
+    };
+
+    const removeHistory = (index: number) => {
+        if (data.histories.length > 1) {
+            setData('histories', data.histories.filter((_, i) => i !== index));
+        }
+    };
+
+    const updateHistory = (index: number, field: string, value: any) => {
+        setData(data => {
+            const newHistories = [...data.histories];
+            newHistories[index] = { ...newHistories[index], [field]: value };
+            return { ...data, histories: newHistories };
+        });
+    };
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-[#F8F9FC] dark:bg-[#0f172a] w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-white/20">
+            <div className="bg-[#F8F9FC] dark:bg-[#0f172a] w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-white/20">
 
                 {/* --- Header --- */}
                 <div className="relative bg-purple-700 text-white p-5 flex justify-between items-center overflow-hidden shrink-0">
@@ -134,10 +105,10 @@ export default function CitizenHistoryCreation({ isOpen, onClose }: CitizenHisto
                     <div className="z-10">
                         <h2 className="text-lg font-bold tracking-wide flex items-center gap-2">
                             <FileClock className="size-5 text-purple-200" />
-                            Record Citizen History
+                            Record Citizen History (Batch Mode)
                         </h2>
                         <p className="text-[10px] text-purple-200 uppercase tracking-widest font-semibold mt-1">
-                            Record a certain citizen history
+                            Link multiple citizens to multiple history events at once
                         </p>
                     </div>
 
@@ -151,198 +122,83 @@ export default function CitizenHistoryCreation({ isOpen, onClose }: CitizenHisto
                 </div>
 
                 {/* --- Scrollable Content --- */}
-                <div className="flex-1 overflow-y-auto p-6 lg:p-8 scrollbar-thin scrollbar-thumb-purple-200 dark:scrollbar-thumb-purple-900 space-y-6">
+                <div className="flex-1 overflow-y-auto p-6 lg:p-8 scrollbar-thin scrollbar-thumb-purple-200 dark:scrollbar-thumb-purple-900 space-y-8">
 
-                    {/* Citizen Information */}
+                    {/* CITIZENS SECTION */}
                     <div className="space-y-4">
-                        <SectionLabel icon={<User className="size-4" />} label="Citizen Information" color="text-purple-600" />
-
-                        <div className="bg-white dark:bg-[#1e293b] p-5 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm space-y-4 relative">
-
-                            {/* SEARCH BAR (Only visible if NOT locked) */}
-                            {!isLocked && (
-                                <div className="space-y-1.5 relative z-20 animate-in fade-in slide-in-from-top-2">
-                                    <label className="text-[10px] font-bold uppercase text-neutral-500 tracking-wide">
-                                        Search Existing Citizen (Optional)
-                                    </label>
-                                    <div className="relative group">
-                                        <input
-                                            className="w-full text-xs p-2.5 pl-9 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all"
-                                            placeholder="Search by Name or CTZ ID..."
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                        />
-                                        <div className="absolute left-3 top-2.5 text-neutral-400">
-                                            {isSearching ? <Loader2 className="size-4 animate-spin" /> : <Search className="size-4" />}
-                                        </div>
-                                    </div>
-
-                                    {/* RESULTS DROPDOWN (Inline List) */}
-                                    {searchQuery.length > 1 && (
-                                        <div className="mt-2 flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
-                                            {searchResults.length > 0 ? (
-                                                searchResults.map((result) => (
-                                                    <button
-                                                        type="button"
-                                                        key={result.id}
-                                                        onMouseDown={(e) => {
-                                                            e.preventDefault();
-                                                            handleSelectCitizen(result);
-                                                        }}
-                                                        className="w-full p-3 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-sm flex items-center justify-between hover:border-purple-300 dark:hover:border-purple-500 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-all text-left group"
-                                                    >
-                                                        <div>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100 group-hover:text-purple-700 dark:group-hover:text-purple-400">
-                                                                    {result.name}
-                                                                </span>
-                                                            </div>
-                                                            <div className="flex items-center gap-2 mt-1">
-                                                                <span className="text-[10px] bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-neutral-500 px-1.5 py-0.5 rounded font-mono">
-                                                                    {result.uuid}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                        <div className="p-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-md text-neutral-400 group-hover:bg-purple-100 dark:group-hover:bg-purple-900/50 group-hover:text-purple-600 dark:group-hover:text-purple-400">
-                                                            <UserCheck className="size-4" />
-                                                        </div>
-                                                    </button>
-                                                ))
-                                            ) : (
-                                                !isSearching && (
-                                                    <div className="p-3 bg-neutral-50 dark:bg-neutral-800/50 border border-dashed border-neutral-300 dark:border-neutral-700 rounded-lg text-center">
-                                                        <span className="text-xs text-neutral-500">No citizens found matching "{searchQuery}"</span>
-                                                    </div>
-                                                )
-                                            )}
-                                        </div>
-                                    )}
+                        <div className="flex justify-between items-center border-b-2 border-neutral-100 dark:border-neutral-800 pb-2">
+                            <div className="flex items-center gap-2 text-purple-600">
+                                <div className="p-1.5 bg-white dark:bg-white/5 rounded shadow-sm border border-neutral-100 dark:border-neutral-700">
+                                    <User className="size-4" />
                                 </div>
-                            )}
-
-                            {/* SELECTED CITIZEN BANNER (Visible ONLY when locked) */}
-                            {isLocked && (
-                                <div className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-900/50 rounded-lg animate-in fade-in zoom-in duration-300">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-purple-100 dark:bg-purple-900/40 rounded-full text-purple-600 dark:text-purple-300">
-                                            <UserCheck className="size-4" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold uppercase text-purple-500 dark:text-purple-400 tracking-wide">
-                                                Citizen Selected
-                                            </p>
-                                            <p className="text-xs font-medium text-purple-900 dark:text-purple-100 font-mono flex items-center gap-1 mt-0.5">
-                                                {data.first_name} {data.last_name}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={handleCancelSelection}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-black/20 border border-neutral-200 dark:border-neutral-700 hover:border-red-300 hover:text-red-500 dark:hover:border-red-800 dark:hover:text-red-400 rounded text-[10px] font-bold uppercase tracking-wider text-neutral-500 transition-all shadow-sm"
-                                    >
-                                        <UserX className="size-3" /> Change
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* Divider (Only show if not locked to avoid clutter) */}
-                            {!isLocked && <div className="border-t border-dashed border-neutral-200 dark:border-neutral-700 my-2"></div>}
-
-                            {/* NAME FIELDS */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <InputGroup
-                                    label="First Name"
-                                    placeholder="First Name"
-                                    required
-                                    value={data.first_name}
-                                    onChange={(e) => setData('first_name', e.target.value)}
-                                    readOnly={isLocked}
-                                    className={isLocked ? 'bg-neutral-50/80 dark:bg-neutral-900/50 text-neutral-500 cursor-not-allowed border-neutral-200' : ''}
-                                />
-                                <InputGroup
-                                    label="Middle Name"
-                                    placeholder="Middle Name"
-                                    value={data.middle_name}
-                                    onChange={(e) => setData('middle_name', e.target.value)}
-                                    readOnly={isLocked}
-                                    className={isLocked ? 'bg-neutral-50/80 dark:bg-neutral-900/50 text-neutral-500 cursor-not-allowed border-neutral-200' : ''}
-                                />
-                                <InputGroup
-                                    label="Last Name"
-                                    placeholder="Last Name"
-                                    required
-                                    value={data.last_name}
-                                    onChange={(e) => setData('last_name', e.target.value)}
-                                    readOnly={isLocked}
-                                    className={isLocked ? 'bg-neutral-50/80 dark:bg-neutral-900/50 text-neutral-500 cursor-not-allowed border-neutral-200' : ''}
-                                />
+                                <h3 className="text-sm font-bold uppercase tracking-wider dark:text-neutral-200">
+                                    Involved Citizens
+                                </h3>
                             </div>
-                            
-                            {(errors.first_name || errors.last_name) && (
-                                <p className="text-[10px] text-red-500 font-medium">First Name and Last Name are required.</p>
-                            )}
+                            <button
+                                type="button"
+                                onClick={addCitizen}
+                                className="flex items-center gap-1 text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-3 py-1.5 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors"
+                            >
+                                <Plus className="size-3.5" /> Add Citizen
+                            </button>
+                        </div>
 
-                            <p className="text-[10px] text-right text-neutral-400 italic mt-2">
-                                {isLocked
-                                    ? "Fields are locked because a registered citizen is selected."
-                                    : "Enter names manually if citizen is not in the database."}
-                            </p>
+                        <div className="grid grid-cols-1 gap-4" key={`citizens-${resetKey}`}>
+                            {data.citizens.map((citizen, idx) => (
+                                <CitizenBlock 
+                                    key={`citizen-${resetKey}-${idx}`}
+                                    index={idx}
+                                    data={citizen}
+                                    onChange={(field: string, val: any) => updateCitizen(idx, field, val)}
+                                    onRemove={() => removeCitizen(idx)}
+                                    canRemove={data.citizens.length > 1}
+                                    errors={errors}
+                                />
+                            ))}
                         </div>
                     </div>
 
-                    {/* History Information */}
+                    {/* HISTORIES SECTION */}
                     <div className="space-y-4">
-                        <SectionLabel icon={<Activity className="size-4" />} label="History Information" color="text-purple-600" />
-
-                        <div className="bg-white dark:bg-[#1e293b] p-5 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm space-y-4">
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <SelectGroup
-                                        label="Select History Type"
-                                        options={['Violation', 'Complaint', 'Commendation', 'Other']}
-                                        required
-                                        value={data.type}
-                                        onChange={(e) => setData('type', e.target.value)}
-                                    />
-                                    {errors.type && <p className="text-[10px] text-red-500 mt-1">{errors.type}</p>}
+                        <div className="flex justify-between items-center border-b-2 border-neutral-100 dark:border-neutral-800 pb-2">
+                            <div className="flex items-center gap-2 text-purple-600">
+                                <div className="p-1.5 bg-white dark:bg-white/5 rounded shadow-sm border border-neutral-100 dark:border-neutral-700">
+                                    <Activity className="size-4" />
                                 </div>
-                                <div>
-                                    <SelectGroup
-                                        label="Status"
-                                        options={['Resolved', 'Pending', 'Active', 'Dismissed']}
-                                        required
-                                        value={data.status}
-                                        onChange={(e) => setData('status', e.target.value)}
-                                    />
-                                    {errors.status && <p className="text-[10px] text-red-500 mt-1">{errors.status}</p>}
-                                </div>
+                                <h3 className="text-sm font-bold uppercase tracking-wider dark:text-neutral-200">
+                                    History Information
+                                </h3>
                             </div>
-                            
-                            <div>
-                                <InputGroup
-                                    label="Record Title"
-                                    placeholder="e.g. Noise Complaint or Traffic Violation"
-                                    required
-                                    value={data.title}
-                                    onChange={(e) => setData('title', e.target.value)}
+                            <button
+                                type="button"
+                                onClick={addHistory}
+                                className="flex items-center gap-1 text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-3 py-1.5 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors"
+                            >
+                                <Plus className="size-3.5" /> Add Log
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4" key={`history-${resetKey}`}>
+                            {data.histories.map((history, idx) => (
+                                <HistoryBlock
+                                    key={idx}
+                                    index={idx}
+                                    data={history}
+                                    onChange={(field: string, val: any) => updateHistory(idx, field, val)}
+                                    onRemove={() => removeHistory(idx)}
+                                    canRemove={data.histories.length > 1}
+                                    errors={errors}
                                 />
-                                {errors.title && <p className="text-[10px] text-red-500 mt-1">{errors.title}</p>}
-                            </div>
+                            ))}
+                        </div>
+                    </div>
 
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold uppercase text-neutral-500 tracking-wide">
-                                    Description <span className="text-red-500">*</span>
-                                </label>
-                                <textarea
-                                    className="w-full text-xs p-3 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all resize-none h-32"
-                                    placeholder="What is it about?"
-                                    value={data.description}
-                                    onChange={(e) => setData('description', e.target.value)}
-                                ></textarea>
-                                {errors.description && <p className="text-[10px] text-red-500 mt-1">{errors.description}</p>}
-                            </div>
+                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700/50 p-4 rounded-xl flex gap-3 text-sm text-yellow-800 dark:text-yellow-200">
+                        <Tag className="size-5 shrink-0 mt-0.5" />
+                        <div>
+                            <p className="font-bold">Batch Creation Note:</p>
+                            <p className="text-xs opacity-80 mt-1">This will associate <strong>every</strong> citizen listed above with <strong>every</strong> history record listed above, generating {data.citizens.length * data.histories.length} total history records.</p>
                         </div>
                     </div>
 
@@ -350,7 +206,7 @@ export default function CitizenHistoryCreation({ isOpen, onClose }: CitizenHisto
 
                 {/* --- Footer --- */}
                 <div className="p-5 bg-white dark:bg-[#0f172a] border-t border-neutral-200 dark:border-neutral-800 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] shrink-0">
-                    <span className="text-[10px] text-neutral-400 italic">Note: Kindly fill up the form</span>
+                    <span className="text-[10px] text-neutral-400 italic">Ensure all fields are correctly filled before saving</span>
 
                     <button
                         onClick={handleSubmit}
@@ -358,7 +214,7 @@ export default function CitizenHistoryCreation({ isOpen, onClose }: CitizenHisto
                         className="flex items-center gap-2 px-8 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-green-600/20 active:scale-95"
                     >
                         {processing ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle className="size-4" />} 
-                        {processing ? 'Saving...' : 'Confirm and Save'}
+                        {processing ? 'Saving Records...' : `Save ${data.citizens.length * data.histories.length} Record(s)`}
                     </button>
                 </div>
 
@@ -367,27 +223,213 @@ export default function CitizenHistoryCreation({ isOpen, onClose }: CitizenHisto
     );
 }
 
-// --- Helper Components ---
+// --- Subcomponents ---
 
-function SectionLabel({ icon, label, color = "text-neutral-700" }: { icon: React.ReactNode, label: string, color?: string }) {
+function CitizenBlock({ index, data, onChange, onRemove, canRemove, errors }: any) {
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [isLocked, setIsLocked] = useState(data.citizen_id !== null);
+    const [hasRecord, setHasRecord] = useState(false);
+
+    useEffect(() => {
+        if (data.citizen_id === null && data.first_name === '' && data.last_name === '') {
+            setSearchQuery('');
+            setSearchResults([]);
+            setIsLocked(false);
+            setHasRecord(false);
+        }
+    }, [data.citizen_id, data.first_name, data.last_name]);
+
+    useEffect(() => {
+        if (searchQuery.trim().length > 1 && !isLocked) {
+            setIsSearching(true);
+            const debounceTimer = setTimeout(() => {
+                fetch(`/api/citizen-search?q=${encodeURIComponent(searchQuery)}`)
+                    .then(res => res.json())
+                    .then(resData => {
+                        setSearchResults(resData);
+                        setIsSearching(false);
+                    })
+                    .catch(e => setIsSearching(false));
+            }, 300);
+            return () => clearTimeout(debounceTimer);
+        } else {
+            setSearchResults([]);
+            setIsSearching(false);
+        }
+    }, [searchQuery, isLocked]);
+
+    const handleSelectCitizen = (citizen: any) => {
+        onChange('citizen_id', citizen.id);
+        
+        // Use the exact names from backend if available, fallback to splitting string
+        const firstName = citizen.first_name || citizen.name.split(' ')[0] || '';
+        const lastName = citizen.last_name || (citizen.name.split(' ').length > 1 ? citizen.name.split(' ')[citizen.name.split(' ').length - 1] : '');
+        const middleName = citizen.middle_name || (citizen.name.split(' ').length > 2 ? citizen.name.split(' ').slice(1, -1).join(' ') : '');
+
+        onChange('first_name', firstName);
+        onChange('last_name', lastName);
+        onChange('middle_name', middleName);
+        
+        setIsLocked(true);
+        setSearchQuery('');
+        setSearchResults([]);
+    };
+
+    const handleCancelSelection = () => {
+        onChange('citizen_id', null);
+        onChange('first_name', '');
+        onChange('middle_name', '');
+        onChange('last_name', '');
+        setIsLocked(false);
+        setSearchQuery('');
+        setSearchResults([]);
+    };
+
     return (
-        <div className={`flex items-center gap-2 pb-2 border-b-2 border-neutral-100 dark:border-neutral-800 ${color}`}>
-            <div className="p-1.5 bg-white dark:bg-white/5 rounded shadow-sm border border-neutral-100 dark:border-neutral-700">
-                {icon}
+        <div className="bg-white dark:bg-[#1e293b] p-5 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm relative">
+            {canRemove && (
+                <button type="button" onClick={onRemove} className="absolute top-3 right-3 text-red-400 hover:text-red-500 bg-red-50 dark:bg-red-900/20 p-1.5 rounded-md transition-colors z-30">
+                    <Trash2 className="size-4" />
+                </button>
+            )}
+
+            {!isLocked && (
+                <div className="mb-4">
+                    <label className="flex items-center gap-2 cursor-pointer mb-3">
+                        <div className="relative">
+                            <input 
+                                type="checkbox" 
+                                className="sr-only" 
+                                checked={hasRecord}
+                                onChange={(e) => {
+                                    setHasRecord(e.target.checked);
+                                    if (!e.target.checked) handleCancelSelection();
+                                }}
+                            />
+                            <div className={`block w-10 h-6 rounded-full transition-colors ${hasRecord ? 'bg-purple-500' : 'bg-neutral-300 dark:bg-neutral-600'}`}></div>
+                            <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${hasRecord ? 'transform translate-x-4' : ''}`}></div>
+                        </div>
+                        <span className="text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wide">
+                            Has Barangay Record?
+                        </span>
+                    </label>
+
+                    {hasRecord && (
+                        <div className="space-y-1.5 relative z-20 animate-in fade-in max-w-sm">
+                            <div className="relative group">
+                                <input
+                                    className="w-full text-xs p-2.5 pl-9 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all"
+                                    placeholder="Search by ID or Name..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                                <div className="absolute left-3 top-2.5 text-neutral-400 group-focus-within:text-purple-500 transition-colors">
+                                    {isSearching ? <Loader2 className="size-4 animate-spin" /> : <Search className="size-4" />}
+                                </div>
+                            </div>
+
+                            {searchQuery.length > 1 && (
+                                <div className="mt-2 flex flex-col gap-1 max-h-48 overflow-y-auto bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-sm p-1">
+                                    {searchResults.length > 0 ? (
+                                        searchResults.map(result => (
+                                            <button
+                                                type="button"
+                                                key={result.id}
+                                                onMouseDown={(e) => { e.preventDefault(); handleSelectCitizen(result); }}
+                                                className="w-full p-2 rounded-md hover:bg-purple-50 dark:hover:bg-purple-900/30 text-left flex justify-between items-center group transition-colors"
+                                            >
+                                                <div>
+                                                    <div className="text-xs font-bold text-neutral-800 dark:text-neutral-200">{result.name}</div>
+                                                    <div className="text-[10px] text-neutral-500 font-mono mt-0.5">
+                                                        {result.uuid} • {result.sex || 'Unknown'} {result.age !== null ? `(${result.age} yrs)` : ''}
+                                                    </div>
+                                                </div>
+                                                <div className="p-1 rounded bg-purple-100 dark:bg-purple-900/40 opacity-0 group-hover:opacity-100 transition-opacity text-purple-600 dark:text-purple-400">
+                                                    <UserCheck className="size-4" />
+                                                </div>
+                                            </button>
+                                        ))
+                                    ) : (!isSearching && <div className="p-2 text-center text-xs text-neutral-500">No matching citizens found.</div>)}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {isLocked && (
+                <div className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-900/50 rounded-lg animate-in fade-in zoom-in duration-300 mb-4 max-w-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-purple-100 dark:bg-purple-900/40 rounded-full text-purple-600 dark:text-purple-300">
+                            <UserCheck className="size-4" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold uppercase text-purple-500 dark:text-purple-400 tracking-wide">Citizen Selected</p>
+                            <p className="text-xs font-medium text-purple-900 dark:text-purple-100 flex items-center gap-1 mt-0.5">{data.first_name} {data.last_name}</p>
+                        </div>
+                    </div>
+                    <button type="button" onClick={handleCancelSelection} className="text-[10px] font-bold uppercase tracking-wider text-red-500 hover:text-red-600 bg-white dark:bg-black/20 border border-neutral-200 dark:border-neutral-700 px-3 py-1.5 rounded shadow-sm">
+                        Unlink
+                    </button>
+                </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <InputGroup label="First Name" required value={data.first_name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange('first_name', e.target.value)} readOnly={isLocked} className={isLocked ? 'bg-neutral-50/80 dark:bg-neutral-900/50 text-neutral-500 cursor-not-allowed' : ''} />
+                <InputGroup label="Middle Name" value={data.middle_name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange('middle_name', e.target.value)} readOnly={isLocked} className={isLocked ? 'bg-neutral-50/80 dark:bg-neutral-900/50 text-neutral-500 cursor-not-allowed' : ''} />
+                <InputGroup label="Last Name" required value={data.last_name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange('last_name', e.target.value)} readOnly={isLocked} className={isLocked ? 'bg-neutral-50/80 dark:bg-neutral-900/50 text-neutral-500 cursor-not-allowed' : ''} />
             </div>
-            <h3 className={`text-sm font-bold uppercase tracking-wider ${color} dark:text-neutral-200`}>
-                {label}
-            </h3>
+            {(errors[`citizens.${index}.first_name`] || errors[`citizens.${index}.last_name`]) && (
+                <p className="text-[10px] text-red-500 font-medium mt-1">First Name and Last Name are required.</p>
+            )}
         </div>
     );
 }
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-    label?: string;
-    icon?: React.ReactNode;
+function HistoryBlock({ index, data, onChange, onRemove, canRemove, errors }: any) {
+    return (
+        <div className="bg-white dark:bg-[#1e293b] p-5 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm relative space-y-4">
+            {canRemove && (
+                <button type="button" onClick={onRemove} className="absolute top-3 right-3 text-red-400 hover:text-red-500 bg-red-50 dark:bg-red-900/20 p-1.5 rounded-md transition-colors z-10">
+                    <Trash2 className="size-4" />
+                </button>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <SelectGroup label="Select History Type" options={['Violation', 'Complaint', 'Commendation', 'Other']} required value={data.type} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onChange('type', e.target.value)} />
+                    {errors[`histories.${index}.type`] && <p className="text-[10px] text-red-500 mt-1">{errors[`histories.${index}.type`]}</p>}
+                </div>
+                <div>
+                    <SelectGroup label="Status" options={['Resolved', 'Pending', 'Active', 'Dismissed']} required value={data.status} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onChange('status', e.target.value)} />
+                    {errors[`histories.${index}.status`] && <p className="text-[10px] text-red-500 mt-1">{errors[`histories.${index}.status`]}</p>}
+                </div>
+            </div>
+            
+            <div>
+                <InputGroup label="Record Title" placeholder="e.g. Noise Complaint or Traffic Violation" required value={data.title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange('title', e.target.value)} />
+                {errors[`histories.${index}.title`] && <p className="text-[10px] text-red-500 mt-1">{errors[`histories.${index}.title`]}</p>}
+            </div>
+
+            <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase text-neutral-500 tracking-wide">
+                    Description <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                    className="w-full text-xs p-3 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all resize-none h-24"
+                    placeholder="Brief description of the record..."
+                    value={data.description}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onChange('description', e.target.value)}
+                ></textarea>
+                {errors[`histories.${index}.description`] && <p className="text-[10px] text-red-500 mt-1">{errors[`histories.${index}.description`]}</p>}
+            </div>
+        </div>
+    );
 }
 
-function InputGroup({ label, icon, required, className, ...props }: InputProps) {
+function InputGroup({ label, required, className, ...props }: any) {
     return (
         <div className="space-y-1.5 w-full">
             {label && (
@@ -395,41 +437,21 @@ function InputGroup({ label, icon, required, className, ...props }: InputProps) 
                     {label} {required && <span className="text-red-500">*</span>}
                 </label>
             )}
-            <div className="relative group">
-                <input
-                    className={`w-full text-xs p-2.5 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all ${className}`}
-                    {...props}
-                />
-                {icon && <div className="absolute right-3 top-2.5">{icon}</div>}
-            </div>
+            <input className={`w-full text-xs p-2.5 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all ${className}`} {...props} />
         </div>
     );
 }
 
-interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
-    label?: string;
-    options: string[];
-    required?: boolean;
-}
-
-function SelectGroup({ label, options, required, ...props }: SelectProps) {
+function SelectGroup({ label, options, required, ...props }: any) {
     return (
         <div className="space-y-1.5 w-full">
             <label className="text-[10px] font-bold uppercase text-neutral-500 tracking-wide">
                 {label} {required && <span className="text-red-500">*</span>}
             </label>
-            <div className="relative">
-                <select
-                    className="w-full text-xs p-2.5 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none appearance-none transition-all cursor-pointer hover:border-purple-300"
-                    {...props}
-                >
-                    <option value="">Select Option</option>
-                    {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                </select>
-                <div className="absolute right-3 top-3 pointer-events-none text-neutral-400">
-                    <svg className="w-3 h-3 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
-                </div>
-            </div>
+            <select className="w-full text-xs p-2.5 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all appearance-none cursor-pointer" {...props}>
+                <option value="" disabled>Select Option</option>
+                {options.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
+            </select>
         </div>
     );
 }

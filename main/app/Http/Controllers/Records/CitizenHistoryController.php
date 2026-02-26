@@ -33,6 +33,7 @@ class CitizenHistoryController extends Controller
 
             return [
                 'id' => $history->cihi_id,
+                'cihi_uuid' => $history->cihi_uuid,
                 'citizenId' => $history->citizen ? $history->citizen->ctz_uuid : 'Manual Entry',
                 'ctz_id' => $history->ctz_id,
                 'firstName' => $history->first_name,
@@ -60,36 +61,41 @@ class CitizenHistoryController extends Controller
         ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'citizen_id'  => 'nullable|integer|exists:citizens,ctz_id',
-            'first_name'  => 'required|string|max:255',
-            'middle_name' => 'nullable|string|max:255',
-            'last_name'   => 'required|string|max:255',
-            'type'        => 'required|string',
-            'title'       => 'required|string|max:255',
-            'description' => 'required|string|max:5000',
-            'status'      => 'required|string',
+            'citizens' => 'required|array|min:1',
+            'citizens.*.citizen_id'  => 'nullable|integer|exists:citizens,ctz_id',
+            'citizens.*.first_name'  => 'required|string|max:255',
+            'citizens.*.middle_name' => 'nullable|string|max:255',
+            'citizens.*.last_name'   => 'required|string|max:255',
+            'histories' => 'required|array|min:1',
+            'histories.*.type'        => 'required|string',
+            'histories.*.title'       => 'required|string|max:255',
+            'histories.*.description' => 'required|string|max:5000',
+            'histories.*.status'      => 'required|string',
         ]);
 
         try {
             \Illuminate\Support\Facades\DB::beginTransaction();
 
-            CitizenHistory::create([
-                'first_name'  => $validated['first_name'],
-                'middle_name' => $validated['middle_name'] ?? null,
-                'last_name'   => $validated['last_name'],
-                'ctz_id'      => $validated['citizen_id'] ?? null,
-                'title'       => $validated['title'],
-                'type'        => $validated['type'],
-                'description' => $validated['description'],
-                'status'      => $validated['status'],
-                'encoded_by'  => \Illuminate\Support\Facades\Auth::id() ?? 1,
-            ]);
+            $encodedBy = \Illuminate\Support\Facades\Auth::id() ?? 1;
+
+            foreach ($validated['citizens'] as $citizen) {
+                foreach ($validated['histories'] as $history) {
+                    CitizenHistory::create([
+                        'first_name'  => $citizen['first_name'],
+                        'middle_name' => $citizen['middle_name'] ?? null,
+                        'last_name'   => $citizen['last_name'],
+                        'ctz_id'      => $citizen['citizen_id'] ?? null,
+                        'title'       => $history['title'],
+                        'type'        => $history['type'],
+                        'description' => $history['description'],
+                        'status'      => $history['status'],
+                        'encoded_by'  => $encodedBy,
+                    ]);
+                }
+            }
 
             \Illuminate\Support\Facades\DB::commit();
 
@@ -100,38 +106,64 @@ class CitizenHistoryController extends Controller
         }
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
-            'citizen_id'  => 'nullable|integer|exists:citizens,ctz_id',
-            'first_name'  => 'required|string|max:255',
-            'middle_name' => 'nullable|string|max:255',
-            'last_name'   => 'required|string|max:255',
-            'type'        => 'required|string',
-            'title'       => 'required|string|max:255',
-            'description' => 'required|string|max:5000',
-            'status'      => 'required|string',
+            'citizens' => 'required|array|min:1',
+            'citizens.*.citizen_id'  => 'nullable|integer|exists:citizens,ctz_id',
+            'citizens.*.first_name'  => 'required|string|max:255',
+            'citizens.*.middle_name' => 'nullable|string|max:255',
+            'citizens.*.last_name'   => 'required|string|max:255',
+            'histories' => 'required|array|min:1',
+            'histories.*.type'        => 'required|string',
+            'histories.*.title'       => 'required|string|max:255',
+            'histories.*.description' => 'required|string|max:5000',
+            'histories.*.status'      => 'required|string',
         ]);
 
         try {
             \Illuminate\Support\Facades\DB::beginTransaction();
 
-            $history = CitizenHistory::where('cihi_id', $id)->firstOrFail();
+            $historyRecord = CitizenHistory::where('cihi_id', $id)->firstOrFail();
+            $updatedBy = \Illuminate\Support\Facades\Auth::id() ?? 1;
 
-            $history->update([
-                'first_name'  => $validated['first_name'],
-                'middle_name' => $validated['middle_name'] ?? null,
-                'last_name'   => $validated['last_name'],
-                'ctz_id'      => $validated['citizen_id'] ?? null,
-                'title'       => $validated['title'],
-                'type'        => $validated['type'],
-                'description' => $validated['description'],
-                'status'      => $validated['status'],
-                'updated_by'  => \Illuminate\Support\Facades\Auth::id() ?? 1,
+            $firstCitizen = $validated['citizens'][0];
+            $firstHistory = $validated['histories'][0];
+
+            $historyRecord->update([
+                'first_name'  => $firstCitizen['first_name'],
+                'middle_name' => $firstCitizen['middle_name'] ?? null,
+                'last_name'   => $firstCitizen['last_name'],
+                'ctz_id'      => $firstCitizen['citizen_id'] ?? null,
+                'title'       => $firstHistory['title'],
+                'type'        => $firstHistory['type'],
+                'description' => $firstHistory['description'],
+                'status'      => $firstHistory['status'],
+                'updated_by'  => $updatedBy,
             ]);
+
+            $isFirstCombination = true;
+
+            foreach ($validated['citizens'] as $citizen) {
+                foreach ($validated['histories'] as $history) {
+                    if ($isFirstCombination) {
+                        $isFirstCombination = false;
+                        continue;
+                    }
+                    
+                    CitizenHistory::create([
+                        'first_name'  => $citizen['first_name'],
+                        'middle_name' => $citizen['middle_name'] ?? null,
+                        'last_name'   => $citizen['last_name'],
+                        'ctz_id'      => $citizen['citizen_id'] ?? null,
+                        'title'       => $history['title'],
+                        'type'        => $history['type'],
+                        'description' => $history['description'],
+                        'status'      => $history['status'],
+                        'encoded_by'  => $updatedBy,
+                    ]);
+                }
+            }
 
             \Illuminate\Support\Facades\DB::commit();
 
