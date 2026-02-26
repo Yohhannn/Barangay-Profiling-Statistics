@@ -51,6 +51,7 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
         // Contact & Address
         contact_numbers: [''],
         email: '',
+        personal_address: '',
         sitio: '',
 
         // Household
@@ -314,6 +315,9 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
 
                                     <InputGroup label="Email Address" type="email" value={data.email} onChange={e => setData('email', e.target.value)} placeholder="citizen@email.com" error={errors.email} />
 
+                                    <div className="pt-2">
+                                        <InputGroup label="Personal Address" value={data.personal_address} onChange={e => setData('personal_address', e.target.value)} placeholder="House No. / Street / Block" error={errors.personal_address} />
+                                    </div>
                                     <div className="pt-2">
                                         {/* Sitio Dropdown - Now uses locally fetched options */}
                                         <SelectGroup

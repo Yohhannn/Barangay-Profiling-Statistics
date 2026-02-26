@@ -24,6 +24,7 @@ interface Citizen {
     bloodType?: string;
     contact: string[];
     email?: string;
+    personalAddress?: string;
     sitio?: string;
     householdId?: string;
     relationship?: string;
@@ -107,6 +108,7 @@ export default function CitizenEdit({ isOpen, onClose, citizen, onSuccess }: Cit
         // Contact & Address
         contact_numbers: [''],
         email: '',
+        personal_address: '',
         sitio: '',
 
         // Household
@@ -166,6 +168,7 @@ export default function CitizenEdit({ isOpen, onClose, citizen, onSuccess }: Cit
 
                 contact_numbers: citizen.contact && citizen.contact.length > 0 ? citizen.contact : [''],
                 email: citizen.email && citizen.email !== 'N/A' ? citizen.email : '',
+                personal_address: citizen.personalAddress && citizen.personalAddress !== 'N/A' ? citizen.personalAddress : '',
                 sitio: citizen.sitio && citizen.sitio !== 'N/A' && citizen.sitio !== 'Unknown' ? citizen.sitio : '',
 
                 household_id: citizen.householdId && citizen.householdId !== 'N/A' ? citizen.householdId : '',
@@ -184,10 +187,10 @@ export default function CitizenEdit({ isOpen, onClose, citizen, onSuccess }: Cit
                 is_studying: citizen.isStudent || false,
                 school_name: citizen.schoolName && citizen.schoolName !== 'N/A' ? citizen.schoolName : '',
                 current_level: citizen.educAttainment && citizen.educAttainment !== 'N/A' ? citizen.educAttainment : '',
-                elementary_name: '',
-                highschool_name: '',
-                senior_high_name: '',
-                college_name: '',
+                elementary_name: citizen.elementary_name || '',
+                highschool_name: citizen.highschool_name || '',
+                senior_high_name: citizen.senior_high_name || '',
+                college_name: citizen.college_name || '',
 
                 health_classification: citizen.healthClassification && citizen.healthClassification !== 'N/A' ? citizen.healthClassification : '',
                 is_voter: citizen.isVoter || false,
@@ -422,6 +425,9 @@ export default function CitizenEdit({ isOpen, onClose, citizen, onSuccess }: Cit
 
                                     <InputGroup label="Email Address" type="email" value={data.email} onChange={e => setData('email', e.target.value)} placeholder="citizen@email.com" error={errors.email} />
 
+                                    <div className="pt-2">
+                                        <InputGroup label="Personal Address" value={data.personal_address} onChange={e => setData('personal_address', e.target.value)} placeholder="House No. / Street / Block" error={errors.personal_address} />
+                                    </div>
                                     <div className="pt-2">
                                         <SelectGroup
                                             label="Sitio / Zone"

@@ -23,6 +23,7 @@ class EduHistory extends Model
         'elementary_name',
         'highschool_name',
         'sr_highschool_name',
+        'college_name',
     ];
 
     // Relationships

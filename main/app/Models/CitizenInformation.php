@@ -32,6 +32,7 @@ class CitizenInformation extends Model
         'is_registered_voter',
         'is_indigenous',
         'relationship_type',
+        'personal_address',
         'hh_id',
         'sitio_id',
         'emp_id',
