@@ -42,6 +42,8 @@ interface Citizen {
     // Contact (Dynamic Array) & Address
     email: string;
     contact: string[];
+    personalAddress: string;
+    householdAddress: string;
     fullAddress: string;
     sitio: string;
 
@@ -63,6 +65,10 @@ interface Citizen {
 
     educAttainment?: string;
     schoolName?: string;
+    elementary_name?: string;
+    highschool_name?: string;
+    senior_high_name?: string;
+    college_name?: string;
 
     fpStatus?: string; // Family Planning
     fpMethod?: string;
@@ -672,8 +678,13 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                                                 </div>
                                                 <InfoItem label="Email Address" value={selectedCitizen.email} />
                                                 <div className="pt-2 border-t border-sidebar-border/50">
+                                                    <InfoItem label="Personal Address" value={selectedCitizen.personalAddress !== 'N/A' && selectedCitizen.personalAddress !== '' ? selectedCitizen.personalAddress : 'Not Provided'} />
+                                                    <InfoItem 
+                                                        label="Household Address" 
+                                                        value={selectedCitizen.householdAddress !== 'N/A' && selectedCitizen.householdAddress !== '' ? selectedCitizen.householdAddress : 'No household assigned'} 
+                                                    />
                                                     <InfoItem label="Sitio" value={selectedCitizen.sitio} highlight />
-                                                    <InfoItem label="Full Address" value={selectedCitizen.fullAddress} />
+                                                    <InfoItem label="Format Address" value={selectedCitizen.fullAddress} />
                                                 </div>
                                             </div>
                                         </div>
@@ -755,12 +766,20 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                                             </div>
                                         )}
 
-                                        {selectedCitizen.isStudent && (
+                                        {(selectedCitizen.isStudent || selectedCitizen.educAttainment || selectedCitizen.elementary_name) && (
                                             <div className="col-span-1 space-y-4">
                                                 <SectionHeader icon={<GraduationCap className="size-4 text-yellow-600" />} title="Education" />
                                                 <div className="bg-yellow-50/50 dark:bg-yellow-900/10 border border-yellow-200 rounded-xl p-4 space-y-2">
-                                                    <InfoItem label="Level" value={selectedCitizen.educAttainment || 'N/A'} />
-                                                    <InfoItem label="School" value={selectedCitizen.schoolName || 'N/A'} />
+                                                    <InfoItem label="Status" value={selectedCitizen.isStudent ? 'Currently Studying' : 'Not Studying'} />
+                                                    <InfoItem label="Highest Attainment" value={selectedCitizen.educAttainment || 'N/A'} />
+                                                    {selectedCitizen.isStudent && <InfoItem label="Current School" value={selectedCitizen.schoolName || 'N/A'} />}
+                                                    <div className="pt-2 border-t border-yellow-200/50 space-y-2 mt-2">
+                                                        <span className="text-[10px] font-bold uppercase text-yellow-600/80 dark:text-yellow-400/80">Educational History</span>
+                                                        <InfoItem label="Elementary" value={selectedCitizen.elementary_name || 'N/A'} />
+                                                        <InfoItem label="High School" value={selectedCitizen.highschool_name || 'N/A'} />
+                                                        <InfoItem label="Senior High" value={selectedCitizen.senior_high_name || 'N/A'} />
+                                                        <InfoItem label="College" value={selectedCitizen.college_name || 'N/A'} />
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}

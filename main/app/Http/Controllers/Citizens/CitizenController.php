@@ -178,6 +178,8 @@ class CitizenController extends Controller
                 // Contact & Address
                 'email' => $info->contact->email ?? 'N/A',
                 'contact' => $contactNums, // Wrap in array for frontend
+                'personalAddress' => $info->personal_address ?? 'N/A',
+                'householdAddress' => $info->householdInfo ? trim(($info->householdInfo->house_number ? $info->householdInfo->house_number . ' ' : '') . ($info->householdInfo->address ?? '')) : 'N/A',
                 'fullAddress' => $info->sitio ? $info->sitio->sitio_name . ', Marigondon' : 'N/A',
                 'sitio' => $info->sitio ? $info->sitio->sitio_name : 'Unknown',
 
@@ -199,6 +201,10 @@ class CitizenController extends Controller
 
                 'educAttainment' => $demo?->educationStatus?->education_level ?? 'N/A',
                 'schoolName' => $demo?->educationStatus?->institution_name ?? 'N/A',
+                'elementary_name' => $demo?->educationStatus?->educationHistory?->elementary_name ?? '',
+                'highschool_name' => $demo?->educationStatus?->educationHistory?->highschool_name ?? '',
+                'senior_high_name' => $demo?->educationStatus?->educationHistory?->sr_highschool_name ?? '',
+                'college_name' => $demo?->educationStatus?->educationHistory?->college_name ?? '',
 
                 'fpStatus' => $demo?->familyPlanning?->status ?? 'N/A',
                 'fpMethod' => $demo?->familyPlanning?->method ?? 'N/A',
@@ -264,6 +270,7 @@ class CitizenController extends Controller
             'contact_numbers' => 'nullable|array',
             'contact_numbers.*' => 'nullable|string',
             'email' => 'nullable|email|max:255',
+            'personal_address' => 'nullable|string|max:1000',
             'sitio' => 'nullable|exists:sitios,sitio_name',
             'household_id' => 'nullable|string',
             'relationship_to_head' => 'nullable|string',
@@ -354,6 +361,7 @@ class CitizenController extends Controller
                 'elementary_name' => $validated['elementary_name'],
                 'highschool_name' => $validated['highschool_name'],
                 'sr_highschool_name' => $validated['senior_high_name'],
+                'college_name' => $validated['college_name'],
             ]);
 
             $eduStatus = EducationStatus::create([
@@ -400,6 +408,7 @@ class CitizenController extends Controller
                 'civil_status' => $validated['civil_status'] ?? 'Single',
                 'blood_type' => $validated['blood_type'],
                 'religion' => $validated['religion'],
+                'personal_address' => $validated['personal_address'] ?? null,
                 'is_deceased' => $request->boolean('is_deceased'),
                 'date_of_death' => $validated['date_of_death'] ?? null,
                 'cause_of_death' => $validated['cause_of_death'] ?? null,
@@ -458,6 +467,7 @@ class CitizenController extends Controller
             'contact_numbers' => 'nullable|array',
             'contact_numbers.*' => 'nullable|string',
             'email' => 'nullable|email|max:255',
+            'personal_address' => 'nullable|string|max:1000',
             'sitio' => 'nullable|exists:sitios,sitio_name',
             'household_id' => 'nullable|string',
             'relationship_to_head' => 'nullable|string',
@@ -557,7 +567,16 @@ class CitizenController extends Controller
                    'elementary_name' => $validated['elementary_name'],
                    'highschool_name' => $validated['highschool_name'],
                    'sr_highschool_name' => $validated['senior_high_name'],
+                   'college_name' => $validated['college_name'],
                ]);
+            } else {
+               $eduHistory = EduHistory::create([
+                   'elementary_name' => $validated['elementary_name'],
+                   'highschool_name' => $validated['highschool_name'],
+                   'sr_highschool_name' => $validated['senior_high_name'],
+                   'college_name' => $validated['college_name'],
+               ]);
+               $eduStatus->edu_hist = $eduHistory->edu_hist;
             }
 
             $eduStatus->update([
@@ -594,6 +613,7 @@ class CitizenController extends Controller
                 'civil_status' => $validated['civil_status'] ?? 'Single',
                 'blood_type' => $validated['blood_type'],
                 'religion' => $validated['religion'],
+                'personal_address' => $validated['personal_address'] ?? null,
                 'is_deceased' => $request->boolean('is_deceased'),
                 'date_of_death' => $validated['date_of_death'] ?? null,
                 'cause_of_death' => $validated['cause_of_death'] ?? null,
