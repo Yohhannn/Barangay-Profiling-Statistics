@@ -20,6 +20,22 @@ interface HouseholdMember {
     relationship: string;
 }
 
+interface MedicalHistory {
+    id: number;
+    type: string;
+    description: string;
+    dateDiagnosed?: string;
+}
+
+interface SettlementHistory {
+    id: number;
+    title: string;
+    type: string;
+    description: string;
+    status: string;
+    dateCreated?: string;
+}
+
 interface Citizen {
     id: number;
     // Header
@@ -85,6 +101,8 @@ interface Citizen {
     healthClassification?: string;
 
     householdMembers: HouseholdMember[];
+    medicalHistories: MedicalHistory[];
+    settlementHistories: SettlementHistory[];
 
     // Audit
     dateEncoded: string;
@@ -790,6 +808,54 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                                                 <div className="bg-red-50/50 dark:bg-red-900/10 border border-red-200 rounded-xl p-4 space-y-2">
                                                     <InfoItem label="Date of Death" value={selectedCitizen.dateOfDeath || 'N/A'} />
                                                     <InfoItem label="Cause" value={selectedCitizen.causeOfDeath || 'N/A'} />
+                                                </div>
+                                            </div>
+                                        )}
+                                        
+                                        {/* Medical History Section */}
+                                        {selectedCitizen.medicalHistories && selectedCitizen.medicalHistories.length > 0 && (
+                                            <div className="col-span-1 md:col-span-2 lg:col-span-3 space-y-4">
+                                                <SectionHeader icon={<HeartPulse className="size-4 text-red-500" />} title="Medical History" />
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    {selectedCitizen.medicalHistories.map((med) => (
+                                                        <div key={med.id} className="bg-red-50/30 dark:bg-red-900/10 border border-red-100 rounded-xl p-4 space-y-2">
+                                                            <div className="flex justify-between items-start mb-2">
+                                                                <h4 className="font-bold text-sm text-neutral-800 dark:text-neutral-200">{med.type}</h4>
+                                                                <span className="text-xs font-mono text-neutral-500">{med.dateDiagnosed || 'Date Not Specified'}</span>
+                                                            </div>
+                                                            <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">{med.description}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Settlement History Section */}
+                                        {selectedCitizen.settlementHistories && selectedCitizen.settlementHistories.length > 0 && (
+                                            <div className="col-span-1 md:col-span-2 lg:col-span-3 space-y-4">
+                                                <SectionHeader icon={<RotateCcw className="size-4 text-orange-500" />} title="Settlement / Citizen History" />
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    {selectedCitizen.settlementHistories.map((hist) => (
+                                                        <div key={hist.id} className="bg-orange-50/30 dark:bg-orange-900/10 border border-orange-100 rounded-xl p-4 space-y-2">
+                                                            <div className="flex justify-between items-start mb-2">
+                                                                <div>
+                                                                    <h4 className="font-bold text-sm text-neutral-800 dark:text-neutral-200">{hist.title}</h4>
+                                                                    <span className="text-[10px] uppercase font-semibold text-orange-600 dark:text-orange-400 tracking-wider block mt-0.5">{hist.type}</span>
+                                                                </div>
+                                                                <div className="flex flex-col items-end">
+                                                                    <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
+                                                                        hist.status === 'Resolved' || hist.status === 'Completed' || hist.status === 'Approved' ? 'bg-green-100 text-green-700' :
+                                                                        hist.status === 'Pending' || hist.status === 'Ongoing' ? 'bg-yellow-100 text-yellow-700' :
+                                                                        'bg-neutral-100 text-neutral-700'
+                                                                    }`}>
+                                                                        {hist.status}
+                                                                    </span>
+                                                                    <span className="text-[10px] font-mono text-neutral-400 mt-1">{hist.dateCreated || 'No Date'}</span>
+                                                                </div>
+                                                            </div>
+                                                            <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-2 p-2 bg-white/50 dark:bg-black/20 rounded border border-orange-100/50">{hist.description}</p>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
                                         )}

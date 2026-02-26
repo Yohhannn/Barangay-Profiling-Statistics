@@ -42,6 +42,8 @@ class CitizenController extends Controller
             'info.demographic.familyPlanning',
             'info.demographic.educationStatus.educationHistory',
             'info.demographic.philhealth',
+            'medicalHistories',
+            'histories.settlementLogs',
             'encodedBy',
             'updatedBy'
         ])
@@ -228,6 +230,26 @@ class CitizenController extends Controller
                 'philhealthId' => $demo?->philhealth?->philhealth_id_number,
                 'membershipType' => $demo?->philhealth?->phea_membership_type,
                 'healthClassification' => $demo?->healthRisk?->clah_classification_name ?? 'Healthy',
+                
+                // Medical and Settlement History
+                'medicalHistories' => $citizen->medicalHistories->map(function ($med) {
+                    return [
+                        'id' => $med->mh_id,
+                        'type' => $med->type,
+                        'description' => $med->description,
+                        'dateDiagnosed' => $med->date_diagnosed ? Carbon::parse($med->date_diagnosed)->format('F d, Y') : null,
+                    ];
+                })->values()->all(),
+                'settlementHistories' => $citizen->histories->map(function ($hist) {
+                    return [
+                        'id' => $hist->cihi_id,
+                        'title' => $hist->title,
+                        'type' => $hist->type,
+                        'description' => $hist->description,
+                        'status' => $hist->status,
+                        'dateCreated' => $hist->date_created ? Carbon::parse($hist->date_created)->format('F d, Y') : null,
+                    ];
+                })->values()->all(),
 
                 // Audit
                 'dateEncoded' => Carbon::parse($citizen->date_encoded)->format('M d, Y | h:i A'),
