@@ -15,6 +15,7 @@ class MedicalHistory extends Model
     public $incrementing = true;
 
     protected $fillable = [
+        'mh_uuid',
         'first_name',
         'last_name',
         'middle_name',

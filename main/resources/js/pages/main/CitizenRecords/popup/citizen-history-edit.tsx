@@ -344,7 +344,7 @@ function CitizenBlock({ index, data, onChange, onRemove, canRemove, errors, isPr
                             <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${hasRecord ? 'transform translate-x-4' : ''}`}></div>
                         </div>
                         <span className="text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wide">
-                            Has Barangay Record?
+                                                            Has Barangay Record?
                         </span>
                     </label>
 

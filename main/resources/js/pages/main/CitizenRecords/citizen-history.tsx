@@ -11,6 +11,7 @@ import { useState, useMemo, useEffect } from 'react';
 import CitizenHistoryCreation from './popup/citizen-history-creation'; // IMPORTED
 import CitizenHistoryEdit from './popup/citizen-history-edit'; // IMPORTED
 import { router } from '@inertiajs/react';
+import Swal from 'sweetalert2';
 
 // --- Types ---
 export interface HistoryRecord {
@@ -102,17 +103,41 @@ export default function CitizenHistory({ histories = [] }: { histories?: History
 
     const handleDelete = (e: React.MouseEvent, id: number) => {
         e.stopPropagation();
-        const reason = prompt('Please enter a reason for archiving this record:');
-        if (reason) {
-            router.delete(`/citizen-records/citizen-history/${id}`, {
-                data: { delete_reason: reason },
-                onSuccess: () => {
-                    if (selectedHistory?.id === id) {
-                        setSelectedHistory(null);
-                    }
+        Swal.fire({
+            title: 'Archive Record',
+            text: 'Are you sure you want to move this record to archives? Please provide a reason.',
+            icon: 'warning',
+            input: 'textarea',
+            inputPlaceholder: 'Reason for archiving...',
+            inputAttributes: {
+                'aria-label': 'Reason for archiving'
+            },
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, archive it!',
+            preConfirm: (reason) => {
+                if (!reason) {
+                    Swal.showValidationMessage('A reason is required to archive a record');
                 }
-            });
-        }
+                return reason;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.delete(`/citizen-records/citizen-history/${id}`, {
+                    data: { delete_reason: result.value },
+                    onSuccess: () => {
+                        if (selectedHistory?.id === id) {
+                            setSelectedHistory(null);
+                        }
+                        Swal.fire('Archived!', 'The record has been moved to archives.', 'success');
+                    },
+                    onError: (errors: any) => {
+                        Swal.fire('Error', errors?.error || 'Failed to archive record.', 'error');
+                    }
+                });
+            }
+        });
     };
 
     return (
@@ -233,7 +258,7 @@ export default function CitizenHistory({ histories = [] }: { histories?: History
                                                         </span>
                                                         {group.ctz_id && (
                                                             <span className="text-[10px] font-mono bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded ml-2 shadow-sm border border-purple-200 dark:border-purple-800">
-                                                                ID: {group.ctz_id}
+                                                                ID: {group.records[0].citizenId}
                                                             </span>
                                                         )}
                                                     </div>
