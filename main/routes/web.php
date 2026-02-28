@@ -46,9 +46,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('citizen-records/citizen-history/{id}', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'update']);
     Route::delete('citizen-records/citizen-history/{id}', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'destroy']);
 
-    Route::get('citizen-records/medical-history', function () {
-        return Inertia::render('main/CitizenRecords/medical-history');
-    })->name('medical-history');
+    Route::get('citizen-records/medical-history', [\App\Http\Controllers\Records\MedicalHistoryController::class, 'index'])->name('medical-history');
+    Route::post('citizen-records/medical-history', [\App\Http\Controllers\Records\MedicalHistoryController::class, 'store']);
+    Route::put('citizen-records/medical-history/{id}', [\App\Http\Controllers\Records\MedicalHistoryController::class, 'update']);
+    Route::delete('citizen-records/medical-history/{id}', [\App\Http\Controllers\Records\MedicalHistoryController::class, 'destroy']);
 
     Route::get('citizen-records/settlement-history', function () {
         return Inertia::render('main/CitizenRecords/settlement-history');
