@@ -22,6 +22,7 @@ class Complainant extends Model
         'suffix',
         'comp_description',
         'ctz_id',
+        'sett_id', // newly added
     ];
 
     // Relationships
@@ -30,8 +31,8 @@ class Complainant extends Model
         return $this->belongsTo(Citizen::class, 'ctz_id', 'ctz_id');
     }
 
-    public function settlementLogs()
+    public function settlementLog()
     {
-        return $this->hasMany(SettlementLog::class, 'comp_id', 'comp_id');
+        return $this->belongsTo(SettlementLog::class, 'sett_id', 'sett_id');
     }
 }

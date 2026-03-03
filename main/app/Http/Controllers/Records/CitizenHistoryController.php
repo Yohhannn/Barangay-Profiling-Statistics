@@ -199,4 +199,22 @@ class CitizenHistoryController extends Controller
             return redirect()->back()->withErrors(['error' => 'Failed to archive history record: ' . $e->getMessage()]);
         }
     }
+
+    public function verifyHistoryLink(Request $request)
+    {
+        $query = $request->query('id');
+        if (empty($query)) return response()->json(['found' => false]);
+
+        $history = CitizenHistory::where('cihi_uuid', $query)->where('is_deleted', false)->first();
+        if ($history) {
+            return response()->json([
+                'found' => true,
+                'title' => $history->title,
+                'date' => $history->date_created ? \Carbon\Carbon::parse($history->date_created)->format('M d, Y') : 'N/A',
+                'status' => $history->status,
+                'type' => $history->type
+            ]);
+        }
+        return response()->json(['found' => false]);
+    }
 }
