@@ -30,6 +30,7 @@ class CitizenHistory extends Model
         'encoded_by',
         'updated_by',
         'ctz_id',
+        'sett_id', // newly added
     ];
 
     protected $casts = [
@@ -68,8 +69,8 @@ class CitizenHistory extends Model
         return $this->belongsTo(Citizen::class, 'ctz_id', 'ctz_id');
     }
 
-    public function settlementLogs()
+    public function settlementLog()
     {
-        return $this->hasMany(SettlementLog::class, 'cihi_id', 'cihi_id');
+        return $this->belongsTo(SettlementLog::class, 'sett_id', 'sett_id');
     }
 }

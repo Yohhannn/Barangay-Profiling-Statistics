@@ -23,8 +23,6 @@ class SettlementLog extends Model
         'delete_reason',
         'encoded_by',
         'updated_by',
-        'comp_id',
-        'cihi_id',
     ];
 
     protected $casts = [
@@ -47,13 +45,13 @@ class SettlementLog extends Model
         return $this->belongsTo(SystemAccount::class, 'updated_by', 'sys_id');
     }
 
-    public function complainant()
+    public function complainants()
     {
-        return $this->belongsTo(Complainant::class, 'comp_id', 'comp_id');
+        return $this->hasMany(Complainant::class, 'sett_id', 'sett_id');
     }
 
-    public function citizenHistory()
+    public function citizenHistories()
     {
-        return $this->belongsTo(CitizenHistory::class, 'cihi_id', 'cihi_id');
+        return $this->hasMany(CitizenHistory::class, 'sett_id', 'sett_id');
     }
 }
