@@ -696,6 +696,7 @@ class CitizenController extends Controller
                 $q->where('ctz_uuid', 'like', "%{$query}%")
                   ->orWhereHas('info', function ($sub) use ($query) {
                       $sub->where('first_name', 'like', "%{$query}%")
+                          ->orWhere('middle_name', 'like', "%{$query}%")
                           ->orWhere('last_name', 'like', "%{$query}%");
                   });
             })
