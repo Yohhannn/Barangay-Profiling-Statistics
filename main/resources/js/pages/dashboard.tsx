@@ -2,11 +2,11 @@ import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, usePage, Link } from '@inertiajs/react';
 import {
     Building2, Users, Home, MapPin,
     Clock, Activity,
-    FileText, CheckCircle, Search, Database, UserCircle, ShieldCheck
+    FileText, CheckCircle, Search, Database, UserCircle, ShieldCheck, UserCheck, User, Users2
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -16,12 +16,18 @@ interface DashboardStats {
     totalHouseholds: number;
     totalBusinesses: number;
     totalInfrastructures: number;
+    totalVoters?: number;
+    totalMale?: number;
+    totalFemale?: number;
+    totalTransactions?: number;
+    totalSettlements?: number;
 }
 
 interface Citizen {
     id: number;
     name: string;
     barangay_id: string;
+    status?: string;
     created_at: string;
 }
 
@@ -43,7 +49,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function Dashboard({ stats, recentCitizens }: DashboardProps) {
     // We cast user as 'User' or 'any' to avoid TS strict errors if type definitions are missing
-    const user = usePage().props.auth.user as User;
+    const { auth } = usePage<any>().props;
+    const user = auth.user as User;
 
     const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -54,7 +61,7 @@ export default function Dashboard({ stats, recentCitizens }: DashboardProps) {
     }, []);
 
     // Fallback data
-    const safeStats = stats || { totalCitizens: 0, totalHouseholds: 0, totalBusinesses: 0, totalInfrastructures: 0 };
+    const safeStats = stats || { totalCitizens: 0, totalHouseholds: 0, totalBusinesses: 0, totalInfrastructures: 0, totalVoters: 0, totalMale: 0, totalFemale: 0, totalTransactions: 0, totalSettlements: 0 };
     const safeRecent = recentCitizens || [];
 
     // Date Formatters
@@ -104,6 +111,40 @@ export default function Dashboard({ stats, recentCitizens }: DashboardProps) {
                     </div>
                 </div>
 
+                {/* --- SECOND ROW: CORE STATS BANNER --- */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    <StatCardVertical
+                        title="Total Citizens"
+                        value={safeStats.totalCitizens}
+                        icon={<Users className="size-5 text-blue-600" />}
+                        bgClass="bg-blue-50 dark:bg-blue-900/10"
+                    />
+                    <StatCardVertical
+                        title="Reg. Voters"
+                        value={safeStats.totalVoters || 0}
+                        icon={<UserCheck className="size-5 text-indigo-600" />}
+                        bgClass="bg-indigo-50 dark:bg-indigo-900/10"
+                    />
+                    <StatCardVertical
+                        title="Households"
+                        value={safeStats.totalHouseholds}
+                        icon={<Home className="size-5 text-emerald-600" />}
+                        bgClass="bg-emerald-50 dark:bg-emerald-900/10"
+                    />
+                    <StatCardVertical
+                        title="Businesses"
+                        value={safeStats.totalBusinesses}
+                        icon={<Building2 className="size-5 text-violet-600" />}
+                        bgClass="bg-violet-50 dark:bg-violet-900/10"
+                    />
+                    <StatCardVertical
+                        title="Infrastructures"
+                        value={safeStats.totalInfrastructures}
+                        icon={<MapPin className="size-5 text-amber-600" />}
+                        bgClass="bg-amber-50 dark:bg-amber-900/10"
+                    />
+                </div>
+
                 {/* --- MAIN GRID SPLIT --- */}
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
 
@@ -148,9 +189,9 @@ export default function Dashboard({ stats, recentCitizens }: DashboardProps) {
                                 <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
                                     <Users className="size-4 text-neutral-500" /> Recently Added Citizens
                                 </h3>
-                                <button className="text-xs font-medium text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 transition-colors">
+                                <Link href="/citizen-panel/citizen-profile" className="text-xs font-medium text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 transition-colors">
                                     View Full List &rarr;
-                                </button>
+                                </Link>
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm text-left">
@@ -160,6 +201,7 @@ export default function Dashboard({ stats, recentCitizens }: DashboardProps) {
                                         <th className="px-5 py-3 font-medium">Location</th>
                                         <th className="px-5 py-3 font-medium">Status</th>
                                         <th className="px-5 py-3 font-medium text-right">Date</th>
+                                        <th className="px-5 py-3 font-medium text-center">Action</th>
                                     </tr>
                                     </thead>
                                     <tbody className="divide-y divide-sidebar-border/70">
@@ -168,15 +210,20 @@ export default function Dashboard({ stats, recentCitizens }: DashboardProps) {
                                             <td className="px-5 py-3.5 font-medium text-neutral-900 dark:text-neutral-100">{citizen.name}</td>
                                             <td className="px-5 py-3.5 text-neutral-500">{citizen.barangay_id}</td>
                                             <td className="px-5 py-3.5">
-                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800">
-                                                        <CheckCircle className="size-2.5" /> VERIFIED
+                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${citizen.status === 'VOTER' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'bg-neutral-100 text-neutral-700 dark:bg-neutral-900/30 dark:text-neutral-400 border-neutral-200 dark:border-neutral-800'}`}>
+                                                        {citizen.status === 'VOTER' ? <CheckCircle className="size-2.5" /> : <UserCircle className="size-2.5" />} {citizen.status || 'NON-VOTER'}
                                                     </span>
                                             </td>
                                             <td className="px-5 py-3.5 text-right text-neutral-500 tabular-nums">{new Date(citizen.created_at).toLocaleDateString()}</td>
+                                            <td className="px-5 py-3.5 text-center">
+                                                <Link href={`/citizen-panel/citizen-profile?search=${citizen.id}`} className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">
+                                                    See Record
+                                                </Link>
+                                            </td>
                                         </tr>
                                     )) : (
                                         <tr>
-                                            <td colSpan={4} className="px-6 py-12 text-center text-neutral-400">No records found.</td>
+                                            <td colSpan={5} className="px-6 py-12 text-center text-neutral-400">No records found.</td>
                                         </tr>
                                     )}
                                     </tbody>
@@ -187,31 +234,37 @@ export default function Dashboard({ stats, recentCitizens }: DashboardProps) {
 
                     {/* --- RIGHT SIDE (Stats Sidebar - Spans 1 Col) --- */}
                     <div className="lg:col-span-1 flex flex-col gap-4">
-                        <div className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1 px-1">Statistics Overview</div>
+                        
+                        <div className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1 px-1">Demographics</div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <StatCardVertical
+                                title="Male"
+                                value={safeStats.totalMale || 0}
+                                icon={<User className="size-5 text-blue-500" />}
+                                bgClass="bg-blue-50 dark:bg-blue-900/10"
+                                compact={true}
+                            />
+                            <StatCardVertical
+                                title="Female"
+                                value={safeStats.totalFemale || 0}
+                                icon={<User className="size-5 text-pink-500" />}
+                                bgClass="bg-pink-50 dark:bg-pink-900/10"
+                                compact={true}
+                            />
+                        </div>
 
+                        <div className="text-xs font-bold text-neutral-400 uppercase tracking-wider mt-2 mb-1 px-1">Operations</div>
                         <StatCardVertical
-                            title="Total Citizens"
-                            value={safeStats.totalCitizens}
-                            icon={<Users className="size-5 text-blue-600" />}
-                            bgClass="bg-blue-50 dark:bg-blue-900/10"
+                            title="Transactions"
+                            value={safeStats.totalTransactions || 0}
+                            icon={<FileText className="size-5 text-teal-600" />}
+                            bgClass="bg-teal-50 dark:bg-teal-900/10"
                         />
                         <StatCardVertical
-                            title="Total Households"
-                            value={safeStats.totalHouseholds}
-                            icon={<Home className="size-5 text-emerald-600" />}
-                            bgClass="bg-emerald-50 dark:bg-emerald-900/10"
-                        />
-                        <StatCardVertical
-                            title="Total Businesses"
-                            value={safeStats.totalBusinesses}
-                            icon={<Building2 className="size-5 text-violet-600" />}
-                            bgClass="bg-violet-50 dark:bg-violet-900/10"
-                        />
-                        <StatCardVertical
-                            title="Infrastructures"
-                            value={safeStats.totalInfrastructures}
-                            icon={<MapPin className="size-5 text-amber-600" />}
-                            bgClass="bg-amber-50 dark:bg-amber-900/10"
+                            title="Settlements"
+                            value={safeStats.totalSettlements || 0}
+                            icon={<ShieldCheck className="size-5 text-red-600" />}
+                            bgClass="bg-red-50 dark:bg-red-900/10"
                         />
 
                         {/* Footer Info */}
@@ -241,7 +294,23 @@ function FeatureItem({ icon, title, desc }: { icon: React.ReactNode, title: stri
     );
 }
 
-function StatCardVertical({ title, value, icon, bgClass }: { title: string, value: number, icon: React.ReactNode, bgClass: string }) {
+function StatCardVertical({ title, value, icon, bgClass, compact }: { title: string, value: number, icon: React.ReactNode, bgClass: string, compact?: boolean }) {
+    if (compact) {
+        return (
+            <div className="group relative overflow-hidden rounded-xl border border-sidebar-border/70 bg-sidebar p-3 shadow-sm transition-all hover:border-neutral-300 dark:hover:border-neutral-700">
+                <div className="flex flex-col items-center gap-2 text-center">
+                    <div className={`p-2 rounded-xl ${bgClass} transition-transform group-hover:scale-110`}>
+                        {icon}
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 tabular-nums leading-none mb-1">{value.toLocaleString()}</h3>
+                        <p className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">{title}</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="group relative overflow-hidden rounded-xl border border-sidebar-border/70 bg-sidebar p-5 shadow-sm transition-all hover:border-neutral-300 dark:hover:border-neutral-700 hover:shadow-md">
             <div className="flex items-center gap-4">

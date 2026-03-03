@@ -20,9 +20,7 @@ Route::get('/scan', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
 
     // --- DASHBOARD ---
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+    Route::get('dashboard', [App\Http\Controllers\Dashboard\DashboardController::class, 'index'])->name('dashboard');
 
     // --- CITIZEN PANEL ---
     Route::get('citizen-panel', function () {
