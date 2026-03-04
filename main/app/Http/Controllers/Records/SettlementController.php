@@ -38,7 +38,8 @@ class SettlementController extends Controller
             $firstSub = $settlement->citizenHistories->first();
 
             return [
-                'id' => $settlement->sett_id,
+                'id' => $settlement->sett_uuid,
+                'system_id' => $settlement->sett_id,
                 // Primary displays
                 'complainantFirstName' => $firstComp->first_name ?? 'Unknown',
                 'complainantLastName' => $firstComp->last_name ?? 'Complainant',
@@ -71,6 +72,9 @@ class SettlementController extends Controller
                 }),
 
                 'description' => $settlement->settlement_description,
+                'complaintDescription' => $settlement->complaint_description,
+                'mediator' => $settlement->mediator,
+                'caseClassification' => $settlement->case_classification,
                 'dateOfSettlement' => $settlement->date_of_settlement ? Carbon::parse($settlement->date_of_settlement)->format('Y-m-d') : 'N/A',
                 
                 // Audit
@@ -95,20 +99,21 @@ class SettlementController extends Controller
             'complainants' => 'required|array|min:1',
             'complainants.*.has_record' => 'boolean',
             'complainants.*.citizen_id' => 'nullable|string',
-            'complainants.*.first_name' => 'required|string|max:255',
+            'complainants.*.first_name' => 'nullable|string|max:255',
             'complainants.*.middle_name' => 'nullable|string|max:255',
-            'complainants.*.last_name' => 'required|string|max:255',
+            'complainants.*.last_name' => 'nullable|string|max:255',
             
             'subjects' => 'required|array|min:1',
             'subjects.*.has_record' => 'boolean',
             'subjects.*.citizen_id' => 'nullable|string',
-            'subjects.*.first_name' => 'required|string|max:255',
+            'subjects.*.first_name' => 'nullable|string|max:255',
             'subjects.*.middle_name' => 'nullable|string|max:255',
-            'subjects.*.last_name' => 'required|string|max:255',
+            'subjects.*.last_name' => 'nullable|string|max:255',
             'subjects.*.involvement_status' => 'nullable|string|max:255',
             'subjects.*.settlement_status' => 'required|string|max:255',
 
-            'linked_history_id' => 'nullable|string',
+            'linked_history_ids' => 'nullable|array',
+            'linked_history_ids.*' => 'nullable|string',
             'complaint_description' => 'required|string|max:5000',
             'settlement_description' => 'nullable|string|max:5000',
             'date_of_settlement' => 'required|date',
@@ -122,16 +127,13 @@ class SettlementController extends Controller
             $encodedBy = Auth::id() ?? 1;
             $now = now();
 
-            // 1. Build Comprehensive Settlement Description
-            $fullDescription = "Complaint: " . $validated['complaint_description'] . "\n\n";
-            if (!empty($validated['settlement_description'])) $fullDescription .= "Resolution: " . $validated['settlement_description'] . "\n";
-            if (!empty($validated['mediator'])) $fullDescription .= "Mediator: " . $validated['mediator'] . "\n";
-            if (!empty($validated['case_classification'])) $fullDescription .= "Classification: " . $validated['case_classification'] . "\n";
-            if (!empty($validated['linked_history_id'])) $fullDescription .= "Linked Previous History: " . $validated['linked_history_id'] . "\n";
-
             // 2. Create the Settlement Log first so we have the sett_id
             $settlementLog = SettlementLog::create([
-                'settlement_description' => trim($fullDescription),
+                'complaint_description' => $validated['complaint_description'],
+                'settlement_description' => $validated['settlement_description'],
+                'mediator' => $validated['mediator'] ?? null,
+                'case_classification' => $validated['case_classification'] ?? null,
+
                 'date_of_settlement' => $validated['date_of_settlement'],
                 'date_encoded' => $now,
                 'encoded_by'  => $encodedBy,
@@ -144,13 +146,23 @@ class SettlementController extends Controller
                     'first_name' => $compData['first_name'],
                     'middle_name' => $compData['middle_name'],
                     'last_name' => $compData['last_name'],
-                    'ctz_id' => !empty($compData['citizen_id']) ? (int) str_replace('CTZ-', '', $compData['citizen_id']) : null,
+                    'ctz_id' => !empty($compData['citizen_id']) ? \App\Models\Citizen::where('ctz_uuid', $compData['citizen_id'])->value('ctz_id') : null,
                     'sett_id' => $settlementLog->sett_id,
+                    'comp_description' => $validated['complaint_description'],
                 ]);
             }
 
-            // 4. Create Subjects (CitizenHistories) attached to the Settlement
+            // 4. Create Subjects (Complainees) attached to the Settlement
             foreach ($validated['subjects'] as $subData) {
+                \App\Models\Complainee::create([
+                    'first_name'  => $subData['first_name'],
+                    'middle_name' => $subData['middle_name'],
+                    'last_name'   => $subData['last_name'],
+                    'ctz_id'      => !empty($subData['citizen_id']) ? \App\Models\Citizen::where('ctz_uuid', $subData['citizen_id'])->value('ctz_id') : null,
+                    'involvement_status' => $subData['involvement_status'] ?? null,
+                    'sett_id'     => $settlementLog->sett_id,
+                ]);
+
                 $subjectDesc = 'Involved in a barangay settlement.';
                 if (!empty($subData['involvement_status'])) {
                     $subjectDesc .= "\nInvolvement: " . $subData['involvement_status'];
@@ -160,7 +172,7 @@ class SettlementController extends Controller
                     'first_name'  => $subData['first_name'],
                     'middle_name' => $subData['middle_name'],
                     'last_name'   => $subData['last_name'],
-                    'ctz_id'      => !empty($subData['citizen_id']) ? (int) str_replace('CTZ-', '', $subData['citizen_id']) : null,
+                    'ctz_id'      => !empty($subData['citizen_id']) ? \App\Models\Citizen::where('ctz_uuid', $subData['citizen_id'])->value('ctz_id') : null,
                     'type'        => 'Settlement',
                     'title'       => 'Barangay Settlement / Blotter',
                     'description' => $subjectDesc,
@@ -186,21 +198,26 @@ class SettlementController extends Controller
             'complainants' => 'required|array|min:1',
             'complainants.*.has_record' => 'boolean',
             'complainants.*.citizen_id' => 'nullable|string',
-            'complainants.*.first_name' => 'required|string|max:255',
+            'complainants.*.first_name' => 'nullable|string|max:255',
             'complainants.*.middle_name' => 'nullable|string|max:255',
-            'complainants.*.last_name' => 'required|string|max:255',
+            'complainants.*.last_name' => 'nullable|string|max:255',
             
             'subjects' => 'required|array|min:1',
             'subjects.*.has_record' => 'boolean',
             'subjects.*.citizen_id' => 'nullable|string',
-            'subjects.*.first_name' => 'required|string|max:255',
+            'subjects.*.first_name' => 'nullable|string|max:255',
             'subjects.*.middle_name' => 'nullable|string|max:255',
-            'subjects.*.last_name' => 'required|string|max:255',
+            'subjects.*.last_name' => 'nullable|string|max:255',
             'subjects.*.involvement_status' => 'nullable|string|max:255',
             'subjects.*.settlement_status' => 'required|string|max:255',
 
-            'settlement_description' => 'required|string|max:5000',
+            'linked_history_ids' => 'nullable|array',
+            'linked_history_ids.*' => 'nullable|string',
+            'complaint_description' => 'required|string|max:5000',
+            'settlement_description' => 'nullable|string|max:5000',
             'date_of_settlement' => 'required|date',
+            'mediator' => 'nullable|string|max:255',
+            'case_classification' => 'nullable|string|max:255',
         ]);
 
         try {
@@ -212,7 +229,11 @@ class SettlementController extends Controller
 
             // 1. Update SettlementLog
             $record->update([
+                'complaint_description' => $validated['complaint_description'],
                 'settlement_description' => $validated['settlement_description'],
+                'mediator' => $validated['mediator'] ?? null,
+                'case_classification' => $validated['case_classification'] ?? null,
+
                 'date_of_settlement' => $validated['date_of_settlement'],
                 'date_updated' => $now,
                 'updated_by' => $updatedBy,
@@ -225,14 +246,25 @@ class SettlementController extends Controller
                     'first_name' => $compData['first_name'],
                     'middle_name' => $compData['middle_name'],
                     'last_name' => $compData['last_name'],
-                    'ctz_id' => !empty($compData['citizen_id']) ? (int) str_replace('CTZ-', '', $compData['citizen_id']) : null,
+                    'ctz_id' => !empty($compData['citizen_id']) ? \App\Models\Citizen::where('ctz_uuid', $compData['citizen_id'])->value('ctz_id') : null,
                     'sett_id' => $record->sett_id,
+                    'comp_description' => $validated['complaint_description'],
                 ]);
             }
 
-            // 3. Sync Subjects (CitizenHistories)
+            // 3. Sync Subjects (Complainees and CitizenHistories)
             $record->citizenHistories()->delete();
+            $record->complainees()->delete();
             foreach ($validated['subjects'] as $subData) {
+                \App\Models\Complainee::create([
+                    'first_name'  => $subData['first_name'],
+                    'middle_name' => $subData['middle_name'],
+                    'last_name'   => $subData['last_name'],
+                    'ctz_id'      => !empty($subData['citizen_id']) ? \App\Models\Citizen::where('ctz_uuid', $subData['citizen_id'])->value('ctz_id') : null,
+                    'involvement_status' => $subData['involvement_status'] ?? null,
+                    'sett_id'     => $record->sett_id,
+                ]);
+
                 $subjectDesc = 'Involved in a barangay settlement.';
                 if (!empty($subData['involvement_status'])) {
                     $subjectDesc .= "\nInvolvement: " . $subData['involvement_status'];
@@ -242,7 +274,7 @@ class SettlementController extends Controller
                     'first_name'  => $subData['first_name'],
                     'middle_name' => $subData['middle_name'],
                     'last_name'   => $subData['last_name'],
-                    'ctz_id'      => !empty($subData['citizen_id']) ? (int) str_replace('CTZ-', '', $subData['citizen_id']) : null,
+                    'ctz_id'      => !empty($subData['citizen_id']) ? \App\Models\Citizen::where('ctz_uuid', $subData['citizen_id'])->value('ctz_id') : null,
                     'type'        => 'Settlement',
                     'title'       => 'Barangay Settlement / Blotter',
                     'description' => $subjectDesc,

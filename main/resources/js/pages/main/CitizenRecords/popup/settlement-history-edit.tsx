@@ -1,6 +1,6 @@
 import {
     X, CheckCircle, Handshake, User,
-    FileText, Search, Scale, UserCheck, UserX,
+    FileText, Scale, UserCheck, UserX,
     Loader2, Plus, Trash2, ShieldAlert, Activity
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -17,6 +17,7 @@ export default function SettlementHistoryEdit({ isOpen, onClose, history }: Sett
     const { data, setData, put, processing, errors, reset, clearErrors } = useForm({
         complainants: [] as any[],
         subjects: [] as any[],
+        complaint_description: '',
         settlement_description: '',
         date_of_settlement: '',
         mediator: '',
@@ -44,10 +45,11 @@ export default function SettlementHistoryEdit({ isOpen, onClose, history }: Sett
                     involvement_status: s.involvement_status || '',
                     settlement_status: s.settlement_status || 'Resolved'
                 })) : [],
+                complaint_description: history.complaintDescription || '',
                 settlement_description: history.description || '',
                 date_of_settlement: history.dateOfSettlement !== 'N/A' ? history.dateOfSettlement : '',
                 mediator: history.mediator || '',
-                case_classification: history.case_classification || ''
+                case_classification: history.caseClassification || ''
             });
         }
     }, [history, isOpen]);
@@ -103,7 +105,7 @@ export default function SettlementHistoryEdit({ isOpen, onClose, history }: Sett
             return;
         }
         
-        put(`/citizen-records/settlement-history/${history.id}`, {
+        put(`/citizen-records/settlement-history/${history.system_id}`, {
             preserveScroll: true,
             onSuccess: () => {
                 Swal.fire({
@@ -216,16 +218,12 @@ export default function SettlementHistoryEdit({ isOpen, onClose, history }: Sett
                         <div className="bg-white dark:bg-[#1e293b] p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm space-y-4 relative">
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 <div>
-                                    <TextAreaGroup label="Complaint Description" placeholder="What is the complaint about?" value={data.settlement_description} onChange={(e: any) => setData('settlement_description', e.target.value)} required />
-                                    {errors.settlement_description && <p className="text-[10px] text-red-500 mt-1">{errors.settlement_description}</p>}
+                                    <TextAreaGroup label="Complaint Description" placeholder="What is the complaint about?" value={data.complaint_description} onChange={(e: any) => setData('complaint_description', e.target.value)} required />
+                                    {errors.complaint_description && <p className="text-[10px] text-red-500 mt-1">{errors.complaint_description}</p>}
                                 </div>
-                                <div className="space-y-1.5 flex flex-col h-full">
-                                    <label className="text-[10px] font-bold uppercase text-neutral-500 tracking-wide">
-                                        Settlement / Resolution Note
-                                    </label>
-                                    <div className="flex-1 p-3 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-800/50 text-neutral-700 dark:text-neutral-300 text-xs italic">
-                                        For historical integrity, changes to resolution outcome details from the initial report may be tracked.
-                                    </div>
+                                <div>
+                                    <TextAreaGroup label="Settlement / Resolution Note" placeholder="Details of the resolution or agreement..." value={data.settlement_description} onChange={(e: any) => setData('settlement_description', e.target.value)} />
+                                    {errors.settlement_description && <p className="text-[10px] text-red-500 mt-1">{errors.settlement_description}</p>}
                                 </div>
                             </div>
 
@@ -289,7 +287,7 @@ function ComplainantForm({ data, index, canRemove, onUpdate, onRemove, errors }:
 
     const handleSelect = (citizen: any) => {
         onUpdate({
-            citizen_id: `CTZ-${citizen.id}`,
+            citizen_id: citizen.uuid,
             first_name: citizen.first_name || parseName(citizen.name).first,
             middle_name: citizen.middle_name || parseName(citizen.name).middle,
             last_name: citizen.last_name || parseName(citizen.name).last
@@ -358,7 +356,7 @@ function ComplainantForm({ data, index, canRemove, onUpdate, onRemove, errors }:
                                     {results.length > 0 ? results.map((c) => (
                                         <button key={c.id} onClick={() => handleSelect(c)} type="button" className="w-full text-left px-4 py-2 hover:bg-amber-50 dark:hover:bg-amber-900/20 flex justify-between border-b border-neutral-100 dark:border-neutral-700/50 text-xs">
                                             <span className="font-bold text-neutral-700 dark:text-neutral-200">{c.name}</span>
-                                            <span className="text-[10px] text-neutral-400 font-mono">CTZ-{c.id}</span>
+                                            <span className="text-[10px] text-neutral-400 font-mono">{c.uuid}</span>
                                         </button>
                                     )) : <div className="p-3 text-center text-xs text-neutral-400 italic">No citizens found.</div>}
                                 </div>
@@ -428,7 +426,7 @@ function SubjectForm({ data, index, canRemove, onUpdate, onRemove, errors }: any
 
     const handleSelect = (citizen: any) => {
         onUpdate({
-            citizen_id: `CTZ-${citizen.id}`,
+            citizen_id: citizen.uuid,
             first_name: citizen.first_name || parseName(citizen.name).first,
             middle_name: citizen.middle_name || parseName(citizen.name).middle,
             last_name: citizen.last_name || parseName(citizen.name).last
@@ -497,7 +495,7 @@ function SubjectForm({ data, index, canRemove, onUpdate, onRemove, errors }: any
                                     {results.length > 0 ? results.map((c) => (
                                         <button key={c.id} onClick={() => handleSelect(c)} type="button" className="w-full text-left px-4 py-2 hover:bg-amber-50 dark:hover:bg-amber-900/20 flex justify-between border-b border-neutral-100 dark:border-neutral-700/50 text-xs">
                                             <span className="font-bold text-neutral-700 dark:text-neutral-200">{c.name}</span>
-                                            <span className="text-[10px] text-neutral-400 font-mono">CTZ-{c.id}</span>
+                                            <span className="text-[10px] text-neutral-400 font-mono">{c.uuid}</span>
                                         </button>
                                     )) : <div className="p-3 text-center text-xs text-neutral-400 italic">No citizens found.</div>}
                                 </div>
