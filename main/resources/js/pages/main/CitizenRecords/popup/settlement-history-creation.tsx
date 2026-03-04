@@ -1,6 +1,6 @@
 import {
     X, CheckCircle, Handshake, User,
-    FileText, Search, Scale, UserCheck, UserX,
+    FileText, Scale, UserCheck, UserX,
     Loader2, Plus, Trash2, ShieldAlert, Activity
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -14,19 +14,13 @@ interface SettlementHistoryCreationProps {
 
 export default function SettlementHistoryCreation({ isOpen, onClose }: SettlementHistoryCreationProps) {
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
-        complainants: [
-            { id: Date.now().toString(), has_record: false, citizen_id: '', first_name: '', middle_name: '', last_name: '' }
-        ],
-        subjects: [
-            { id: (Date.now() + 1).toString(), has_record: false, citizen_id: '', first_name: '', middle_name: '', last_name: '', involvement_status: '', settlement_status: '' }
-        ],
-
-        linked_history_id: '',
+        complainants: [{ id: Math.random().toString(), has_record: false, citizen_id: '', first_name: '', middle_name: '', last_name: '' }],
+        subjects: [{ id: Math.random().toString(), has_record: false, citizen_id: '', first_name: '', middle_name: '', last_name: '', involvement_status: '', settlement_status: 'Resolved' }],
         complaint_description: '',
         settlement_description: '',
-        date_of_settlement: '',
+        date_of_settlement: new Date().toISOString().split('T')[0],
         mediator: '',
-        case_classification: '',
+        case_classification: 'Other'
     });
 
     if (!isOpen) return null;
@@ -59,12 +53,11 @@ export default function SettlementHistoryCreation({ isOpen, onClose }: Settlemen
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
-        // Validation check to ensure no citizen is both a complainant and a subject
+
         const complainantIds = data.complainants.filter(c => c.citizen_id).map(c => c.citizen_id);
         const subjectIds = data.subjects.filter(s => s.citizen_id).map(s => s.citizen_id);
         const conflict = subjectIds.find(id => complainantIds.includes(id));
-        
+
         if (conflict) {
             Swal.fire({
                 icon: 'error',
@@ -137,9 +130,9 @@ export default function SettlementHistoryCreation({ isOpen, onClose }: Settlemen
 
                         <div className="space-y-4">
                             {data.complainants.map((comp, index) => (
-                                <ComplainantForm 
-                                    key={comp.id} 
-                                    data={comp} 
+                                <ComplainantForm
+                                    key={comp.id}
+                                    data={comp}
                                     index={index}
                                     canRemove={data.complainants.length > 1}
                                     onUpdate={(updates: any) => updateComplainant(comp.id, updates)}
@@ -164,9 +157,9 @@ export default function SettlementHistoryCreation({ isOpen, onClose }: Settlemen
 
                         <div className="space-y-4">
                             {data.subjects.map((sub, index) => (
-                                <SubjectForm 
-                                    key={sub.id} 
-                                    data={sub} 
+                                <SubjectForm
+                                    key={sub.id}
+                                    data={sub}
                                     index={index}
                                     canRemove={data.subjects.length > 1}
                                     onUpdate={(updates: any) => updateSubject(sub.id, updates)}
@@ -198,11 +191,7 @@ export default function SettlementHistoryCreation({ isOpen, onClose }: Settlemen
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 pt-2">
-                                <div>
-                                    <InputGroup label="Linked History ID" placeholder="e.g. CIHI-..." value={data.linked_history_id} onChange={(e: any) => setData('linked_history_id', e.target.value)} />
-                                    {errors.linked_history_id && <p className="text-[10px] text-red-500 mt-1">{errors.linked_history_id}</p>}
-                                </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
                                 <div>
                                     <InputGroup label="Date of Settlement" type="date" value={data.date_of_settlement} onChange={(e: any) => setData('date_of_settlement', e.target.value)} required />
                                     {errors.date_of_settlement && <p className="text-[10px] text-red-500 mt-1">{errors.date_of_settlement}</p>}
@@ -217,7 +206,7 @@ export default function SettlementHistoryCreation({ isOpen, onClose }: Settlemen
 
                 <div className="p-5 bg-white dark:bg-[#0f172a] border-t border-neutral-200 dark:border-neutral-800 flex justify-end items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] shrink-0">
                     <button onClick={handleSubmit} disabled={processing} className="flex items-center gap-2 px-8 py-2.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-amber-600/20 active:scale-95">
-                        {processing ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle className="size-4" />} 
+                        {processing ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle className="size-4" />}
                         {processing ? "Processing..." : "Confirm and Save"}
                     </button>
                 </div>
@@ -261,7 +250,7 @@ function ComplainantForm({ data, index, canRemove, onUpdate, onRemove, errors }:
 
     const handleSelect = (citizen: any) => {
         onUpdate({
-            citizen_id: `CTZ-${citizen.id}`,
+            citizen_id: citizen.uuid,
             first_name: citizen.first_name || parseName(citizen.name).first,
             middle_name: citizen.middle_name || parseName(citizen.name).middle,
             last_name: citizen.last_name || parseName(citizen.name).last
@@ -291,16 +280,16 @@ function ComplainantForm({ data, index, canRemove, onUpdate, onRemove, errors }:
                     <span className="text-[10px] font-bold uppercase text-neutral-500">Has Barangay Record?</span>
                     <div className="flex gap-2">
                         <label className="flex items-center gap-1.5 cursor-pointer">
-                            <input type="radio" name={`cmp_hasRec_${data.id}`} className="accent-rose-600" checked={data.has_record} onChange={() => { 
-                                onUpdate({ has_record: true, citizen_id: '', first_name: '', middle_name: '', last_name: '' }); 
-                                setIsLocked(false); setSearchQuery(''); 
+                            <input type="radio" name={`cmp_hasRec_${data.id}`} className="accent-rose-600" checked={data.has_record} onChange={() => {
+                                onUpdate({ has_record: true, citizen_id: '', first_name: '', middle_name: '', last_name: '' });
+                                setIsLocked(false); setSearchQuery('');
                             }} />
                             <span className="text-xs font-medium">Yes</span>
                         </label>
                         <label className="flex items-center gap-1.5 cursor-pointer">
-                            <input type="radio" name={`cmp_hasRec_${data.id}`} className="accent-rose-600" checked={!data.has_record} onChange={() => { 
-                                onUpdate({ has_record: false, citizen_id: '', first_name: '', middle_name: '', last_name: '' }); 
-                                setIsLocked(false); setSearchQuery(''); 
+                            <input type="radio" name={`cmp_hasRec_${data.id}`} className="accent-rose-600" checked={!data.has_record} onChange={() => {
+                                onUpdate({ has_record: false, citizen_id: '', first_name: '', middle_name: '', last_name: '' });
+                                setIsLocked(false); setSearchQuery('');
                             }} />
                             <span className="text-xs font-medium">No</span>
                         </label>
@@ -322,7 +311,7 @@ function ComplainantForm({ data, index, canRemove, onUpdate, onRemove, errors }:
                                     onFocus={() => setShowResults(true)}
                                 />
                                 <div className="absolute left-3 top-2.5 text-neutral-400">
-                                    {isSearching ? <Loader2 className="size-4 animate-spin" /> : <Search className="size-4" />}
+                                    {isSearching ? <Loader2 className="size-4 animate-spin" /> : <FileText className="size-4" />}
                                 </div>
                             </div>
                             {showResults && searchQuery.length > 1 && (
@@ -330,7 +319,7 @@ function ComplainantForm({ data, index, canRemove, onUpdate, onRemove, errors }:
                                     {results.length > 0 ? results.map((c) => (
                                         <button key={c.id} onClick={() => handleSelect(c)} type="button" className="w-full text-left px-4 py-2 hover:bg-amber-50 dark:hover:bg-amber-900/20 flex justify-between border-b border-neutral-100 dark:border-neutral-700/50 text-xs">
                                             <span className="font-bold text-neutral-700 dark:text-neutral-200">{c.name}</span>
-                                            <span className="text-[10px] text-neutral-400 font-mono">CTZ-{c.id}</span>
+                                            <span className="text-[10px] text-neutral-400 font-mono">{c.uuid}</span>
                                         </button>
                                     )) : <div className="p-3 text-center text-xs text-neutral-400 italic">No citizens found.</div>}
                                 </div>
@@ -400,7 +389,7 @@ function SubjectForm({ data, index, canRemove, onUpdate, onRemove, errors }: any
 
     const handleSelect = (citizen: any) => {
         onUpdate({
-            citizen_id: `CTZ-${citizen.id}`,
+            citizen_id: citizen.uuid,
             first_name: citizen.first_name || parseName(citizen.name).first,
             middle_name: citizen.middle_name || parseName(citizen.name).middle,
             last_name: citizen.last_name || parseName(citizen.name).last
@@ -430,16 +419,16 @@ function SubjectForm({ data, index, canRemove, onUpdate, onRemove, errors }: any
                     <span className="text-[10px] font-bold uppercase text-neutral-500">Has Barangay Record? (Optional)</span>
                     <div className="flex gap-2">
                         <label className="flex items-center gap-1.5 cursor-pointer">
-                            <input type="radio" name={`sub_hasRec_${data.id}`} className="accent-amber-600" checked={data.has_record} onChange={() => { 
-                                onUpdate({ has_record: true, citizen_id: '', first_name: '', middle_name: '', last_name: '' }); 
-                                setIsLocked(false); setSearchQuery(''); 
+                            <input type="radio" name={`sub_hasRec_${data.id}`} className="accent-amber-600" checked={data.has_record} onChange={() => {
+                                onUpdate({ has_record: true, citizen_id: '', first_name: '', middle_name: '', last_name: '' });
+                                setIsLocked(false); setSearchQuery('');
                             }} />
                             <span className="text-xs font-medium">Yes</span>
                         </label>
                         <label className="flex items-center gap-1.5 cursor-pointer">
-                            <input type="radio" name={`sub_hasRec_${data.id}`} className="accent-amber-600" checked={!data.has_record} onChange={() => { 
-                                onUpdate({ has_record: false, citizen_id: '', first_name: '', middle_name: '', last_name: '' }); 
-                                setIsLocked(false); setSearchQuery(''); 
+                            <input type="radio" name={`sub_hasRec_${data.id}`} className="accent-amber-600" checked={!data.has_record} onChange={() => {
+                                onUpdate({ has_record: false, citizen_id: '', first_name: '', middle_name: '', last_name: '' });
+                                setIsLocked(false); setSearchQuery('');
                             }} />
                             <span className="text-xs font-medium">No</span>
                         </label>
@@ -461,7 +450,7 @@ function SubjectForm({ data, index, canRemove, onUpdate, onRemove, errors }: any
                                     onFocus={() => setShowResults(true)}
                                 />
                                 <div className="absolute left-3 top-2.5 text-neutral-400">
-                                    {isSearching ? <Loader2 className="size-4 animate-spin" /> : <Search className="size-4" />}
+                                    {isSearching ? <Loader2 className="size-4 animate-spin" /> : <FileText className="size-4" />}
                                 </div>
                             </div>
                             {showResults && searchQuery.length > 1 && (
@@ -469,7 +458,7 @@ function SubjectForm({ data, index, canRemove, onUpdate, onRemove, errors }: any
                                     {results.length > 0 ? results.map((c) => (
                                         <button key={c.id} onClick={() => handleSelect(c)} type="button" className="w-full text-left px-4 py-2 hover:bg-amber-50 dark:hover:bg-amber-900/20 flex justify-between border-b border-neutral-100 dark:border-neutral-700/50 text-xs">
                                             <span className="font-bold text-neutral-700 dark:text-neutral-200">{c.name}</span>
-                                            <span className="text-[10px] text-neutral-400 font-mono">CTZ-{c.id}</span>
+                                            <span className="text-[10px] text-neutral-400 font-mono">{c.uuid}</span>
                                         </button>
                                     )) : <div className="p-3 text-center text-xs text-neutral-400 italic">No citizens found.</div>}
                                 </div>

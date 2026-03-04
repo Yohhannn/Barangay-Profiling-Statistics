@@ -4,7 +4,8 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft, Search, Plus, Trash2,
     Scale, User, Calendar, FileText,
-    Edit3, X, SlidersHorizontal, Activity, ShieldAlert
+    Edit3, X, SlidersHorizontal, Activity, ShieldAlert,
+    CheckCircle
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import Swal from 'sweetalert2';
@@ -13,7 +14,8 @@ import SettlementHistoryEdit from './popup/settlement-history-edit';
 
 // --- Types ---
 export interface SettlementRecord {
-    id: number;
+    id: string;
+    system_id: number;
     // Primary Displays (for the table lists)
     complainantFirstName: string;
     complainantLastName: string;
@@ -42,6 +44,9 @@ export interface SettlementRecord {
     }>;
 
     description: string;
+    complaintDescription: string;
+    mediator: string | null;
+    caseClassification: string | null;
     dateOfSettlement: string;
     
     // Audit
@@ -115,7 +120,7 @@ export default function SettlementHistory({ histories = [] }: { histories?: Sett
         });
     };
 
-    const handleDelete = (e: React.MouseEvent, id: number) => {
+    const handleDelete = (e: React.MouseEvent, systemId: number) => {
         e.stopPropagation();
         Swal.fire({
             title: 'Archive Record',
@@ -135,10 +140,10 @@ export default function SettlementHistory({ histories = [] }: { histories?: Sett
             }
         }).then((result) => {
             if (result.isConfirmed) {
-                router.delete(`/citizen-records/settlement-history/${id}`, {
+                router.delete(`/citizen-records/settlement-history/${systemId}`, {
                     data: { delete_reason: result.value },
                     onSuccess: () => {
-                        if (selectedRecord?.id === id) {
+                        if (selectedRecord?.system_id === systemId) {
                             setSelectedRecord(null);
                         }
                         Swal.fire('Archived!', 'The record has been moved to archives.', 'success');
@@ -270,7 +275,7 @@ export default function SettlementHistory({ histories = [] }: { histories?: Sett
                                                     <div className="flex flex-col items-end gap-1.5">
                                                         <span className="text-[10px] text-neutral-500">{rec.dateOfSettlement}</span>
                                                         <button
-                                                            onClick={(e) => handleDelete(e, rec.id)}
+                                                            onClick={(e) => handleDelete(e, rec.system_id)}
                                                             className="text-neutral-300 hover:text-red-500 transition-colors p-1 bg-white dark:bg-neutral-800 rounded border border-transparent hover:border-red-200 dark:hover:border-red-900"
                                                             title="Archive Record"
                                                         >
@@ -300,9 +305,14 @@ export default function SettlementHistory({ histories = [] }: { histories?: Sett
                                             </div>
                                             <div className="flex flex-col">
                                                 <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
-                                                    Settlement Details
+                                                    {selectedRecord.caseClassification || 'Settlement'} Details
                                                 </h2>
-                                                <span className="text-sm text-neutral-500">Record #{selectedRecord.id} &bull; {selectedRecord.dateOfSettlement}</span>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className="text-[10px] bg-neutral-900 text-white dark:bg-amber-600 px-2 py-0.5 rounded font-mono font-bold tracking-tight">#{selectedRecord.id}</span>
+                                                    <span className="text-sm text-neutral-500 font-medium tracking-tight flex items-center gap-1.5">
+                                                        <Calendar className="size-3.5" /> {selectedRecord.dateOfSettlement}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                         
@@ -367,14 +377,44 @@ export default function SettlementHistory({ histories = [] }: { histories?: Sett
                                         </div>
                                     </div>
 
-                                    <div className="space-y-3 pt-2 border-t border-sidebar-border/50">
-                                        <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2">
-                                            <Activity className="size-3.5" /> Comprehensive Resolution Log
-                                        </h3>
-                                        <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 min-h-[150px] whitespace-pre-wrap font-mono relative shadow-inner">
-                                            {selectedRecord.description}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="space-y-4">
+                                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2">
+                                                <ShieldAlert className="size-3.5 text-rose-500" /> Complaint Statement
+                                            </h3>
+                                            <div className="bg-white dark:bg-sidebar border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 min-h-[120px] whitespace-pre-wrap shadow-sm">
+                                                {selectedRecord.complaintDescription || 'No complaint description provided.'}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2">
+                                                <CheckCircle className="size-3.5 text-emerald-500" /> Resolution Agreement
+                                            </h3>
+                                            <div className="bg-emerald-50/30 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 min-h-[120px] whitespace-pre-wrap shadow-sm italic">
+                                                {selectedRecord.description || 'No resolution details recorded.'}
+                                            </div>
                                         </div>
                                     </div>
+
+                                    {(selectedRecord.mediator || selectedRecord.caseClassification) && (
+                                        <div className="p-5 bg-neutral-50 dark:bg-neutral-900/40 rounded-xl border border-sidebar-border/60 grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                            {selectedRecord.mediator && (
+                                                <div className="space-y-1">
+                                                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Mediator / Lupon</p>
+                                                    <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{selectedRecord.mediator}</p>
+                                                </div>
+                                            )}
+                                            {selectedRecord.caseClassification && (
+                                                <div className="space-y-1">
+                                                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Classification</p>
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                                                        {selectedRecord.caseClassification}
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                        </div>
+                                    )}
 
                                 </div>
 

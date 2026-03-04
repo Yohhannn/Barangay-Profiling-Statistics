@@ -15,7 +15,11 @@ class SettlementLog extends Model
     public $incrementing = true;
 
     protected $fillable = [
+        'sett_uuid',
+        'complaint_description',
         'settlement_description',
+        'mediator',
+        'case_classification',
         'date_of_settlement',
         'date_encoded',
         'date_updated',
@@ -33,6 +37,19 @@ class SettlementLog extends Model
     ];
 
     public $timestamps = false;
+
+    protected static function boot()
+    {
+        parent::boot();
+        static::creating(function ($model) {
+            if (empty($model->sett_uuid)) {
+                do {
+                    $uuid = 'SETT-' . str_pad(mt_rand(0, 9999), 4, '0', STR_PAD_LEFT);
+                } while (static::where('sett_uuid', $uuid)->exists());
+                $model->sett_uuid = $uuid;
+            }
+        });
+    }
 
     // Relationships
     public function encodedByAccount()
@@ -53,5 +70,10 @@ class SettlementLog extends Model
     public function citizenHistories()
     {
         return $this->hasMany(CitizenHistory::class, 'sett_id', 'sett_id');
+    }
+
+    public function complainees()
+    {
+        return $this->hasMany(Complainee::class, 'sett_id', 'sett_id');
     }
 }

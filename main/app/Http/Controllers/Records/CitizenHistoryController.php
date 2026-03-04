@@ -212,9 +212,30 @@ class CitizenHistoryController extends Controller
                 'title' => $history->title,
                 'date' => $history->date_created ? \Carbon\Carbon::parse($history->date_created)->format('M d, Y') : 'N/A',
                 'status' => $history->status,
-                'type' => $history->type
+                'type' => $history->type,
             ]);
         }
         return response()->json(['found' => false]);
+    }
+
+    public function getRecentHistories()
+    {
+        $histories = CitizenHistory::where('is_deleted', false)
+            ->whereNotNull('cihi_uuid')
+            ->orderBy('date_created', 'desc')
+            ->limit(8)
+            ->get(['cihi_uuid', 'title', 'date_created', 'status', 'type']);
+
+        $formatted = $histories->map(function ($h) {
+            return [
+                'id' => $h->cihi_uuid,
+                'title' => $h->title,
+                'date' => $h->date_created ? \Carbon\Carbon::parse($h->date_created)->format('M d, Y') : 'N/A',
+                'status' => $h->status,
+                'type' => $h->type,
+            ];
+        });
+
+        return response()->json($formatted);
     }
 }
