@@ -351,7 +351,7 @@ class HouseholdController extends Controller
         }
 
         $households = HouseholdInfo::with(['citizen_informations.citizens'])
-        ->where('hh_uuid', 'like', '%' . $query . '%')
+        ->whereRaw('LOWER(hh_uuid) LIKE LOWER(?)', ['%' . $query . '%'])
         ->where('is_deleted', false)
         ->take(5)
         ->get();

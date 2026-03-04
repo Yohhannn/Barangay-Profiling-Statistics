@@ -22,6 +22,7 @@ export default function SettlementHistoryCreation({ isOpen, onClose }: Settlemen
         ],
 
         linked_history_id: '',
+        linked_history_details: null as any,
         complaint_description: '',
         settlement_description: '',
         date_of_settlement: '',
@@ -200,8 +201,25 @@ export default function SettlementHistoryCreation({ isOpen, onClose }: Settlemen
 
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 pt-2">
                                 <div>
-                                    <InputGroup label="Linked History ID" placeholder="e.g. CIHI-..." value={data.linked_history_id} onChange={(e: any) => setData('linked_history_id', e.target.value)} />
-                                    {errors.linked_history_id && <p className="text-[10px] text-red-500 mt-1">{errors.linked_history_id}</p>}
+                                    <HistorySearch 
+                                        value={data.linked_history_id}
+                                        details={data.linked_history_details}
+                                        onSelect={(history: any) => {
+                                            setData(d => ({
+                                                ...d,
+                                                linked_history_id: history.uuid || history.cihi_uuid,
+                                                linked_history_details: history
+                                            }));
+                                        }}
+                                        onClear={() => {
+                                            setData(d => ({
+                                                ...d,
+                                                linked_history_id: '',
+                                                linked_history_details: null
+                                            }));
+                                        }}
+                                        error={errors.linked_history_id}
+                                    />
                                 </div>
                                 <div>
                                     <InputGroup label="Date of Settlement" type="date" value={data.date_of_settlement} onChange={(e: any) => setData('date_of_settlement', e.target.value)} required />
@@ -222,6 +240,152 @@ export default function SettlementHistoryCreation({ isOpen, onClose }: Settlemen
                     </button>
                 </div>
             </div>
+        </div>
+    );
+}
+
+// --- NEW COMPONENT FOR HISTORY SEARCH ---
+function HistorySearch({ value, details, onSelect, onClear, error }: any) {
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isSearching, setIsSearching] = useState(false);
+    const [recentHistories, setRecentHistories] = useState<any[]>([]);
+    const [showRecent, setShowRecent] = useState(false);
+    const [searchResult, setSearchResult] = useState<any>(null);
+
+    useEffect(() => {
+        fetch('/api/recent-histories')
+            .then(res => res.json())
+            .then(data => setRecentHistories(data))
+            .catch(err => console.error('Failed to fetch recent histories', err));
+    }, []);
+
+    const handleSearch = () => {
+        if (!searchQuery.trim()) return;
+        setIsSearching(true);
+        fetch(`/api/verify-history-link?id=${encodeURIComponent(searchQuery)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.found) {
+                    setSearchResult(data);
+                } else {
+                    setSearchResult({ not_found: true });
+                }
+                setIsSearching(false);
+            })
+            .catch(() => setIsSearching(false));
+    };
+
+    return (
+        <div className="space-y-1.5 relative">
+            <label className="text-[10px] font-bold uppercase text-neutral-500 tracking-wide flex justify-between">
+                <span>Linked History Record</span>
+                {recentHistories.length > 0 && !details && (
+                    <button 
+                        type="button" 
+                        onClick={() => setShowRecent(!showRecent)}
+                        className="text-amber-600 hover:underline normal-case font-bold"
+                    >
+                        {showRecent ? 'Close Recent' : 'Show Recent'}
+                    </button>
+                )}
+            </label>
+
+            {!details ? (
+                <div className="space-y-2">
+                    <div className="flex gap-2">
+                        <div className="relative flex-1 group">
+                            <input
+                                className="w-full text-xs p-2.5 pl-9 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-400 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none"
+                                placeholder="Search UUID or last 4 digits..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                            />
+                            <div className="absolute left-3 top-2.5 text-neutral-400">
+                                {isSearching ? <Loader2 className="size-4 animate-spin" /> : <Search className="size-4" />}
+                            </div>
+                        </div>
+                        <button 
+                            type="button" 
+                            onClick={handleSearch}
+                            className="px-4 py-2 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-xs font-bold hover:bg-neutral-200 transition-colors"
+                        >
+                            Verify
+                        </button>
+                    </div>
+
+                    {showRecent && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700 shadow-xl max-h-48 overflow-y-auto z-50 p-1">
+                            <p className="p-2 text-[10px] font-bold uppercase text-neutral-400 border-b border-neutral-100 dark:border-neutral-700 mb-1">Recently Created Records</p>
+                            {recentHistories.map(h => (
+                                <button
+                                    key={h.id}
+                                    type="button"
+                                    onClick={() => { onSelect(h); setShowRecent(false); }}
+                                    className="w-full p-2 text-left hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded border-b border-neutral-50 dark:border-neutral-700/50 last:border-0"
+                                >
+                                    <div className="flex justify-between items-start">
+                                        <span className="text-xs font-bold text-neutral-700 dark:text-neutral-200">{h.title}</span>
+                                        <span className="text-[10px] font-mono text-neutral-400">{h.uuid}</span>
+                                    </div>
+                                    <div className="text-[10px] text-neutral-500 mt-0.5">{h.name} • {h.type} • {h.status}</div>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {searchResult && !searchResult.not_found && (
+                        <div className={`p-3 border rounded-lg animate-in slide-in-from-top-2 duration-200 ${searchResult.is_linked ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800/30' : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800/50'}`}>
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <p className={`text-xs font-bold ${searchResult.is_linked ? 'text-amber-800 dark:text-amber-300' : 'text-green-800 dark:text-green-300'}`}>
+                                        {searchResult.is_linked ? 'Already Assigned' : 'Record Found!'}
+                                    </p>
+                                    <p className={`text-[11px] mt-0.5 ${searchResult.is_linked ? 'text-amber-700 dark:text-amber-400' : 'text-green-700 dark:text-green-400'}`}>{searchResult.title}</p>
+                                    <p className={`text-[10px] opacity-80 ${searchResult.is_linked ? 'text-amber-600 dark:text-amber-500' : 'text-green-600 dark:text-green-500'}`}>{searchResult.uuid} • {searchResult.type}</p>
+                                    {searchResult.is_linked && <p className="text-[9px] font-bold text-amber-600 uppercase mt-1">Cannot be re-assigned to another settlement</p>}
+                                </div>
+                                {!searchResult.is_linked && (
+                                    <button 
+                                        type="button"
+                                        onClick={() => { onSelect(searchResult); setSearchResult(null); setSearchQuery(''); }}
+                                        className="px-3 py-1.5 bg-green-600 text-white rounded text-[10px] font-bold uppercase tracking-wider"
+                                    >
+                                        Link This
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {searchResult?.not_found && (
+                        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg text-xs text-red-700 dark:text-red-400 animate-in slide-in-from-top-2">
+                            No record found matching "{searchQuery}". Please check the ID.
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg flex justify-between items-center group">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-amber-100 dark:bg-amber-900/40 rounded-full text-amber-600 dark:text-amber-300">
+                            <FileText className="size-4" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold uppercase text-amber-600 dark:text-amber-400">Linked Record</p>
+                            <p className="text-xs font-bold text-neutral-800 dark:text-neutral-100 mt-0.5">{details.title}</p>
+                            <p className="text-[10px] text-neutral-500 font-mono mt-0.5">{details.uuid}</p>
+                        </div>
+                    </div>
+                    <button 
+                        type="button" 
+                        onClick={() => { onClear(); setSearchResult(null); setSearchQuery(''); }}
+                        className="p-1 text-red-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                        <Trash2 className="size-4" />
+                    </button>
+                </div>
+            )}
+            {error && <p className="text-[10px] text-red-500 mt-1">{error}</p>}
         </div>
     );
 }

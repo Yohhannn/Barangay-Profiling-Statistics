@@ -122,21 +122,25 @@ class SettlementController extends Controller
             $encodedBy = Auth::id() ?? 1;
             $now = now();
 
-            // 1. Build Comprehensive Settlement Description
-            $fullDescription = "Complaint: " . $validated['complaint_description'] . "\n\n";
-            if (!empty($validated['settlement_description'])) $fullDescription .= "Resolution: " . $validated['settlement_description'] . "\n";
-            if (!empty($validated['mediator'])) $fullDescription .= "Mediator: " . $validated['mediator'] . "\n";
-            if (!empty($validated['case_classification'])) $fullDescription .= "Classification: " . $validated['case_classification'] . "\n";
-            if (!empty($validated['linked_history_id'])) $fullDescription .= "Linked Previous History: " . $validated['linked_history_id'] . "\n";
-
             // 2. Create the Settlement Log first so we have the sett_id
             $settlementLog = SettlementLog::create([
-                'settlement_description' => trim($fullDescription),
+                'complaint_description' => $validated['complaint_description'],
+                'settlement_description' => $validated['settlement_description'] ?? null,
                 'date_of_settlement' => $validated['date_of_settlement'],
                 'date_encoded' => $now,
                 'encoded_by'  => $encodedBy,
-                'is_deleted' => false
+                'is_deleted' => false,
+                'mediator' => $validated['mediator'] ?? null,
+                'case_classification' => $validated['case_classification'] ?? null,
             ]);
+
+            // 3. Link Existing History if provided
+            if (!empty($validated['linked_history_id'])) {
+                $historyToLink = CitizenHistory::where('cihi_uuid', $validated['linked_history_id'])->first();
+                if ($historyToLink) {
+                    $historyToLink->update(['sett_id' => $settlementLog->sett_id]);
+                }
+            }
 
             // 3. Create Complainants attached to the Settlement
             foreach ($validated['complainants'] as $compData) {
@@ -212,11 +216,23 @@ class SettlementController extends Controller
 
             // 1. Update SettlementLog
             $record->update([
+                'complaint_description' => $validated['complaint_description'] ?? $record->complaint_description,
                 'settlement_description' => $validated['settlement_description'],
                 'date_of_settlement' => $validated['date_of_settlement'],
                 'date_updated' => $now,
                 'updated_by' => $updatedBy,
             ]);
+
+            // 2. Clear old links to this settlement if any
+            CitizenHistory::where('sett_id', $record->sett_id)->update(['sett_id' => null]);
+
+            // 3. Re-link History if provided
+            if (!empty($request->linked_history_id)) {
+                $historyToLink = CitizenHistory::where('cihi_uuid', $request->linked_history_id)->first();
+                if ($historyToLink) {
+                    $historyToLink->update(['sett_id' => $record->sett_id]);
+                }
+            }
 
             // 2. Sync Complainants (Simplest approach: Delete existing and recreate, or since edit UI usually manages all, full replace is easiest for arrays without IDs)
             $record->complainants()->delete();

@@ -15,6 +15,7 @@ class SettlementLog extends Model
     public $incrementing = true;
 
     protected $fillable = [
+        'complaint_description',
         'settlement_description',
         'date_of_settlement',
         'date_encoded',

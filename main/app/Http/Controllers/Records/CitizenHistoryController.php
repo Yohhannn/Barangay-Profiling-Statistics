@@ -43,6 +43,8 @@ class CitizenHistoryController extends Controller
                 'title' => $history->title,
                 'description' => $history->description,
                 'status' => $history->status,
+                'involvementType' => $history->involvement_type,
+                'caseClassification' => $history->case_classification,
                 'dateRecorded' => $history->date_created ? \Carbon\Carbon::parse($history->date_created)->format('Y-m-d') : 'N/A',
                 // Audit
                 'dateEncoded' => $history->date_created ? \Carbon\Carbon::parse($history->date_created)->format('Y-m-d | h:i A') : 'N/A',
@@ -92,6 +94,8 @@ class CitizenHistoryController extends Controller
                         'type'        => $history['type'],
                         'description' => $history['description'],
                         'status'      => $history['status'],
+                        'involvement_type' => $history['involvement_type'] ?? null,
+                        'case_classification' => $history['case_classification'] ?? null,
                         'encoded_by'  => $encodedBy,
                     ]);
                 }
@@ -119,6 +123,8 @@ class CitizenHistoryController extends Controller
             'histories.*.title'       => 'required|string|max:255',
             'histories.*.description' => 'required|string|max:5000',
             'histories.*.status'      => 'required|string',
+            'histories.*.involvement_type' => 'nullable|string|max:255',
+            'histories.*.case_classification' => 'nullable|string|max:255',
         ]);
 
         try {
@@ -139,6 +145,8 @@ class CitizenHistoryController extends Controller
                 'type'        => $firstHistory['type'],
                 'description' => $firstHistory['description'],
                 'status'      => $firstHistory['status'],
+                'involvement_type' => $firstHistory['involvement_type'] ?? null,
+                'case_classification' => $firstHistory['case_classification'] ?? null,
                 'updated_by'  => $updatedBy,
             ]);
 
@@ -160,6 +168,8 @@ class CitizenHistoryController extends Controller
                         'type'        => $history['type'],
                         'description' => $history['description'],
                         'status'      => $history['status'],
+                        'involvement_type' => $history['involvement_type'] ?? null,
+                        'case_classification' => $history['case_classification'] ?? null,
                         'encoded_by'  => $updatedBy,
                     ]);
                 }
@@ -205,16 +215,51 @@ class CitizenHistoryController extends Controller
         $query = $request->query('id');
         if (empty($query)) return response()->json(['found' => false]);
 
-        $history = CitizenHistory::where('cihi_uuid', $query)->where('is_deleted', false)->first();
+        // If it's a 4-digit number, search for matching last 4 digits of UUID
+        if (is_numeric($query) && strlen($query) === 4) {
+            $history = CitizenHistory::where('cihi_uuid', 'LIKE', "%-{$query}")
+                ->where('is_deleted', false)
+                ->first();
+        } else {
+            $history = CitizenHistory::where('cihi_uuid', $query)
+                ->where('is_deleted', false)
+                ->first();
+        }
+
         if ($history) {
             return response()->json([
                 'found' => true,
+                'id' => $history->cihi_id, 
+                'uuid' => $history->cihi_uuid,
                 'title' => $history->title,
                 'date' => $history->date_created ? \Carbon\Carbon::parse($history->date_created)->format('M d, Y') : 'N/A',
                 'status' => $history->status,
-                'type' => $history->type
+                'type' => $history->type,
+                'is_linked' => !empty($history->sett_id),
+                'linked_to' => $history->sett_id
             ]);
         }
         return response()->json(['found' => false]);
+    }
+
+    public function getRecentHistories()
+    {
+        $histories = CitizenHistory::where('is_deleted', false)
+            ->orderBy('date_created', 'desc')
+            ->take(5)
+            ->get()
+            ->map(function($h) {
+                return [
+                    'id' => $h->cihi_id,
+                    'uuid' => $h->cihi_uuid,
+                    'title' => $h->title,
+                    'type' => $h->type,
+                    'status' => $h->status,
+                    'name' => trim($h->first_name . ' ' . $h->last_name),
+                    'date' => $h->date_created ? \Carbon\Carbon::parse($h->date_created)->format('M d, Y') : 'N/A'
+                ];
+            });
+
+        return response()->json($histories);
     }
 }
