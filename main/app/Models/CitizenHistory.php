@@ -24,7 +24,6 @@ class CitizenHistory extends Model
         'type',
         'status',
         'involvement_type',
-        'case_classification',
         'is_deleted',
         'delete_reason',
         'date_created',

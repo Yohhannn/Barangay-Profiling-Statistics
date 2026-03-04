@@ -4,7 +4,8 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft, Search, Plus, Trash2,
     Scale, User, Calendar, FileText,
-    Edit3, X, SlidersHorizontal, Activity, ShieldAlert
+    Edit3, X, SlidersHorizontal, Activity, ShieldAlert, Handshake,
+    Filter, ChevronDown, CheckCircle, Info, UserCheck, AlertCircle, AlertTriangle
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import Swal from 'sweetalert2';
@@ -14,12 +15,15 @@ import SettlementHistoryEdit from './popup/settlement-history-edit';
 // --- Types ---
 export interface SettlementRecord {
     id: number;
+    sett_uuid: string;
     // Primary Displays (for the table lists)
     complainantFirstName: string;
     complainantLastName: string;
     subjectFirstName: string;
     subjectLastName: string;
     ctz_id: number | null;
+    mediator: string;
+    complaint_description: string;
     citizenId: string;
 
     // Full Arrays
@@ -28,17 +32,20 @@ export interface SettlementRecord {
         first_name: string;
         middle_name: string | null;
         last_name: string;
-        ctz_id: number | null;
-        citizenId: string | null;
+        citizen_id: string | null;
+        comp_description: string | null;
     }>;
-    subjects: Array<{
+    linked_histories: Array<{
         id: number;
         first_name: string;
         middle_name: string | null;
         last_name: string;
         ctz_id: number | null;
-        citizenId: string | null;
+        cihi_uuid: string;
         status: string;
+        title: string;
+        type: string;
+        citizen_id: string | null;
     }>;
 
     description: string;
@@ -92,14 +99,14 @@ export default function SettlementHistory({ histories = [] }: { histories?: Sett
     const groupedHistory = useMemo(() => {
         const groups: Record<string, SettlementRecord[]> = {};
         filteredHistory.forEach(rec => {
-            const key = rec.ctz_id ? `CTZ-${rec.ctz_id}` : `EXT-${rec.subjectFirstName.trim().toLowerCase()}-${rec.subjectLastName.trim().toLowerCase()}`;
+            const key = rec.citizenId && rec.citizenId !== 'N/A' ? rec.citizenId : `EXT-${rec.subjectFirstName.trim().toLowerCase()}-${rec.subjectLastName.trim().toLowerCase()}`;
             if (!groups[key]) groups[key] = [];
             groups[key].push(rec);
         });
         
         return Object.entries(groups).map(([key, records]) => ({
             key,
-            ctz_id: records[0].ctz_id,
+            citizenId: records[0].citizenId,
             subjectFirstName: records[0].subjectFirstName,
             subjectLastName: records[0].subjectLastName,
             records,
@@ -232,9 +239,9 @@ export default function SettlementHistory({ histories = [] }: { histories?: Sett
                                                         <span className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wide">
                                                             {group.subjectFirstName} {group.subjectLastName}
                                                         </span>
-                                                        {group.ctz_id && (
+                                                        {group.citizenId && group.citizenId !== 'N/A' && (
                                                             <span className="text-[10px] font-mono bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded ml-2 shadow-sm border border-amber-200 dark:border-amber-800">
-                                                                ID: {group.records[0].citizenId}
+                                                                ID: {group.citizenId}
                                                             </span>
                                                         )}
                                                     </div>
@@ -295,24 +302,40 @@ export default function SettlementHistory({ histories = [] }: { histories?: Sett
                                 <div className="bg-neutral-50 dark:bg-neutral-900/20 border-b border-sidebar-border p-6">
                                     <div className="flex justify-between items-start">
                                         <div className="flex items-start gap-4">
-                                            <div className="p-3 rounded-xl bg-amber-100 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50">
-                                                <Scale className="size-8 text-amber-600 dark:text-amber-400" />
+                                            <div className="bg-amber-100 dark:bg-amber-900/30 p-3 rounded-xl text-amber-600 dark:text-amber-400">
+                                                <Handshake className="size-8" />
                                             </div>
-                                            <div className="flex flex-col">
-                                                <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
-                                                    Settlement Details
+                                            <div>
+                                                <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-tight">
+                                                    {selectedRecord.complainantFirstName} {selectedRecord.complainantLastName} <span className="text-amber-600 dark:text-amber-500 mx-1">vs</span> {selectedRecord.subjectFirstName} {selectedRecord.subjectLastName}
                                                 </h2>
-                                                <span className="text-sm text-neutral-500">Record #{selectedRecord.id} &bull; {selectedRecord.dateOfSettlement}</span>
+                                                <div className="flex items-center gap-2 mt-1 text-sm text-neutral-500">
+                                                    <Scale className="size-3.5" />
+                                                    <span className="font-medium">#{selectedRecord.id} • {selectedRecord.dateOfSettlement}</span>
+                                                    <span className="font-mono bg-white dark:bg-black/20 border px-1.5 rounded text-xs ml-2 text-amber-600 dark:text-amber-500 border-amber-200 dark:border-amber-800 font-bold">
+                                                        {selectedRecord.sett_uuid}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                         
                                         <button onClick={() => setIsEditOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all hover:shadow-md">
-                                            <Edit3 className="size-3.5" /> Edit Form
+                                            <Edit3 className="size-3.5" /> Edit Record
                                         </button>
                                     </div>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+
+                                    {/* Info Grid (Synced with citizen-history) */}
+                                    <div className="grid grid-cols-2 gap-x-8 gap-y-4 bg-white dark:bg-sidebar border border-sidebar-border rounded-xl p-5 shadow-sm">
+                                        <InfoRow label="Settlement UUID" value={selectedRecord.sett_uuid} highlight />
+                                        <InfoRow label="Record Number" value={`#${selectedRecord.id}`} />
+                                        <InfoRow label="Date of Settlement" value={selectedRecord.dateOfSettlement} />
+                                        <InfoRow label="Mediator / Lupon" value={selectedRecord.mediator || 'N/A'} />
+                                        <InfoRow label="Complainants" value={`${selectedRecord.complainants?.length || 0} Person(s)`} />
+                                        <InfoRow label="Respondents" value={`${selectedRecord.linked_histories?.length || 0} Linked Record(s)`} />
+                                    </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         {/* Complainants List */}
@@ -323,43 +346,69 @@ export default function SettlementHistory({ histories = [] }: { histories?: Sett
                                             </div>
                                             <div className="space-y-3">
                                                 {selectedRecord.complainants?.map(comp => (
-                                                    <div key={comp.id} className="flex justify-between items-center bg-neutral-50 dark:bg-neutral-800 p-3 rounded-lg border border-sidebar-border/50">
-                                                        <span className="font-bold text-neutral-900 dark:text-neutral-100">
-                                                            {comp.first_name} {comp.middle_name} {comp.last_name}
-                                                        </span>
-                                                        {comp.citizenId && (
-                                                            <span className="text-[10px] font-mono bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">
-                                                                {comp.citizenId}
+                                                    <div key={comp.id} className="flex flex-col bg-neutral-50 dark:bg-neutral-800 p-3 rounded-lg border border-sidebar-border/50 gap-2">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="font-bold text-neutral-900 dark:text-neutral-100">
+                                                                {comp.first_name} {comp.middle_name ? `${comp.middle_name} ` : ''}{comp.last_name}
                                                             </span>
+                                                            {comp.citizen_id ? (
+                                                                <span className="text-[10px] font-mono bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 px-1.5 py-0.5 rounded border border-rose-100 dark:border-rose-900/50 shadow-sm font-bold">
+                                                                    {comp.citizen_id}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-[10px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-700 font-medium">
+                                                                    Manual Entry
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {comp.comp_description && (
+                                                            <p className="text-[10px] text-neutral-500 italic border-l-2 border-rose-200 pl-2 py-0.5">
+                                                                "{comp.comp_description}"
+                                                            </p>
                                                         )}
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
 
-                                        {/* Subjects List */}
+                                        {/* Linked Histories / Complainees List */}
                                         <div className="bg-white dark:bg-sidebar border border-sidebar-border rounded-xl p-5 shadow-sm space-y-4">
                                             <div className="flex items-center gap-2 text-amber-600 dark:text-amber-500 border-b border-sidebar-border/50 pb-2">
-                                                <User className="size-4.5" /> 
-                                                <span className="text-sm font-bold uppercase tracking-wider">Subjects / Respondents ({selectedRecord.subjects?.length || 0})</span>
+                                                <FileText className="size-4.5" /> 
+                                                <span className="text-sm font-bold uppercase tracking-wider">Respondents / Complainees ({selectedRecord.linked_histories?.length || 0})</span>
                                             </div>
                                             <div className="space-y-3">
-                                                {selectedRecord.subjects?.map(sub => (
-                                                    <div key={sub.id} className="flex flex-col gap-1.5 bg-neutral-50 dark:bg-neutral-800 p-3 rounded-lg border border-sidebar-border/50">
+                                                {selectedRecord.linked_histories?.length === 0 ? (
+                                                    <p className="text-xs text-neutral-400 italic py-2">No history records linked.</p>
+                                                ) : selectedRecord.linked_histories?.map(sub => (
+                                                    <div key={sub.id} className="flex flex-col gap-1.5 bg-neutral-50 dark:bg-neutral-800 p-3 rounded-lg border border-sidebar-border/50 hover:border-amber-200 transition-colors">
                                                         <div className="flex justify-between items-center">
-                                                            <span className="font-bold text-neutral-900 dark:text-neutral-100">
-                                                                {sub.first_name} {sub.middle_name} {sub.last_name}
-                                                            </span>
+                                                            <div>
+                                                                <span className="font-bold text-neutral-900 dark:text-neutral-100 lowercase first-letter:uppercase">
+                                                                    {sub.first_name} {sub.last_name}
+                                                                </span>
+                                                                {sub.citizen_id ? (
+                                                                    <span className="text-[10px] font-mono bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-900/50 shadow-sm font-bold">
+                                                                        {sub.citizen_id}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-[10px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-700 font-medium">
+                                                                        Manual Entry
+                                                                    </span>
+                                                                )}
+                                                                <div className="flex items-center gap-2 mt-1">
+                                                                    <span className="text-[10px] font-mono text-neutral-500">{sub.cihi_uuid}</span>
+                                                                    <span className="text-[9px] px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-700 text-neutral-500 rounded uppercase font-bold">{sub.type}</span>
+                                                                </div>
+                                                            </div>
                                                             <div className="flex items-center gap-2">
                                                                 <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${sub.status === 'Pending' ? 'bg-orange-100 text-orange-800' : 'bg-emerald-100 text-emerald-800'}`}>
                                                                     {sub.status || 'Resolved'}
                                                                 </span>
-                                                                {sub.citizenId && (
-                                                                    <span className="text-[10px] font-mono bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">
-                                                                        {sub.citizenId}
-                                                                    </span>
-                                                                )}
                                                             </div>
+                                                        </div>
+                                                        <div className="text-[10px] text-neutral-400 border-t border-neutral-100 dark:border-neutral-700/50 pt-1 mt-1">
+                                                            Related to: {sub.first_name} {sub.last_name}
                                                         </div>
                                                     </div>
                                                 ))}
@@ -367,12 +416,23 @@ export default function SettlementHistory({ histories = [] }: { histories?: Sett
                                         </div>
                                     </div>
 
-                                    <div className="space-y-3 pt-2 border-t border-sidebar-border/50">
-                                        <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2">
-                                            <Activity className="size-3.5" /> Comprehensive Resolution Log
-                                        </h3>
-                                        <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 min-h-[150px] whitespace-pre-wrap font-mono relative shadow-inner">
-                                            {selectedRecord.description}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
+                                        <div className="space-y-3">
+                                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2">
+                                                <ShieldAlert className="size-3.5" /> Incident / Complaint
+                                            </h3>
+                                            <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 min-h-[120px] whitespace-pre-wrap font-mono relative shadow-inner">
+                                                {selectedRecord.complaint_description || 'No description provided.'}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2">
+                                                <Handshake className="size-3.5" /> Resolution / Settlement
+                                            </h3>
+                                            <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 min-h-[120px] whitespace-pre-wrap font-mono relative shadow-inner">
+                                                {selectedRecord.description || 'Pending resolution.'}
+                                            </div>
                                         </div>
                                     </div>
 

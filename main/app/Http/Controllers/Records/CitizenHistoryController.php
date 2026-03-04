@@ -124,7 +124,6 @@ class CitizenHistoryController extends Controller
             'histories.*.description' => 'required|string|max:5000',
             'histories.*.status'      => 'required|string',
             'histories.*.involvement_type' => 'nullable|string|max:255',
-            'histories.*.case_classification' => 'nullable|string|max:255',
         ]);
 
         try {
@@ -256,10 +255,48 @@ class CitizenHistoryController extends Controller
                     'type' => $h->type,
                     'status' => $h->status,
                     'name' => trim($h->first_name . ' ' . $h->last_name),
-                    'date' => $h->date_created ? \Carbon\Carbon::parse($h->date_created)->format('M d, Y') : 'N/A'
+                    'date' => $h->date_created ? \Carbon\Carbon::parse($h->date_created)->format('M d, Y') : 'N/A',
+                    'is_assigned' => !empty($h->sett_id),
+                    'sett_id' => $h->sett_id
                 ];
             });
 
         return response()->json($histories);
+    }
+
+    public function search(Request $request)
+    {
+        $search = strtolower($request->query('q', ''));
+        if (empty($search)) return response()->json([]);
+
+        $results = CitizenHistory::with('citizen')
+            ->where('is_deleted', false)
+            ->where(function($q) use ($search) {
+                $q->whereRaw("LOWER(title) LIKE ?", ["%{$search}%"])
+                  ->orWhereRaw("LOWER(first_name) LIKE ?", ["%{$search}%"])
+                  ->orWhereRaw("LOWER(last_name) LIKE ?", ["%{$search}%"])
+                  ->orWhere('cihi_uuid', 'LIKE', "%{$search}%");
+            })
+            ->limit(10)
+            ->get()
+            ->map(function($h) {
+                return [
+                    'id' => $h->cihi_id,
+                    'uuid' => $h->cihi_uuid,
+                    'name' => trim($h->first_name . ' ' . $h->last_name),
+                    'first_name' => $h->first_name,
+                    'middle_name' => $h->middle_name,
+                    'last_name' => $h->last_name,
+                    'title' => $h->title,
+                    'type' => $h->type,
+                    'status' => $h->status,
+                    'citizen_id' => $h->citizen ? 'CTZ-' . $h->citizen->ctz_id : null,
+                    'date' => $h->date_created ? \Carbon\Carbon::parse($h->date_created)->format('M d, Y') : 'N/A',
+                    'is_assigned' => !empty($h->sett_id),
+                    'sett_id' => $h->sett_id
+                ];
+            });
+
+        return response()->json($results);
     }
 }
