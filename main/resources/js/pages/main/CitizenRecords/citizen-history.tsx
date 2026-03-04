@@ -26,6 +26,8 @@ export interface HistoryRecord {
     title: string;
     description: string;
     status: string;
+    involvementType: string;
+    caseClassification: string;
     dateRecorded: string;
 
     // Audit
@@ -355,6 +357,8 @@ export default function CitizenHistory({ histories = [] }: { histories?: History
                                                  className={getTypeText(selectedHistory.type)}
                                         />
                                         <InfoRow label="Current Status" value={selectedHistory.status} />
+                                        <InfoRow label="Involvement" value={selectedHistory.involvementType || 'N/A'} />
+                                        <InfoRow label="Classification" value={selectedHistory.caseClassification || 'N/A'} />
                                     </div>
 
                                     {/* Description Block */}

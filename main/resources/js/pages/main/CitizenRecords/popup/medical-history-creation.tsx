@@ -291,24 +291,34 @@ function CitizenBlock({ index, data, onChange, onRemove, canRemove, errors }: an
 
             {!isLocked && (
                 <div className="mb-4 mt-2">
-                    <label className="flex items-center gap-2 cursor-pointer mb-3">
-                        <div className="relative">
-                            <input 
-                                type="checkbox" 
-                                className="sr-only" 
-                                checked={hasRecord}
-                                onChange={(e) => {
-                                    setHasRecord(e.target.checked);
-                                    if (!e.target.checked) handleCancelSelection();
-                                }}
-                            />
-                            <div className={`block w-10 h-6 rounded-full transition-colors ${hasRecord ? 'bg-rose-500' : 'bg-neutral-300 dark:bg-neutral-600'}`}></div>
-                            <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${hasRecord ? 'transform translate-x-4' : ''}`}></div>
+                    <div className="flex items-center gap-3 bg-white dark:bg-black/20 px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 w-fit mb-3">
+                        <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-tight">Has Barangay Record?</span>
+                        <div className="flex gap-4">
+                            <label className="flex items-center gap-1.5 cursor-pointer">
+                                <input 
+                                    type="radio" 
+                                    name={`hasRec_${index}`}
+                                    className="accent-rose-600 h-3.5 w-3.5" 
+                                    checked={hasRecord}
+                                    onChange={() => setHasRecord(true)}
+                                />
+                                <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300">Yes</span>
+                            </label>
+                            <label className="flex items-center gap-1.5 cursor-pointer">
+                                <input 
+                                    type="radio" 
+                                    name={`hasRec_${index}`}
+                                    className="accent-rose-600 h-3.5 w-3.5" 
+                                    checked={!hasRecord}
+                                    onChange={() => {
+                                        setHasRecord(false);
+                                        handleCancelSelection();
+                                    }}
+                                />
+                                <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300">No</span>
+                            </label>
                         </div>
-                        <span className="text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wide">
-                            Has Barangay Record?
-                        </span>
-                    </label>
+                    </div>
 
                     {hasRecord && (
                         <div className="space-y-1.5 relative z-20 animate-in fade-in max-w-sm">

@@ -693,11 +693,11 @@ class CitizenController extends Controller
         $citizens = Citizen::with('info')
             ->where('is_deleted', false)
             ->where(function ($q) use ($query) {
-                $q->where('ctz_uuid', 'like', "%{$query}%")
+                $q->whereRaw("LOWER(ctz_uuid) LIKE LOWER(?)", ["%{$query}%"])
                   ->orWhereHas('info', function ($sub) use ($query) {
-                      $sub->where('first_name', 'like', "%{$query}%")
-                          ->orWhere('middle_name', 'like', "%{$query}%")
-                          ->orWhere('last_name', 'like', "%{$query}%");
+                      $sub->whereRaw("LOWER(first_name) LIKE LOWER(?)", ["%{$query}%"])
+                          ->orWhereRaw("LOWER(middle_name) LIKE LOWER(?)", ["%{$query}%"])
+                          ->orWhereRaw("LOWER(last_name) LIKE LOWER(?)", ["%{$query}%"]);
                   });
             })
             ->take(5)
