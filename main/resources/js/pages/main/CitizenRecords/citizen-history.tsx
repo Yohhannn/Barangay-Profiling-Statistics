@@ -5,11 +5,12 @@ import { Head, Link } from '@inertiajs/react';
 import {
     ArrowLeft, Search, Plus, Trash2,
     FileClock, User, Calendar, FileText,
-    Download, Edit3, X, SlidersHorizontal, Activity, Tag
+    Download, Edit3, X, SlidersHorizontal, Activity, Tag, Info
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import CitizenHistoryCreation from './popup/citizen-history-creation'; // IMPORTED
 import CitizenHistoryEdit from './popup/citizen-history-edit'; // IMPORTED
+import CitizenQuickView from './popup/citizen-quick-view';
 import { router } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 
@@ -52,6 +53,18 @@ export default function CitizenHistory({ histories = [] }: { histories?: History
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+    // --- QUICK VIEW STATE ---
+    const [quickViewOpen, setQuickViewOpen] = useState(false);
+    const [quickViewCitizenId, setQuickViewCitizenId] = useState<number | null>(null);
+
+    const handleOpenQuickView = (e: React.MouseEvent, id: number | null) => {
+        e.stopPropagation();
+        if (id) {
+            setQuickViewCitizenId(id);
+            setQuickViewOpen(true);
+        }
+    };
 
     // Keep selectedHistory synced with prop updates
     useEffect(() => {
@@ -259,9 +272,19 @@ export default function CitizenHistory({ histories = [] }: { histories?: History
                                                             {group.firstName} {group.lastName}
                                                         </span>
                                                         {group.ctz_id && (
-                                                            <span className="text-[10px] font-mono bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded ml-2 shadow-sm border border-purple-200 dark:border-purple-800">
-                                                                ID: {group.records[0].citizenId}
-                                                            </span>
+                                                            <div className="flex items-center gap-1.5 ml-1">
+                                                                <button 
+                                                                    onClick={(e) => handleOpenQuickView(e, group.ctz_id)}
+                                                                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-600 hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-all shadow-sm border border-purple-100 dark:border-purple-900/30 group"
+                                                                    title="Quick View Record"
+                                                                >
+                                                                    <Info className="size-3 group-hover:scale-110 transition-transform" />
+                                                                    <span className="text-[9px] font-bold uppercase tracking-tight">Quick View</span>
+                                                                </button>
+                                                                <span className="text-[10px] font-mono bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded shadow-sm border border-purple-200 dark:border-purple-800">
+                                                                    ID: {group.records[0].citizenId}
+                                                                </span>
+                                                            </div>
                                                         )}
                                                     </div>
                                                     <div className="flex items-center gap-3">
@@ -333,7 +356,19 @@ export default function CitizenHistory({ histories = [] }: { histories?: History
                                                 </h2>
                                                 <div className="flex items-center gap-2 mt-1 text-sm text-neutral-500">
                                                     <User className="size-3.5" />
-                                                    <span className="font-medium">{selectedHistory.firstName} {selectedHistory.lastName}</span>
+                                                    <span className="font-medium">
+                                                        {selectedHistory.firstName} {selectedHistory.lastName}
+                                                    </span>
+                                                    {selectedHistory.ctz_id && (
+                                                        <button 
+                                                            onClick={(e) => handleOpenQuickView(e, selectedHistory.ctz_id)}
+                                                            className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all shadow-sm border border-neutral-200 dark:border-neutral-700 group ml-2"
+                                                            title="Quick View Record"
+                                                        >
+                                                            <Info className="size-3 group-hover:scale-110 transition-transform" />
+                                                            <span className="text-[9px] font-bold uppercase tracking-tight">Quick View</span>
+                                                        </button>
+                                                    )}
                                                     <span className="font-mono bg-white dark:bg-black/20 border px-1.5 rounded text-xs ml-2">
                                                         {selectedHistory.citizenId}
                                                     </span>
@@ -408,6 +443,12 @@ export default function CitizenHistory({ histories = [] }: { histories?: History
                     </div>
                 </div>
             </div>
+            {/* Quick View Modal */}
+            <CitizenQuickView 
+                isOpen={quickViewOpen} 
+                onClose={() => setQuickViewOpen(false)} 
+                citizenId={quickViewCitizenId} 
+            />
         </AppLayout>
     );
 }

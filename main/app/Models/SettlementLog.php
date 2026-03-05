@@ -25,6 +25,7 @@ class SettlementLog extends Model
         'delete_reason',
         'encoded_by',
         'updated_by',
+        'mediator',
     ];
 
     protected $casts = [

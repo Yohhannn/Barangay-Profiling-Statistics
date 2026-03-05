@@ -43,7 +43,7 @@ class CitizenController extends Controller
             'info.demographic.educationStatus.educationHistory',
             'info.demographic.philhealth',
             'medicalHistories',
-            'histories.settlementLogs',
+            'histories.settlementLog',
             'encodedBy',
             'updatedBy'
         ])
@@ -54,12 +54,13 @@ class CitizenController extends Controller
         // Search (Name)
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $citizensQuery->whereHas('info', function ($q) use ($search) {
-                $q->where(function ($sub) use ($search) {
-                    $sub->where('first_name', 'like', "%{$search}%")
-                        ->orWhere('last_name', 'like', "%{$search}%")
-                        ->orWhere('middle_name', 'like', "%{$search}%");
-                });
+            $citizensQuery->where(function($q) use ($search) {
+                $q->where('ctz_uuid', 'like', "%{$search}%")
+                  ->orWhereHas('info', function ($sub) use ($search) {
+                        $sub->where('first_name', 'like', "%{$search}%")
+                            ->orWhere('last_name', 'like', "%{$search}%")
+                            ->orWhere('middle_name', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -722,5 +723,74 @@ class CitizenController extends Controller
             });
 
         return response()->json($citizens);
+    }
+
+    public function getQuickViewData($id)
+    {
+        try {
+            $citizen = Citizen::with([
+                'info.sitio',
+                'info.employment',
+                'info.contact.phones',
+                'info.demographic.socioEconomic',
+                'info.demographic.healthRisk',
+                'info.demographic.philhealth',
+                'info.demographic.educationStatus',
+                'info.householdInfo',
+                'histories' => function($q) {
+                    $q->where('is_deleted', false)->orderBy('date_created', 'desc')->limit(5);
+                }
+            ])
+            ->where('ctz_id', $id)
+            ->where('is_deleted', false)
+            ->firstOrFail();
+
+            $info = $citizen->info;
+            $demo = $info->demographic;
+
+            return response()->json([
+                'id' => $citizen->ctz_id,
+                'uuid' => $citizen->ctz_uuid,
+                'firstName' => $info->first_name,
+                'middleName' => $info->middle_name,
+                'lastName' => $info->last_name,
+                'suffix' => $info->suffix,
+                'sex' => $info->sex,
+                'age' => $info->date_of_birth ? \Carbon\Carbon::parse($info->date_of_birth)->age : null,
+                'dob' => $info->date_of_birth ? \Carbon\Carbon::parse($info->date_of_birth)->format('F d, Y') : null,
+                'civilStatus' => $info->civil_status,
+                'sitio' => $info->sitio->sitio_name ?? 'Unknown',
+                'pob' => $info->place_of_birth ?? 'N/A',
+                'bloodType' => $info->blood_type ?? 'Unknown',
+                'religion' => $info->religion ?? 'N/A',
+                'occupation' => $info->employment->occupation ?? 'N/A',
+                'employmentStatus' => $info->employment->status ?? 'N/A',
+                'isVoter' => (bool) $info->is_registered_voter,
+                'isIp' => (bool) $info->is_indigenous,
+                'isGovWorker' => (bool) ($info->employment->is_gov_worker ?? false),
+                'healthClassification' => $demo->healthRisk->clah_classification_name ?? 'Healthy',
+                'philhealthId' => $demo->philhealth->philhealth_id_number ?? 'N/A',
+                'householdId' => $info->householdInfo->hh_uuid ?? 'N/A',
+                'contactNumbers' => $info->contact && $info->contact->phones
+                    ? $info->contact->phones->pluck('phone_number')->toArray()
+                    : [],
+                'email' => $info->contact->email ?? 'N/A',
+                'fullAddress' => $info->personal_address ?? 'N/A',
+                'histories' => $citizen->histories->map(function($h) {
+                    return [
+                        'uuid' => $h->cihi_uuid,
+                        'title' => $h->title,
+                        'description' => $h->description,
+                        'type' => $h->type,
+                        'involvement' => $h->involvement_type,
+                        'classification' => $h->case_classification,
+                        'date' => $h->date_created ? \Carbon\Carbon::parse($h->date_created)->format('M d, Y') : 'N/A',
+                        'status' => $h->status,
+                    ];
+                }),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Citizen not found or error occurred.'], 404);
+        }
     }
 }

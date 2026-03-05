@@ -31,7 +31,7 @@ class SettlementController extends Controller
             });
         }
 
-        $records = $query->orderBy('date_encoded', 'desc')->get()->map(function($settlement) {
+        $records = $query->orderBy('sett_uuid', 'asc')->get()->map(function($settlement) {
             $encodedByName = $settlement->encodedByAccount ? trim($settlement->encodedByAccount->sys_fname . ' ' . $settlement->encodedByAccount->sys_lname) : 'Unknown User';
             $updatedByName = $settlement->updatedByAccount ? trim($settlement->updatedByAccount->sys_fname . ' ' . $settlement->updatedByAccount->sys_lname) : $encodedByName;
 
@@ -56,6 +56,7 @@ class SettlementController extends Controller
                         'first_name' => $c->first_name,
                         'middle_name' => $c->middle_name,
                         'last_name' => $c->last_name,
+                        'ctz_id' => $c->ctz_id,
                         'citizen_id' => $c->citizen ? $c->citizen->ctz_uuid : null,
                         'comp_description' => $c->comp_description,
                     ];
@@ -72,6 +73,8 @@ class SettlementController extends Controller
                         'status' => $s->status,
                         'title' => $s->title,
                         'type' => $s->type,
+                        'description' => $s->description,
+                        'involvement_type' => $s->involvement_type,
                     ];
                 }),
 
@@ -105,7 +108,7 @@ class SettlementController extends Controller
             'complainants.*.first_name' => 'required|string|max:255',
             'complainants.*.middle_name' => 'nullable|string|max:255',
             'complainants.*.last_name' => 'required|string|max:255',
-            'complainants.*.comp_description' => 'nullable|string|max:2000',
+            'complainants.*.ctz_id' => 'nullable|integer',
             
 
             'linked_history_ids' => 'nullable|array',
@@ -135,8 +138,22 @@ class SettlementController extends Controller
 
             // 3. Link Existing Histories if provided
             if (!empty($validated['linked_history_ids'])) {
+                $historiesToLink = CitizenHistory::whereIn('cihi_uuid', $validated['linked_history_ids'])
+                    ->where('is_deleted', false)
+                    ->get();
+                
+                // Validate that all histories are in a linkable status
+                foreach ($historiesToLink as $history) {
+                    if (in_array($history->status, ['Resolved', 'Dismissed'])) {
+                        throw new \Exception("Record {$history->cihi_uuid} is already {$history->status} and cannot be linked.");
+                    }
+                }
+
                 CitizenHistory::whereIn('cihi_uuid', $validated['linked_history_ids'])
-                    ->update(['sett_id' => $settlementLog->sett_id]);
+                    ->update([
+                        'sett_id' => $settlementLog->sett_id,
+                        'status' => 'Resolved'
+                    ]);
             }
         
 
@@ -146,9 +163,8 @@ class SettlementController extends Controller
                     'first_name' => $compData['first_name'],
                     'middle_name' => $compData['middle_name'] ?? null,
                     'last_name' => $compData['last_name'],
-                    'ctz_id' => !empty($compData['citizen_id']) ? (int) str_replace('CTZ-', '', $compData['citizen_id']) : null,
+                    'ctz_id' => !empty($compData['ctz_id']) ? $compData['ctz_id'] : (!empty($compData['citizen_id']) ? (int) str_replace('CTZ-', '', $compData['citizen_id']) : null),
                     'sett_id' => $settlementLog->sett_id,
-                    'comp_description' => $compData['comp_description'] ?? '',
                 ]);
             }
 
@@ -174,7 +190,7 @@ class SettlementController extends Controller
             'complainants.*.first_name' => 'required|string|max:255',
             'complainants.*.middle_name' => 'nullable|string|max:255',
             'complainants.*.last_name' => 'required|string|max:255',
-            'complainants.*.comp_description' => 'nullable|string|max:2000',
+            'complainants.*.ctz_id' => 'nullable|integer',
 
             'linked_history_ids' => 'nullable|array',
             'linked_history_ids.*' => 'string',
@@ -198,15 +214,34 @@ class SettlementController extends Controller
                 'date_of_settlement' => $validated['date_of_settlement'],
                 'date_updated' => $now,
                 'updated_by' => $updatedBy,
+                'mediator' => $validated['mediator'],
             ]);
 
             // 2. Clear old links to this settlement if any
-            CitizenHistory::where('sett_id', $record->sett_id)->update(['sett_id' => null]);
+            CitizenHistory::where('sett_id', $record->sett_id)
+                ->update([
+                    'sett_id' => null,
+                    'status' => 'Pending'
+                ]);
 
             // 3. Re-link Histories if provided
             if (!empty($validated['linked_history_ids'])) {
+                $historiesToLink = CitizenHistory::whereIn('cihi_uuid', $validated['linked_history_ids'])
+                    ->where('is_deleted', false)
+                    ->get();
+                
+                // Validate that all histories are in a linkable status
+                foreach ($historiesToLink as $history) {
+                    if ($history->sett_id !== $record->sett_id && in_array($history->status, ['Resolved', 'Dismissed'])) {
+                        throw new \Exception("Record {$history->cihi_uuid} is already {$history->status} and cannot be linked.");
+                    }
+                }
+
                 CitizenHistory::whereIn('cihi_uuid', $validated['linked_history_ids'])
-                    ->update(['sett_id' => $record->sett_id]);
+                    ->update([
+                        'sett_id' => $record->sett_id,
+                        'status' => 'Resolved'
+                    ]);
             }
 
             // 2. Sync Complainants (Simplest approach: Delete existing and recreate, or since edit UI usually manages all, full replace is easiest for arrays without IDs)
@@ -217,9 +252,8 @@ class SettlementController extends Controller
                     'first_name' => $compData['first_name'],
                     'middle_name' => $compData['middle_name'] ?? null,
                     'last_name' => $compData['last_name'],
-                    'ctz_id' => !empty($compData['citizen_id']) ? (int) str_replace('CTZ-', '', $compData['citizen_id']) : null,
+                    'ctz_id' => !empty($compData['ctz_id']) ? $compData['ctz_id'] : (!empty($compData['citizen_id']) ? (int) str_replace('CTZ-', '', $compData['citizen_id']) : null),
                     'sett_id' => $record->sett_id,
-                    'comp_description' => $compData['comp_description'] ?? '',
                 ]);
             }
 
@@ -246,6 +280,13 @@ class SettlementController extends Controller
             $record->is_deleted = true;
             $record->delete_reason = $validated['delete_reason'];
             $record->save();
+
+            // Reset linked histories
+            CitizenHistory::where('sett_id', $record->sett_id)
+                ->update([
+                    'sett_id' => null,
+                    'status' => 'Pending'
+                ]);
 
             DB::commit();
 

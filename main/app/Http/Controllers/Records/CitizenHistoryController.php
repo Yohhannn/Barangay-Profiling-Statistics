@@ -218,10 +218,12 @@ class CitizenHistoryController extends Controller
         if (is_numeric($query) && strlen($query) === 4) {
             $history = CitizenHistory::where('cihi_uuid', 'LIKE', "%-{$query}")
                 ->where('is_deleted', false)
+                ->whereNotIn('status', ['Resolved', 'Dismissed'])
                 ->first();
         } else {
             $history = CitizenHistory::where('cihi_uuid', $query)
                 ->where('is_deleted', false)
+                ->whereNotIn('status', ['Resolved', 'Dismissed'])
                 ->first();
         }
 
@@ -277,6 +279,7 @@ class CitizenHistoryController extends Controller
                   ->orWhereRaw("LOWER(last_name) LIKE ?", ["%{$search}%"])
                   ->orWhere('cihi_uuid', 'LIKE', "%{$search}%");
             })
+            ->whereNotIn('status', ['Resolved', 'Dismissed'])
             ->limit(10)
             ->get()
             ->map(function($h) {
@@ -298,5 +301,34 @@ class CitizenHistoryController extends Controller
             });
 
         return response()->json($results);
+    }
+
+    public function getHistoryDetail($uuid)
+    {
+        $history = CitizenHistory::with(['citizen', 'encodedByAccount', 'updatedByAccount'])
+            ->where('cihi_uuid', $uuid)
+            ->firstOrFail();
+
+        $encodedByName = $history->encodedByAccount ? trim($history->encodedByAccount->sys_fname . ' ' . $history->encodedByAccount->sys_lname) : 'Unknown User';
+        $updatedByName = $history->updatedByAccount ? trim($history->updatedByAccount->sys_fname . ' ' . $history->updatedByAccount->sys_lname) : $encodedByName;
+
+        return response()->json([
+            'uuid' => $history->cihi_uuid,
+            'title' => $history->title,
+            'description' => $history->description,
+            'type' => $history->type,
+            'status' => $history->status,
+            'firstName' => $history->first_name,
+            'middleName' => $history->middle_name ?? '',
+            'lastName' => $history->last_name,
+            'involvement' => $history->involvement_type,
+            'classification' => $history->case_classification,
+            'date' => $history->date_created ? \Carbon\Carbon::parse($history->date_created)->format('M d, Y') : 'N/A',
+            'dateEncoded' => $history->date_created ? \Carbon\Carbon::parse($history->date_created)->format('Y-m-d | h:i A') : 'N/A',
+            'encodedBy' => $encodedByName,
+            'dateUpdated' => $history->date_updated ? \Carbon\Carbon::parse($history->date_updated)->format('Y-m-d | h:i A') : 'N/A',
+            'updatedBy' => $history->date_updated ? $updatedByName : 'N/A',
+            'citizen_id' => $history->citizen ? $history->citizen->ctz_uuid : null,
+        ]);
     }
 }

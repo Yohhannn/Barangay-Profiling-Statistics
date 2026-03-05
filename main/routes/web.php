@@ -159,6 +159,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/api/verify-history-link', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'verifyHistoryLink']);
     Route::get('/api/recent-histories', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'getRecentHistories']);
     Route::get('/api/citizen-history-search', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'search']);
+    Route::get('/api/history-detail/{uuid}', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'getHistoryDetail']);
+    Route::get('/api/citizen/{id}', [CitizenController::class, 'getQuickViewData']);
 });
 
 require __DIR__.'/settings.php';
