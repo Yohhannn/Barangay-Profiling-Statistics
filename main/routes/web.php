@@ -160,6 +160,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/api/recent-histories', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'getRecentHistories']);
     Route::get('/api/citizen-history-search', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'search']);
     Route::get('/api/history-detail/{uuid}', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'getHistoryDetail']);
+    Route::get('/api/settlement-detail/{uuid}', [\App\Http\Controllers\Records\SettlementController::class, 'getSettlementDetail']);
     Route::get('/api/citizen/{id}', [CitizenController::class, 'getQuickViewData']);
 });
 

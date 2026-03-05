@@ -296,4 +296,38 @@ class SettlementController extends Controller
             return redirect()->back()->withErrors(['error' => 'Failed to archive settlement record: ' . $e->getMessage()]);
         }
     }
+    public function getSettlementDetail($uuid)
+    {
+        $settlement = SettlementLog::with(['complainants.citizen', 'citizenHistories.citizen', 'encodedByAccount', 'updatedByAccount'])
+            ->where('sett_uuid', $uuid)
+            ->firstOrFail();
+
+        $encodedByName = $settlement->encodedByAccount ? trim($settlement->encodedByAccount->sys_fname . ' ' . $settlement->encodedByAccount->sys_lname) : 'Unknown User';
+        $updatedByName = $settlement->updatedByAccount ? trim($settlement->updatedByAccount->sys_fname . ' ' . $settlement->updatedByAccount->sys_lname) : $encodedByName;
+
+        return response()->json([
+            'id' => $settlement->sett_id,
+            'sett_uuid' => $settlement->sett_uuid,
+            'complaint_description' => $settlement->complaint_description,
+            'settlement_description' => $settlement->settlement_description,
+            'date_of_settlement' => $settlement->date_of_settlement ? \Carbon\Carbon::parse($settlement->date_of_settlement)->format('M d, Y') : 'N/A',
+            'mediator' => $settlement->mediator,
+            'date_encoded' => $settlement->date_encoded ? \Carbon\Carbon::parse($settlement->date_encoded)->format('Y-m-d | h:i A') : 'N/A',
+            'encoded_by' => $encodedByName,
+            'date_updated' => $settlement->date_updated ? \Carbon\Carbon::parse($settlement->date_updated)->format('Y-m-d | h:i A') : 'N/A',
+            'updated_by' => $updatedByName,
+            'complainants' => $settlement->complainants->map(function($c) {
+                return [
+                    'name' => trim($c->first_name . ' ' . $c->last_name),
+                    'citizen_id' => $c->citizen ? $c->citizen->ctz_uuid : null,
+                ];
+            }),
+            'respondents' => $settlement->citizenHistories->map(function($h) {
+                return [
+                    'name' => trim($h->first_name . ' ' . $h->last_name),
+                    'cihi_uuid' => $h->cihi_uuid,
+                ];
+            }),
+        ]);
+    }
 }

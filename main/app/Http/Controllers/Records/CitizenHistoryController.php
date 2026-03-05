@@ -10,7 +10,7 @@ class CitizenHistoryController extends Controller
 {
     public function index(Request $request)
     {
-        $query = CitizenHistory::with(['citizen', 'encodedByAccount', 'updatedByAccount'])
+        $query = CitizenHistory::with(['citizen', 'encodedByAccount', 'updatedByAccount', 'settlementLog'])
             ->where('is_deleted', false);
 
         // Optional filtering by search and type
@@ -51,6 +51,10 @@ class CitizenHistoryController extends Controller
                 'encodedBy' => $encodedByName,
                 'dateUpdated' => $history->date_updated ? \Carbon\Carbon::parse($history->date_updated)->format('Y-m-d | h:i A') : 'N/A',
                 'updatedBy' => $history->date_updated ? $updatedByName : 'N/A',
+                'settlement' => $history->settlementLog ? [
+                    'id' => $history->settlementLog->sett_id,
+                    'uuid' => $history->settlementLog->sett_uuid,
+                ] : null,
             ];
         });
 
@@ -305,7 +309,7 @@ class CitizenHistoryController extends Controller
 
     public function getHistoryDetail($uuid)
     {
-        $history = CitizenHistory::with(['citizen', 'encodedByAccount', 'updatedByAccount'])
+        $history = CitizenHistory::with(['citizen', 'encodedByAccount', 'updatedByAccount', 'settlementLog'])
             ->where('cihi_uuid', $uuid)
             ->firstOrFail();
 
@@ -329,6 +333,10 @@ class CitizenHistoryController extends Controller
             'dateUpdated' => $history->date_updated ? \Carbon\Carbon::parse($history->date_updated)->format('Y-m-d | h:i A') : 'N/A',
             'updatedBy' => $history->date_updated ? $updatedByName : 'N/A',
             'citizen_id' => $history->citizen ? $history->citizen->ctz_uuid : null,
+            'settlement' => $history->settlementLog ? [
+                'id' => $history->settlementLog->sett_id,
+                'uuid' => $history->settlementLog->sett_uuid,
+            ] : null,
         ]);
     }
 }
