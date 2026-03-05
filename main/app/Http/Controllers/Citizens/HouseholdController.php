@@ -99,8 +99,9 @@ class HouseholdController extends Controller
                 'members' => $hh->citizen_informations->filter(function($info) {
                     return $info->citizens->where('is_deleted', false)->isNotEmpty();
                 })->map(function($info) {
+                    $citizen = $info->citizens->where('is_deleted', false)->first();
                     return [
-                        'id' => $info->ctz_info_id ?? mt_rand(), // Use a random ID if ctz_info_id isn't available
+                        'id' => $citizen ? $citizen->ctz_id : ($info->ctz_info_id ?? mt_rand()),
                         'firstName' => $info->first_name ?? '',
                         'lastName' => $info->last_name ?? '',
                         'relationship' => $info->relationship_type ?? 'Member',
@@ -351,7 +352,7 @@ class HouseholdController extends Controller
         }
 
         $households = HouseholdInfo::with(['citizen_informations.citizens'])
-        ->where('hh_uuid', 'like', '%' . $query . '%')
+        ->whereRaw('LOWER(hh_uuid) LIKE LOWER(?)', ['%' . $query . '%'])
         ->where('is_deleted', false)
         ->take(5)
         ->get();

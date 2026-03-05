@@ -14,7 +14,7 @@ interface CitizenHistoryCreationProps {
 export default function CitizenHistoryCreation({ isOpen, onClose }: CitizenHistoryCreationProps) {
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         citizens: [{ citizen_id: null as number | null, first_name: '', middle_name: '', last_name: '' }],
-        histories: [{ type: '', title: '', description: '', status: 'Pending' }]
+        histories: [{ type: '', title: '', description: '', status: 'Pending', involvement_type: '', case_classification: '' }]
     });
 
     const [resetKey, setResetKey] = useState(0);
@@ -75,7 +75,7 @@ export default function CitizenHistoryCreation({ isOpen, onClose }: CitizenHisto
     };
 
     const addHistory = () => {
-        setData('histories', [...data.histories, { type: '', title: '', description: '', status: 'Pending' }]);
+        setData('histories', [...data.histories, { type: '', title: '', description: '', status: 'Pending', involvement_type: '', case_classification: '' }]);
     };
 
     const removeHistory = (index: number) => {
@@ -107,7 +107,7 @@ export default function CitizenHistoryCreation({ isOpen, onClose }: CitizenHisto
                             <FileClock className="size-5 text-purple-200" />
                             Record Citizen History (Batch Mode)
                         </h2>
-                        <p className="text-[10px] text-purple-200 uppercase tracking-widest font-semibold mt-1">
+                        <p className="text-[10px] text-purple-200 tracking-widest font-semibold mt-1">
                             Link multiple citizens to multiple history events at once
                         </p>
                     </div>
@@ -131,7 +131,7 @@ export default function CitizenHistoryCreation({ isOpen, onClose }: CitizenHisto
                                 <div className="p-1.5 bg-white dark:bg-white/5 rounded shadow-sm border border-neutral-100 dark:border-neutral-700">
                                     <User className="size-4" />
                                 </div>
-                                <h3 className="text-sm font-bold uppercase tracking-wider dark:text-neutral-200">
+                                <h3 className="text-sm font-bold tracking-wider dark:text-neutral-200">
                                     Involved Citizens
                                 </h3>
                             </div>
@@ -166,7 +166,7 @@ export default function CitizenHistoryCreation({ isOpen, onClose }: CitizenHisto
                                 <div className="p-1.5 bg-white dark:bg-white/5 rounded shadow-sm border border-neutral-100 dark:border-neutral-700">
                                     <Activity className="size-4" />
                                 </div>
-                                <h3 className="text-sm font-bold uppercase tracking-wider dark:text-neutral-200">
+                                <h3 className="text-sm font-bold tracking-wider dark:text-neutral-200">
                                     History Information
                                 </h3>
                             </div>
@@ -296,25 +296,35 @@ function CitizenBlock({ index, data, onChange, onRemove, canRemove, errors }: an
             )}
 
             {!isLocked && (
-                <div className="mb-4">
-                    <label className="flex items-center gap-2 cursor-pointer mb-3">
-                        <div className="relative">
-                            <input 
-                                type="checkbox" 
-                                className="sr-only" 
-                                checked={hasRecord}
-                                onChange={(e) => {
-                                    setHasRecord(e.target.checked);
-                                    if (!e.target.checked) handleCancelSelection();
-                                }}
-                            />
-                            <div className={`block w-10 h-6 rounded-full transition-colors ${hasRecord ? 'bg-purple-500' : 'bg-neutral-300 dark:bg-neutral-600'}`}></div>
-                            <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${hasRecord ? 'transform translate-x-4' : ''}`}></div>
+                <>
+                    <div className="flex items-center gap-3 bg-white dark:bg-black/20 px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 w-fit mb-3">
+                        <span className="text-[10px] font-bold text-neutral-500">Has Barangay Record?</span>
+                        <div className="flex gap-4">
+                            <label className="flex items-center gap-1.5 cursor-pointer">
+                                <input 
+                                    type="radio" 
+                                    name={`hasRec_${index}`}
+                                    className="accent-purple-600 h-3.5 w-3.5" 
+                                    checked={hasRecord}
+                                    onChange={() => setHasRecord(true)}
+                                />
+                                <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300">Yes</span>
+                            </label>
+                            <label className="flex items-center gap-1.5 cursor-pointer">
+                                <input 
+                                    type="radio" 
+                                    name={`hasRec_${index}`}
+                                    className="accent-purple-600 h-3.5 w-3.5" 
+                                    checked={!hasRecord}
+                                    onChange={() => {
+                                        setHasRecord(false);
+                                        handleCancelSelection();
+                                    }}
+                                />
+                                <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300">No</span>
+                            </label>
                         </div>
-                        <span className="text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase tracking-wide">
-                            Has Barangay Record?
-                        </span>
-                    </label>
+                    </div>
 
                     {hasRecord && (
                         <div className="space-y-1.5 relative z-20 animate-in fade-in max-w-sm">
@@ -356,7 +366,7 @@ function CitizenBlock({ index, data, onChange, onRemove, canRemove, errors }: an
                             )}
                         </div>
                     )}
-                </div>
+                </>
             )}
 
             {isLocked && (
@@ -366,11 +376,11 @@ function CitizenBlock({ index, data, onChange, onRemove, canRemove, errors }: an
                             <UserCheck className="size-4" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-bold uppercase text-purple-500 dark:text-purple-400 tracking-wide">Citizen Selected</p>
+                            <p className="text-[10px] font-bold text-purple-500 dark:text-purple-400 tracking-wide">Citizen Selected</p>
                             <p className="text-xs font-medium text-purple-900 dark:text-purple-100 flex items-center gap-1 mt-0.5">{data.first_name} {data.last_name}</p>
                         </div>
                     </div>
-                    <button type="button" onClick={handleCancelSelection} className="text-[10px] font-bold uppercase tracking-wider text-red-500 hover:text-red-600 bg-white dark:bg-black/20 border border-neutral-200 dark:border-neutral-700 px-3 py-1.5 rounded shadow-sm">
+                    <button type="button" onClick={handleCancelSelection} className="text-[10px] font-bold tracking-wider text-red-500 hover:text-red-600 bg-white dark:bg-black/20 border border-neutral-200 dark:border-neutral-700 px-3 py-1.5 rounded shadow-sm">
                         Unlink
                     </button>
                 </div>
@@ -413,8 +423,19 @@ function HistoryBlock({ index, data, onChange, onRemove, canRemove, errors }: an
                 {errors[`histories.${index}.title`] && <p className="text-[10px] text-red-500 mt-1">{errors[`histories.${index}.title`]}</p>}
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <SelectGroup label="Involvement Type" options={['Complainant', 'Respondent', 'Witness', 'Other']} required value={data.involvement_type} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onChange('involvement_type', e.target.value)} />
+                    {errors[`histories.${index}.involvement_type`] && <p className="text-[10px] text-red-500 mt-1">{errors[`histories.${index}.involvement_type`]}</p>}
+                </div>
+                <div>
+                    <SelectGroup label="Case Classification" options={['Criminal', 'Civil', 'Administrative', 'Others']} required value={data.case_classification} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onChange('case_classification', e.target.value)} />
+                    {errors[`histories.${index}.case_classification`] && <p className="text-[10px] text-red-500 mt-1">{errors[`histories.${index}.case_classification`]}</p>}
+                </div>
+            </div>
+
             <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase text-neutral-500 tracking-wide">
+                <label className="text-[10px] font-bold text-neutral-500 tracking-wide">
                     Description <span className="text-red-500">*</span>
                 </label>
                 <textarea
@@ -433,7 +454,7 @@ function InputGroup({ label, required, className, ...props }: any) {
     return (
         <div className="space-y-1.5 w-full">
             {label && (
-                <label className="text-[10px] font-bold uppercase text-neutral-500 tracking-wide">
+                <label className="text-[10px] font-bold text-neutral-500 tracking-wide">
                     {label} {required && <span className="text-red-500">*</span>}
                 </label>
             )}
@@ -445,7 +466,7 @@ function InputGroup({ label, required, className, ...props }: any) {
 function SelectGroup({ label, options, required, ...props }: any) {
     return (
         <div className="space-y-1.5 w-full">
-            <label className="text-[10px] font-bold uppercase text-neutral-500 tracking-wide">
+            <label className="text-[10px] font-bold text-neutral-500 tracking-wide">
                 {label} {required && <span className="text-red-500">*</span>}
             </label>
             <select className="w-full text-xs p-2.5 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all appearance-none cursor-pointer" {...props}>

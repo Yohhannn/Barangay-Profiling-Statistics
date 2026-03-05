@@ -5,11 +5,14 @@ import { Head, Link } from '@inertiajs/react';
 import {
     ArrowLeft, Search, Plus, Trash2,
     FileClock, User, Calendar, FileText,
-    Download, Edit3, X, SlidersHorizontal, Activity, Tag
+    Download, Edit3, X, SlidersHorizontal, Activity, Tag, Info,
+    Handshake
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import CitizenHistoryCreation from './popup/citizen-history-creation'; // IMPORTED
 import CitizenHistoryEdit from './popup/citizen-history-edit'; // IMPORTED
+import CitizenQuickView from './popup/citizen-quick-view';
+import SettlementQuickView from './popup/settlement-quick-view';
 import { router } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 
@@ -26,6 +29,8 @@ export interface HistoryRecord {
     title: string;
     description: string;
     status: string;
+    involvementType: string;
+    caseClassification: string;
     dateRecorded: string;
 
     // Audit
@@ -33,6 +38,10 @@ export interface HistoryRecord {
     encodedBy: string;
     dateUpdated: string;
     updatedBy: string;
+    settlement?: {
+        id: number;
+        uuid: string;
+    } | null;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -50,6 +59,29 @@ export default function CitizenHistory({ histories = [] }: { histories?: History
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+    // --- QUICK VIEW STATE ---
+    const [quickViewOpen, setQuickViewOpen] = useState(false);
+    const [quickViewCitizenId, setQuickViewCitizenId] = useState<number | null>(null);
+
+    const [settlementQuickViewOpen, setSettlementQuickViewOpen] = useState(false);
+    const [settlementUuid, setSettlementUuid] = useState<string | null>(null);
+
+    const handleOpenQuickView = (e: React.MouseEvent, id: number | null) => {
+        e.stopPropagation();
+        if (id) {
+            setQuickViewCitizenId(id);
+            setQuickViewOpen(true);
+        }
+    };
+
+    const handleOpenSettlementQuickView = (e: React.MouseEvent, uuid: string | null) => {
+        e.stopPropagation();
+        if (uuid) {
+            setSettlementUuid(uuid);
+            setSettlementQuickViewOpen(true);
+        }
+    };
 
     // Keep selectedHistory synced with prop updates
     useEffect(() => {
@@ -257,9 +289,19 @@ export default function CitizenHistory({ histories = [] }: { histories?: History
                                                             {group.firstName} {group.lastName}
                                                         </span>
                                                         {group.ctz_id && (
-                                                            <span className="text-[10px] font-mono bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded ml-2 shadow-sm border border-purple-200 dark:border-purple-800">
-                                                                ID: {group.records[0].citizenId}
-                                                            </span>
+                                                            <div className="flex items-center gap-1.5 ml-1">
+                                                                <button 
+                                                                    onClick={(e) => handleOpenQuickView(e, group.ctz_id)}
+                                                                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-600 hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-all shadow-sm border border-purple-100 dark:border-purple-900/30 group"
+                                                                    title="Quick View Record"
+                                                                >
+                                                                    <Info className="size-3 group-hover:scale-110 transition-transform" />
+                                                                    <span className="text-[9px] font-bold uppercase tracking-tight">Quick View</span>
+                                                                </button>
+                                                                <span className="text-[10px] font-mono bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded shadow-sm border border-purple-200 dark:border-purple-800">
+                                                                    ID: {group.records[0].citizenId}
+                                                                </span>
+                                                            </div>
                                                         )}
                                                     </div>
                                                     <div className="flex items-center gap-3">
@@ -331,7 +373,19 @@ export default function CitizenHistory({ histories = [] }: { histories?: History
                                                 </h2>
                                                 <div className="flex items-center gap-2 mt-1 text-sm text-neutral-500">
                                                     <User className="size-3.5" />
-                                                    <span className="font-medium">{selectedHistory.firstName} {selectedHistory.lastName}</span>
+                                                    <span className="font-medium">
+                                                        {selectedHistory.firstName} {selectedHistory.lastName}
+                                                    </span>
+                                                    {selectedHistory.ctz_id && (
+                                                        <button 
+                                                            onClick={(e) => handleOpenQuickView(e, selectedHistory.ctz_id)}
+                                                            className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all shadow-sm border border-neutral-200 dark:border-neutral-700 group ml-2"
+                                                            title="Quick View Record"
+                                                        >
+                                                            <Info className="size-3 group-hover:scale-110 transition-transform" />
+                                                            <span className="text-[9px] font-bold uppercase tracking-tight">Quick View</span>
+                                                        </button>
+                                                    )}
                                                     <span className="font-mono bg-white dark:bg-black/20 border px-1.5 rounded text-xs ml-2">
                                                         {selectedHistory.citizenId}
                                                     </span>
@@ -355,6 +409,26 @@ export default function CitizenHistory({ histories = [] }: { histories?: History
                                                  className={getTypeText(selectedHistory.type)}
                                         />
                                         <InfoRow label="Current Status" value={selectedHistory.status} />
+                                        <InfoRow label="Involvement" value={selectedHistory.involvementType || 'N/A'} />
+                                        <InfoRow label="Classification" value={selectedHistory.caseClassification || 'N/A'} />
+                                        {selectedHistory.settlement && (
+                                            <div className="col-span-2 flex justify-between border-b border-sidebar-border/50 pb-1 mt-2">
+                                                <span className="text-neutral-500 font-medium text-sm">Linked Settlement:</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] font-mono bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded border border-amber-100 dark:border-amber-800 font-bold shadow-sm">
+                                                        {selectedHistory.settlement.uuid}
+                                                    </span>
+                                                    <button 
+                                                        onClick={(e) => handleOpenSettlementQuickView(e, selectedHistory.settlement?.uuid || null)}
+                                                        className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-all shadow-sm group"
+                                                        title="Quick View Settlement"
+                                                    >
+                                                        <Handshake className="size-3 group-hover:scale-110 transition-transform" />
+                                                        <span className="text-[9px] font-bold uppercase tracking-tight">Quick View</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Description Block */}
@@ -404,6 +478,18 @@ export default function CitizenHistory({ histories = [] }: { histories?: History
                     </div>
                 </div>
             </div>
+            {/* Quick View Modal */}
+            <CitizenQuickView 
+                isOpen={quickViewOpen} 
+                onClose={() => setQuickViewOpen(false)} 
+                citizenId={quickViewCitizenId} 
+            />
+            {/* Settlement Quick View Modal */}
+            <SettlementQuickView 
+                isOpen={settlementQuickViewOpen} 
+                onClose={() => setSettlementQuickViewOpen(false)} 
+                settlementUuid={settlementUuid} 
+            />
         </AppLayout>
     );
 }

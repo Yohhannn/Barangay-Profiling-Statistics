@@ -6,12 +6,19 @@ import {
     ArrowLeft, Search, Plus, Trash2,
     User, MapPin, Briefcase, UserX, GraduationCap,
     HeartPulse, Baby, Phone, Hash, Home,
-    Filter, X, SlidersHorizontal, Edit3, ScanFace, Check, RotateCcw
+    Filter, X, SlidersHorizontal, Edit3, ScanFace, Check, RotateCcw,
+    Activity, FileText, Info
 } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import Swal from 'sweetalert2';
 import CitizenCreation from './popup/citizen-creation';
 import CitizenEdit from './popup/citizen-edit';
+
+// --- Quick View Imports ---
+import MedicalQuickView from '../CitizenRecords/popup/medical-quick-view';
+import SettlementQuickView from '../CitizenRecords/popup/settlement-quick-view';
+import HistoryQuickView from '../CitizenRecords/popup/history-quick-view';
+import CitizenQuickView from '../CitizenRecords/popup/citizen-quick-view';
 
 // --- 1. Comprehensive Type Definition ---
 interface HouseholdMember {
@@ -22,6 +29,7 @@ interface HouseholdMember {
 
 interface MedicalHistory {
     id: number;
+    uuid: string;
     type: string;
     description: string;
     dateDiagnosed?: string;
@@ -29,11 +37,13 @@ interface MedicalHistory {
 
 interface SettlementHistory {
     id: number;
+    uuid: string;
     title: string;
     type: string;
     description: string;
     status: string;
     dateCreated?: string;
+    settlement_uuid?: string | null;
 }
 
 interface Citizen {
@@ -126,6 +136,43 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
     const [showFilters, setShowFilters] = useState(false);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
+
+    // --- Quick View State ---
+    const [medicalQuickViewOpen, setMedicalQuickViewOpen] = useState(false);
+    const [selectedMedicalUuid, setSelectedMedicalUuid] = useState<string | null>(null);
+
+    const [historyQuickViewOpen, setHistoryQuickViewOpen] = useState(false);
+    const [selectedHistoryUuid, setSelectedHistoryUuid] = useState<string | null>(null);
+
+    const [settlementQuickViewOpen, setSettlementQuickViewOpen] = useState(false);
+    const [selectedSettlementUuid, setSelectedSettlementUuid] = useState<string | null>(null);
+
+    const [citizenQuickViewOpen, setCitizenQuickViewOpen] = useState(false);
+    const [selectedCitizenId, setSelectedCitizenId] = useState<number | null>(null);
+
+    const handleOpenMedicalQuickView = (e: React.MouseEvent, uuid: string) => {
+        e.stopPropagation();
+        setSelectedMedicalUuid(uuid);
+        setMedicalQuickViewOpen(true);
+    };
+
+    const handleOpenHistoryQuickView = (e: React.MouseEvent, uuid: string) => {
+        e.stopPropagation();
+        setSelectedHistoryUuid(uuid);
+        setHistoryQuickViewOpen(true);
+    };
+
+    const handleOpenSettlementQuickView = (e: React.MouseEvent, uuid: string) => {
+        e.stopPropagation();
+        setSelectedSettlementUuid(uuid);
+        setSettlementQuickViewOpen(true);
+    };
+
+    const handleOpenCitizenQuickView = (e: React.MouseEvent, id: number) => {
+        e.stopPropagation();
+        setSelectedCitizenId(id);
+        setCitizenQuickViewOpen(true);
+    };
     
     // Multi-select dropdown state
     const [showEncodedByDropdown, setShowEncodedByDropdown] = useState(false);
@@ -746,8 +793,19 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                                                     <tbody className="divide-y divide-sidebar-border">
                                                     {selectedCitizen.householdMembers && selectedCitizen.householdMembers.length > 0 ? (
                                                         selectedCitizen.householdMembers.map((member) => (
-                                                            <tr key={member.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
-                                                                <td className="px-4 py-3 text-center border-r border-sidebar-border">{member.name}</td>
+                                                            <tr key={member.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 group/row">
+                                                                <td className="px-4 py-3 border-r border-sidebar-border relative">
+                                                                    <div className="flex items-center justify-between gap-2">
+                                                                        <span className="font-medium">{member.name}</span>
+                                                                        <button 
+                                                                            onClick={(e) => handleOpenCitizenQuickView(e, member.id)}
+                                                                            className="opacity-0 group-hover/row:opacity-100 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 hover:bg-blue-200 transition-all shadow-sm border border-blue-200 dark:border-blue-800"
+                                                                            title="Quick View Member Profile"
+                                                                        >
+                                                                            <Info className="size-3" />
+                                                                        </button>
+                                                                    </div>
+                                                                </td>
                                                                 <td className="px-4 py-3 text-center text-neutral-500">{member.relationship}</td>
                                                             </tr>
                                                         ))
@@ -818,12 +876,23 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                                                 <SectionHeader icon={<HeartPulse className="size-4 text-red-500" />} title="Medical History" />
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     {selectedCitizen.medicalHistories.map((med) => (
-                                                        <div key={med.id} className="bg-red-50/30 dark:bg-red-900/10 border border-red-100 rounded-xl p-4 space-y-2">
+                                                        <div key={med.id} className="bg-red-50/30 dark:bg-red-900/10 border border-red-100 rounded-xl p-4 space-y-2 group/card relative overflow-hidden">
                                                             <div className="flex justify-between items-start mb-2">
-                                                                <h4 className="font-bold text-sm text-neutral-800 dark:text-neutral-200">{med.type}</h4>
-                                                                <span className="text-xs font-mono text-neutral-500">{med.dateDiagnosed || 'Date Not Specified'}</span>
+                                                                <div>
+                                                                    <h4 className="font-bold text-sm text-neutral-800 dark:text-neutral-200">{med.type}</h4>
+                                                                    <span className="text-[10px] font-mono text-rose-500 font-bold block mt-0.5">{med.uuid}</span>
+                                                                </div>
+                                                                <div className="flex flex-col items-end gap-2">
+                                                                    <span className="text-xs font-mono text-neutral-500">{med.dateDiagnosed || 'Date Not Specified'}</span>
+                                                                    <button 
+                                                                        onClick={(e) => handleOpenMedicalQuickView(e, med.uuid)}
+                                                                        className="flex items-center gap-1.5 px-3 py-1 bg-rose-600 text-white text-[10px] font-bold uppercase rounded-lg shadow-sm hover:bg-rose-700 transition-all active:scale-95"
+                                                                    >
+                                                                        <Activity className="size-3" /> Quick View
+                                                                    </button>
+                                                                </div>
                                                             </div>
-                                                            <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">{med.description}</p>
+                                                            <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1 line-clamp-2 italic">{med.description}</p>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -836,24 +905,47 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                                                 <SectionHeader icon={<RotateCcw className="size-4 text-orange-500" />} title="Settlement / Citizen History" />
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     {selectedCitizen.settlementHistories.map((hist) => (
-                                                        <div key={hist.id} className="bg-orange-50/30 dark:bg-orange-900/10 border border-orange-100 rounded-xl p-4 space-y-2">
-                                                            <div className="flex justify-between items-start mb-2">
-                                                                <div>
-                                                                    <h4 className="font-bold text-sm text-neutral-800 dark:text-neutral-200">{hist.title}</h4>
-                                                                    <span className="text-[10px] uppercase font-semibold text-orange-600 dark:text-orange-400 tracking-wider block mt-0.5">{hist.type}</span>
+                                                        <div key={hist.id} className="bg-orange-50/30 dark:bg-orange-900/10 border border-orange-100 rounded-xl p-4 space-y-3 group/hist relative flex flex-col">
+                                                            <div className="flex justify-between items-start">
+                                                                <div className="flex-1">
+                                                                    <h4 className="font-bold text-sm text-neutral-900 dark:text-neutral-100 leading-tight">{hist.title}</h4>
+                                                                    <div className="flex items-center gap-2 mt-1">
+                                                                        <span className="text-[10px] font-mono text-amber-600 font-bold">{hist.uuid}</span>
+                                                                        <span className="text-[9px] uppercase font-bold text-amber-600/60 dark:text-amber-400/60 tracking-widest">• {hist.type}</span>
+                                                                    </div>
                                                                 </div>
-                                                                <div className="flex flex-col items-end">
-                                                                    <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
-                                                                        hist.status === 'Resolved' || hist.status === 'Completed' || hist.status === 'Approved' ? 'bg-green-100 text-green-700' :
-                                                                        hist.status === 'Pending' || hist.status === 'Ongoing' ? 'bg-yellow-100 text-yellow-700' :
-                                                                        'bg-neutral-100 text-neutral-700'
+                                                                <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                                                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold shadow-sm border ${
+                                                                        hist.status === 'Resolved' || hist.status === 'Completed' || hist.status === 'Approved' ? 'bg-green-100 text-green-700 border-green-200' :
+                                                                        hist.status === 'Pending' || hist.status === 'Ongoing' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                                                                        'bg-neutral-100 text-neutral-700 border-neutral-200'
                                                                     }`}>
-                                                                        {hist.status}
+                                                                        {hist.status.toUpperCase()}
                                                                     </span>
-                                                                    <span className="text-[10px] font-mono text-neutral-400 mt-1">{hist.dateCreated || 'No Date'}</span>
+                                                                    <span className="text-[9px] font-mono text-neutral-400 font-bold">{hist.dateCreated || 'NO DATE'}</span>
                                                                 </div>
                                                             </div>
-                                                            <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-2 p-2 bg-white/50 dark:bg-black/20 rounded border border-orange-100/50">{hist.description}</p>
+                                                            
+                                                            <p className="text-xs text-neutral-600 dark:text-neutral-400 line-clamp-2 italic p-2 bg-white/40 dark:bg-black/20 rounded border border-orange-50 px-3">
+                                                                {hist.description}
+                                                            </p>
+
+                                                            <div className="flex gap-2 pt-1 mt-auto">
+                                                                <button 
+                                                                    onClick={(e) => handleOpenHistoryQuickView(e, hist.uuid)}
+                                                                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-neutral-900 dark:bg-neutral-800 text-white text-[9px] font-bold uppercase rounded-lg shadow-sm hover:bg-neutral-800 dark:hover:bg-neutral-700 transition-all active:scale-95 border border-neutral-700"
+                                                                >
+                                                                    <FileText className="size-3" /> Record Details
+                                                                </button>
+                                                                {hist.settlement_uuid && (
+                                                                    <button 
+                                                                        onClick={(e) => handleOpenSettlementQuickView(e, hist.settlement_uuid!)}
+                                                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-amber-600 text-white text-[9px] font-bold uppercase rounded-lg shadow-sm hover:bg-amber-700 transition-all active:scale-95 border border-amber-500"
+                                                                    >
+                                                                        <RotateCcw className="size-3" /> View Settlement
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -897,6 +989,28 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                     </div>
                 </div>
             </div>
+
+            {/* --- QUICK VIEW MODALS --- */}
+            <MedicalQuickView 
+                isOpen={medicalQuickViewOpen} 
+                onClose={() => setMedicalQuickViewOpen(false)} 
+                medicalUuid={selectedMedicalUuid} 
+            />
+            <HistoryQuickView 
+                isOpen={historyQuickViewOpen} 
+                onClose={() => setHistoryQuickViewOpen(false)} 
+                historyUuid={selectedHistoryUuid} 
+            />
+            <SettlementQuickView 
+                isOpen={settlementQuickViewOpen} 
+                onClose={() => setSettlementQuickViewOpen(false)} 
+                settlementUuid={selectedSettlementUuid} 
+            />
+            <CitizenQuickView 
+                isOpen={citizenQuickViewOpen} 
+                onClose={() => setCitizenQuickViewOpen(false)} 
+                citizenId={selectedCitizenId} 
+            />
         </AppLayout>
     );
 }

@@ -5,12 +5,14 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft, Search, Plus, Trash2,
     Stethoscope, User, Calendar, FileText,
-    Download, Edit3, X, SlidersHorizontal, Activity
+    Download, Edit3, X, SlidersHorizontal, Activity, Info
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import MedicalHistoryCreation from './popup/medical-history-creation'; // IMPORTED
 import MedicalHistoryEdit from './popup/medical-history-edit'; // IMPORTED
+import MedicalQuickView from './popup/medical-quick-view';
+import CitizenQuickView from './popup/citizen-quick-view';
 
 // --- Types ---
 export interface MedicalRecord {
@@ -47,6 +49,28 @@ export default function MedicalHistory({ histories = [] }: { histories?: Medical
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+    // --- QUICK VIEW STATE ---
+    const [quickViewOpen, setQuickViewOpen] = useState(false);
+    const [quickViewMedicalUuid, setQuickViewMedicalUuid] = useState<string | null>(null);
+    const [citizenQuickViewOpen, setCitizenQuickViewOpen] = useState(false);
+    const [quickViewCitizenId, setQuickViewCitizenId] = useState<number | null>(null);
+
+    const handleOpenQuickView = (e: React.MouseEvent, uuid: string | null) => {
+        e.stopPropagation();
+        if (uuid) {
+            setQuickViewMedicalUuid(uuid);
+            setQuickViewOpen(true);
+        }
+    };
+
+    const handleOpenCitizenQuickView = (e: React.MouseEvent, id: number | null) => {
+        e.stopPropagation();
+        if (id) {
+            setQuickViewCitizenId(id);
+            setCitizenQuickViewOpen(true);
+        }
+    };
 
     // Keep selectedRecord synced with prop updates
     useEffect(() => {
@@ -252,9 +276,19 @@ export default function MedicalHistory({ histories = [] }: { histories?: Medical
                                                             {group.firstName} {group.lastName}
                                                         </span>
                                                         {group.ctz_id && (
-                                                            <span className="text-[10px] font-mono bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 px-1.5 py-0.5 rounded ml-2 shadow-sm border border-rose-200 dark:border-rose-800">
-                                                                ID: {group.records[0].citizenId}
-                                                            </span>
+                                                            <div className="flex items-center gap-1.5 ml-2">
+                                                                <button 
+                                                                    onClick={(e) => handleOpenCitizenQuickView(e, group.ctz_id)}
+                                                                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-rose-50 dark:bg-rose-900/20 text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all shadow-sm border border-rose-100 dark:border-rose-900/30 group"
+                                                                    title="Quick View Patient Record"
+                                                                >
+                                                                    <Info className="size-3 group-hover:scale-110 transition-transform" />
+                                                                    <span className="text-[9px] font-bold uppercase tracking-tight">Quick View</span>
+                                                                </button>
+                                                                <span className="text-[10px] font-mono bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 px-1.5 py-0.5 rounded shadow-sm border border-rose-200 dark:border-rose-800">
+                                                                    ID: {group.records[0].citizenId}
+                                                                </span>
+                                                            </div>
                                                         )}
                                                     </div>
                                                     <div className="flex items-center gap-3">
@@ -287,13 +321,23 @@ export default function MedicalHistory({ histories = [] }: { histories?: Medical
                                                 <td className="px-4 py-3 text-right">
                                                     <div className="flex flex-col items-end gap-1.5">
                                                         <span className="text-[10px] text-neutral-500">{rec.dateDiagnosed}</span>
-                                                        <button
-                                                            onClick={(e) => handleDelete(e, rec.id)}
-                                                            className="text-neutral-300 hover:text-red-500 transition-colors p-1 bg-white dark:bg-neutral-800 rounded border border-transparent hover:border-red-200 dark:hover:border-red-900"
-                                                            title="Delete Record"
-                                                        >
-                                                            <Trash2 className="size-3" />
-                                                        </button>
+                                                        <div className="flex items-center gap-1.5 mt-1">
+                                                            <button 
+                                                                onClick={(e) => handleOpenQuickView(e, rec.uuid)}
+                                                                className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all border border-neutral-200 dark:border-neutral-700 group shadow-sm"
+                                                                title="Quick View Medical Record"
+                                                            >
+                                                                <Activity className="size-3 text-rose-500 group-hover:scale-110 transition-transform" />
+                                                                <span className="text-[9px] font-bold uppercase tracking-tight">View</span>
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => handleDelete(e, rec.id)}
+                                                                className="text-neutral-300 hover:text-red-500 transition-colors p-1 bg-white dark:bg-neutral-800 rounded border border-transparent hover:border-red-200 dark:hover:border-red-900"
+                                                                title="Delete Record"
+                                                            >
+                                                                <Trash2 className="size-3" />
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -325,6 +369,16 @@ export default function MedicalHistory({ histories = [] }: { histories?: Medical
                                                 <div className="flex items-center gap-2 mt-1 text-sm text-neutral-500">
                                                     <User className="size-3.5" />
                                                     <span className="font-medium">{selectedRecord.firstName} {selectedRecord.lastName}</span>
+                                                    {selectedRecord.ctz_id && (
+                                                        <button 
+                                                            onClick={(e) => handleOpenCitizenQuickView(e, selectedRecord.ctz_id)}
+                                                            className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all shadow-sm border border-neutral-200 dark:border-neutral-700 group ml-2"
+                                                            title="Quick View Patient Record"
+                                                        >
+                                                            <Info className="size-3 group-hover:scale-110 transition-transform" />
+                                                            <span className="text-[9px] font-bold uppercase tracking-tight">Quick View</span>
+                                                        </button>
+                                                    )}
                                                     <span className="font-mono bg-white dark:bg-black/20 border px-1.5 rounded text-xs ml-2">
                                                         {selectedRecord.citizenId}
                                                     </span>
@@ -396,6 +450,17 @@ export default function MedicalHistory({ histories = [] }: { histories?: Medical
                     </div>
                 </div>
             </div>
+            {/* Quick View Modals */}
+            <CitizenQuickView 
+                isOpen={citizenQuickViewOpen} 
+                onClose={() => setCitizenQuickViewOpen(false)} 
+                citizenId={quickViewCitizenId} 
+            />
+            <MedicalQuickView 
+                isOpen={quickViewOpen} 
+                onClose={() => setQuickViewOpen(false)} 
+                medicalUuid={quickViewMedicalUuid} 
+            />
         </AppLayout>
     );
 }
