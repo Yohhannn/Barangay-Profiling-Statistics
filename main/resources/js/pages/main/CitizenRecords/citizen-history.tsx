@@ -5,12 +5,14 @@ import { Head, Link } from '@inertiajs/react';
 import {
     ArrowLeft, Search, Plus, Trash2,
     FileClock, User, Calendar, FileText,
-    Download, Edit3, X, SlidersHorizontal, Activity, Tag, Info
+    Download, Edit3, X, SlidersHorizontal, Activity, Tag, Info,
+    Handshake
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import CitizenHistoryCreation from './popup/citizen-history-creation'; // IMPORTED
 import CitizenHistoryEdit from './popup/citizen-history-edit'; // IMPORTED
 import CitizenQuickView from './popup/citizen-quick-view';
+import SettlementQuickView from './popup/settlement-quick-view';
 import { router } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 
@@ -36,6 +38,10 @@ export interface HistoryRecord {
     encodedBy: string;
     dateUpdated: string;
     updatedBy: string;
+    settlement?: {
+        id: number;
+        uuid: string;
+    } | null;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -58,11 +64,22 @@ export default function CitizenHistory({ histories = [] }: { histories?: History
     const [quickViewOpen, setQuickViewOpen] = useState(false);
     const [quickViewCitizenId, setQuickViewCitizenId] = useState<number | null>(null);
 
+    const [settlementQuickViewOpen, setSettlementQuickViewOpen] = useState(false);
+    const [settlementUuid, setSettlementUuid] = useState<string | null>(null);
+
     const handleOpenQuickView = (e: React.MouseEvent, id: number | null) => {
         e.stopPropagation();
         if (id) {
             setQuickViewCitizenId(id);
             setQuickViewOpen(true);
+        }
+    };
+
+    const handleOpenSettlementQuickView = (e: React.MouseEvent, uuid: string | null) => {
+        e.stopPropagation();
+        if (uuid) {
+            setSettlementUuid(uuid);
+            setSettlementQuickViewOpen(true);
         }
     };
 
@@ -394,6 +411,24 @@ export default function CitizenHistory({ histories = [] }: { histories?: History
                                         <InfoRow label="Current Status" value={selectedHistory.status} />
                                         <InfoRow label="Involvement" value={selectedHistory.involvementType || 'N/A'} />
                                         <InfoRow label="Classification" value={selectedHistory.caseClassification || 'N/A'} />
+                                        {selectedHistory.settlement && (
+                                            <div className="col-span-2 flex justify-between border-b border-sidebar-border/50 pb-1 mt-2">
+                                                <span className="text-neutral-500 font-medium text-sm">Linked Settlement:</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] font-mono bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded border border-amber-100 dark:border-amber-800 font-bold shadow-sm">
+                                                        {selectedHistory.settlement.uuid}
+                                                    </span>
+                                                    <button 
+                                                        onClick={(e) => handleOpenSettlementQuickView(e, selectedHistory.settlement?.uuid || null)}
+                                                        className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-all shadow-sm group"
+                                                        title="Quick View Settlement"
+                                                    >
+                                                        <Handshake className="size-3 group-hover:scale-110 transition-transform" />
+                                                        <span className="text-[9px] font-bold uppercase tracking-tight">Quick View</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Description Block */}
@@ -448,6 +483,12 @@ export default function CitizenHistory({ histories = [] }: { histories?: History
                 isOpen={quickViewOpen} 
                 onClose={() => setQuickViewOpen(false)} 
                 citizenId={quickViewCitizenId} 
+            />
+            {/* Settlement Quick View Modal */}
+            <SettlementQuickView 
+                isOpen={settlementQuickViewOpen} 
+                onClose={() => setSettlementQuickViewOpen(false)} 
+                settlementUuid={settlementUuid} 
             />
         </AppLayout>
     );
