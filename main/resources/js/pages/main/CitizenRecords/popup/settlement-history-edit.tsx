@@ -34,7 +34,7 @@ export default function SettlementHistoryEdit({ isOpen, onClose, history }: Sett
                     first_name: c.first_name || '',
                     middle_name: c.middle_name || '',
                     last_name: c.last_name || '',
-                    comp_description: c.comp_description || ''
+                    ctz_id: c.ctz_id || null
                 })) : [],
                 complaint_description: history.complaint_description || '',
                 settlement_description: history.description || '',
@@ -60,7 +60,7 @@ export default function SettlementHistoryEdit({ isOpen, onClose, history }: Sett
     };
 
     const addComplainant = () => {
-        setData('complainants', [...data.complainants, { id: Math.random().toString(), has_record: false, citizen_id: '', first_name: '', middle_name: '', last_name: '', comp_description: '' }]);
+        setData('complainants', [...data.complainants, { id: Math.random().toString(), has_record: false, citizen_id: '', first_name: '', middle_name: '', last_name: '' }]);
     };
 
     const removeComplainant = (id: string) => {
@@ -143,6 +143,7 @@ export default function SettlementHistoryEdit({ isOpen, onClose, history }: Sett
                                     data={comp} 
                                     index={index}
                                     canRemove={data.complainants.length > 1}
+                                    allComplainants={data.complainants}
                                     onUpdate={(updates: any) => updateComplainant(comp.id, updates)}
                                     onRemove={() => removeComplainant(comp.id)}
                                     errors={errors}
@@ -394,7 +395,7 @@ function HistorySearch({ selectedIds, selectedDetails, onSelect, onRemove, error
 
 // --- SUBCOMPONENTS ---
 
-function ComplainantForm({ data, index, canRemove, onUpdate, onRemove, errors }: any) {
+function ComplainantForm({ data, index, canRemove, onUpdate, onRemove, errors, allComplainants }: any) {
     const [searchQuery, setSearchQuery] = useState('');
     const [showResults, setShowResults] = useState(false);
     const [results, setResults] = useState<any[]>([]);
@@ -427,10 +428,11 @@ function ComplainantForm({ data, index, canRemove, onUpdate, onRemove, errors }:
 
     const handleSelect = (citizen: any) => {
         onUpdate({
-            citizen_id: `CTZ-${citizen.id}`,
+            citizen_id: citizen.uuid || `CTZ-${citizen.id}`,
             first_name: citizen.first_name || parseName(citizen.name).first,
             middle_name: citizen.middle_name || parseName(citizen.name).middle,
-            last_name: citizen.last_name || parseName(citizen.name).last
+            last_name: citizen.last_name || parseName(citizen.name).last,
+            ctz_id: citizen.ctz_id || citizen.id
         });
         setIsLocked(true);
         setSearchQuery('');
@@ -438,7 +440,7 @@ function ComplainantForm({ data, index, canRemove, onUpdate, onRemove, errors }:
     };
 
     const handleCancel = () => {
-        onUpdate({ citizen_id: '', first_name: '', middle_name: '', last_name: '', comp_description: '' });
+        onUpdate({ citizen_id: '', first_name: '', middle_name: '', last_name: '', ctz_id: null });
         setIsLocked(false);
         setSearchQuery('');
     };
@@ -504,24 +506,37 @@ function ComplainantForm({ data, index, canRemove, onUpdate, onRemove, errors }:
                             </div>
                             {showResults && searchQuery.length > 1 && (
                                 <div className="mt-2 flex flex-col gap-1 max-h-48 overflow-y-auto bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-sm p-1">
-                                    {results.length > 0 ? results.map((c) => (
-                                        <button
-                                            key={c.id}
-                                            type="button"
-                                            onMouseDown={(e) => { e.preventDefault(); handleSelect(c); }}
-                                            className="w-full p-2 rounded-md hover:bg-rose-50 dark:hover:bg-rose-900/30 text-left flex justify-between items-center group transition-colors"
-                                        >
-                                            <div>
-                                                <div className="text-xs font-bold text-neutral-800 dark:text-neutral-200">{c.name}</div>
-                                                <div className="text-[10px] text-neutral-500 font-mono mt-0.5">
-                                                    {`CTZ-${c.id}`} • {c.sex || 'Unknown'} {c.age !== null ? `(${c.age} yrs)` : ''}
+                                    {results.length > 0 ? results.map((c: any) => {
+                                        const cUuid = c.uuid || `CTZ-${c.id}`;
+                                        const isAlreadyAdded = allComplainants.some((comp: any) => 
+                                            comp.citizen_id === cUuid || 
+                                            (comp.ctz_id && comp.ctz_id === (c.id))
+                                        );
+                                        
+                                        return (
+                                            <button
+                                                key={c.id}
+                                                type="button"
+                                                disabled={isAlreadyAdded}
+                                                onMouseDown={(e) => { e.preventDefault(); if (!isAlreadyAdded) handleSelect(c); }}
+                                                className={`w-full p-2 rounded-md text-left flex justify-between items-center group transition-colors ${isAlreadyAdded ? 'opacity-50 cursor-not-allowed bg-neutral-100 dark:bg-neutral-900/40' : 'hover:bg-rose-50 dark:hover:bg-rose-900/30'}`}
+                                            >
+                                                <div>
+                                                    <div className="text-xs font-bold text-neutral-800 dark:text-neutral-200">{c.name}</div>
+                                                    <div className="text-[10px] text-neutral-500 font-mono mt-0.5">
+                                                        {`CTZ-${c.id}`} • {c.sex || 'Unknown'} {c.age !== null ? `(${c.age} yrs)` : ''}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div className="p-1 rounded bg-rose-100 dark:bg-rose-900/40 opacity-0 group-hover:opacity-100 transition-opacity text-rose-600 dark:text-rose-400">
-                                                <UserCheck className="size-4" />
-                                            </div>
-                                        </button>
-                                    )) : <div className="p-3 text-center text-xs text-neutral-400 italic">No citizens found.</div>}
+                                                {isAlreadyAdded ? (
+                                                    <span className="text-[9px] font-bold uppercase tracking-tight bg-neutral-200 text-neutral-500 px-1.5 py-0.5 rounded">Added</span>
+                                                ) : (
+                                                    <div className="p-1 rounded bg-rose-100 dark:bg-rose-900/40 opacity-0 group-hover:opacity-100 transition-opacity text-rose-600 dark:text-rose-400">
+                                                        <UserCheck className="size-4" />
+                                                    </div>
+                                                )}
+                                            </button>
+                                        );
+                                    }) : <div className="p-3 text-center text-xs text-neutral-400 italic">No citizens found.</div>}
                                 </div>
                             )}
                         </div>
@@ -555,18 +570,6 @@ function ComplainantForm({ data, index, canRemove, onUpdate, onRemove, errors }:
                     <InputGroup label="Last Name" value={data.last_name} onChange={(e: any) => onUpdate({ last_name: e.target.value })} readOnly={isLocked} className={isLocked ? 'bg-neutral-50/50 cursor-not-allowed' : ''} required />
                     {errors[`complainants.${index}.last_name`] && <p className="text-[10px] text-red-500 mt-1">{errors[`complainants.${index}.last_name`]}</p>}
                 </div>
-            </div>
-
-            <div className="mt-4">
-                <TextAreaGroup 
-                    label="Complainant Statement / Description" 
-                    placeholder="Enter this specific person's statement or role in the complaint..." 
-                    value={data.comp_description} 
-                    onChange={(e: any) => onUpdate({ comp_description: e.target.value })} 
-                    rows={2}
-                    className="min-h-[80px]"
-                />
-                {errors[`complainants.${index}.comp_description`] && <p className="text-[10px] text-red-500 mt-1">{errors[`complainants.${index}.comp_description`]}</p>}
             </div>
         </div>
     );

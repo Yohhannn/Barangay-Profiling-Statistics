@@ -5,12 +5,16 @@ import {
     ArrowLeft, Search, Plus, Trash2,
     Scale, User, Calendar, FileText,
     Edit3, X, SlidersHorizontal, Activity, ShieldAlert, Handshake,
-    Filter, ChevronDown, CheckCircle, Info, UserCheck, AlertCircle, AlertTriangle
+    Filter, ChevronDown, CheckCircle, Info, UserCheck, AlertCircle, AlertTriangle,
+    Landmark, LayoutGrid, List, Users, Clock // Added new icons
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import SettlementHistoryCreation from './popup/settlement-history-creation'; 
 import SettlementHistoryEdit from './popup/settlement-history-edit'; 
+import CitizenQuickView from './popup/citizen-quick-view';
+import HistoryQuickView from './popup/history-quick-view';
+import { useForm } from '@inertiajs/react';
 
 // --- Types ---
 export interface SettlementRecord {
@@ -32,6 +36,7 @@ export interface SettlementRecord {
         first_name: string;
         middle_name: string | null;
         last_name: string;
+        ctz_id: number | null;
         citizen_id: string | null;
         comp_description: string | null;
     }>;
@@ -68,6 +73,28 @@ export default function SettlementHistory({ histories = [] }: { histories?: Sett
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilters, setShowFilters] = useState(false);
     
+    // Quick View State
+    const [quickViewOpen, setQuickViewOpen] = useState(false);
+    const [quickViewCitizenId, setQuickViewCitizenId] = useState<number | null>(null);
+
+    // History Quick View state
+    const [historyQuickViewOpen, setHistoryQuickViewOpen] = useState(false);
+    const [historyQuickViewUuid, setHistoryQuickViewUuid] = useState<string | null>(null);
+    const [rawHistoryData, setRawHistoryData] = useState<any | null>(null);
+
+    const handleOpenQuickView = (e: React.MouseEvent, id: number | null) => {
+        e.stopPropagation();
+        setQuickViewCitizenId(id);
+        setQuickViewOpen(true);
+    };
+
+    const handleOpenHistoryQuickView = (e: React.MouseEvent, uuid: string | null, raw: any = null) => {
+        e.stopPropagation();
+        setHistoryQuickViewUuid(uuid);
+        setRawHistoryData(raw);
+        setHistoryQuickViewOpen(true);
+    };
+    
     // We can filter by subject or complainant by text, but we don't have strictly categorized fixed string types like medical yet.
     // For now we'll just implement simple string search over names.
 
@@ -95,22 +122,9 @@ export default function SettlementHistory({ histories = [] }: { histories?: Sett
         });
     }, [searchQuery, histories]);
 
-    // Grouping by Primary Subject
-    const groupedHistory = useMemo(() => {
-        const groups: Record<string, SettlementRecord[]> = {};
-        filteredHistory.forEach(rec => {
-            const key = rec.citizenId && rec.citizenId !== 'N/A' ? rec.citizenId : `EXT-${rec.subjectFirstName.trim().toLowerCase()}-${rec.subjectLastName.trim().toLowerCase()}`;
-            if (!groups[key]) groups[key] = [];
-            groups[key].push(rec);
-        });
-        
-        return Object.entries(groups).map(([key, records]) => ({
-            key,
-            citizenId: records[0].citizenId,
-            subjectFirstName: records[0].subjectFirstName,
-            subjectLastName: records[0].subjectLastName,
-            records,
-        })).sort((a, b) => a.subjectLastName.localeCompare(b.subjectLastName));
+    // Flat sorting by SETT-UUID
+    const sortedHistory = useMemo(() => {
+        return [...filteredHistory].sort((a, b) => a.sett_uuid.localeCompare(b.sett_uuid));
     }, [filteredHistory]);
 
     const toggleGroup = (key: string) => {
@@ -221,74 +235,47 @@ export default function SettlementHistory({ histories = [] }: { histories?: Sett
                             <table className="w-full text-sm text-left">
                                 <thead className="text-[10px] text-neutral-500 uppercase bg-neutral-50 dark:bg-neutral-800/50 sticky top-0 z-10 backdrop-blur-sm">
                                 <tr>
-                                    <th className="px-4 py-3 font-semibold border-b border-sidebar-border">Primary Subject</th>
-                                    <th className="px-4 py-3 font-semibold border-b border-sidebar-border">Primary Complainant</th>
+                                    <th className="px-4 py-3 font-semibold border-b border-sidebar-border">Settlement ID</th>
+                                    <th className="px-4 py-3 font-semibold border-b border-sidebar-border">Involved Parties / Case</th>
                                     <th className="px-4 py-3 font-semibold border-b border-sidebar-border text-right">Date & Act.</th>
                                 </tr>
                                 </thead>
-                                {groupedHistory.map(group => (
-                                    <tbody key={group.key} className="divide-y divide-sidebar-border/50">
-                                        <tr 
-                                            onClick={() => toggleGroup(group.key)}
-                                            className="bg-neutral-100/50 dark:bg-neutral-800/80 cursor-pointer hover:bg-neutral-200/60 dark:hover:bg-neutral-700/60 transition-colors"
-                                        >
-                                            <td colSpan={3} className="px-4 py-3">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                        <User className="size-4 text-amber-600 dark:text-amber-400" />
-                                                        <span className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wide">
-                                                            {group.subjectFirstName} {group.subjectLastName}
-                                                        </span>
-                                                        {group.citizenId && group.citizenId !== 'N/A' && (
-                                                            <span className="text-[10px] font-mono bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded ml-2 shadow-sm border border-amber-200 dark:border-amber-800">
-                                                                ID: {group.citizenId}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex items-center gap-3">
-                                                        <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-300 bg-white dark:bg-black/20 px-2 py-1 rounded-md border border-neutral-200 dark:border-neutral-700 shadow-sm">
-                                                            {group.records.length} Record{group.records.length !== 1 ? 's' : ''}
-                                                        </span>
-                                                        <div className={`p-1 rounded-md bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 shadow-sm text-neutral-500 transition-transform duration-200 ${expandedGroups.has(group.key) ? 'rotate-180' : ''}`}>
-                                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" /></svg>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        {expandedGroups.has(group.key) && group.records.map((rec) => (
-                                            <tr
-                                                key={rec.id}
-                                                onClick={() => setSelectedRecord(rec)}
-                                                className={`
-                                                        cursor-pointer transition-all hover:bg-amber-50 dark:hover:bg-amber-900/10
-                                                        ${selectedRecord?.id === rec.id ? 'bg-amber-50 dark:bg-amber-900/20 border-l-4 border-l-amber-500' : 'border-l-4 border-transparent'}
-                                                    `}
-                                            >
-                                                <td className="px-4 py-3 pl-8 text-xs relative border-l-[3px] border-l-amber-300/30 dark:border-l-amber-700/30 flex items-center gap-1.5">
-                                                    <FileText className="size-3 text-neutral-400" />
-                                                    <span className="truncate max-w-[100px] text-neutral-600 dark:text-neutral-400 block font-medium">#{rec.id}</span>
-                                                </td>
-                                                <td className="px-4 py-3 text-xs text-neutral-700 dark:text-neutral-200 font-bold truncate max-w-[100px]">
-                                                    {rec.complainantFirstName} {rec.complainantLastName}
-                                                    {rec.complainants?.length > 1 && <span className="text-[10px] text-amber-600 ml-1">(+{rec.complainants.length - 1})</span>}
-                                                </td>
-                                                <td className="px-4 py-3 text-right">
-                                                    <div className="flex flex-col items-end gap-1.5">
-                                                        <span className="text-[10px] text-neutral-500">{rec.dateOfSettlement}</span>
-                                                        <button
-                                                            onClick={(e) => handleDelete(e, rec.id)}
-                                                            className="text-neutral-300 hover:text-red-500 transition-colors p-1 bg-white dark:bg-neutral-800 rounded border border-transparent hover:border-red-200 dark:hover:border-red-900"
-                                                            title="Archive Record"
-                                                        >
-                                                            <Trash2 className="size-3" />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
+                                <tbody className="divide-y divide-sidebar-border/50">
+                                {sortedHistory.map((rec) => (
+                                    <tr
+                                        key={rec.id}
+                                        onClick={() => setSelectedRecord(rec)}
+                                        className={`
+                                                cursor-pointer transition-all hover:bg-amber-50 dark:hover:bg-amber-900/10
+                                                ${selectedRecord?.id === rec.id ? 'bg-amber-50 dark:bg-amber-900/20 border-l-4 border-l-amber-500' : 'border-l-4 border-transparent'}
+                                            `}
+                                    >
+                                        <td className="px-4 py-3 text-xs font-mono font-bold text-amber-600 dark:text-amber-500">
+                                            {rec.sett_uuid}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="text-xs text-neutral-700 dark:text-neutral-200 font-bold truncate max-w-[120px]">
+                                                {rec.subjectFirstName} {rec.subjectLastName}
+                                            </div>
+                                            <div className="text-[10px] text-neutral-400">
+                                                vs. {rec.complainantFirstName} {rec.complainantLastName}
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            <div className="flex flex-col items-end gap-1.5">
+                                                <span className="text-[10px] text-neutral-500">{rec.dateOfSettlement}</span>
+                                                <button
+                                                    onClick={(e) => handleDelete(e, rec.id)}
+                                                    className="text-neutral-300 hover:text-red-500 transition-colors p-1 bg-white dark:bg-neutral-800 rounded border border-transparent hover:border-red-200 dark:hover:border-red-900"
+                                                    title="Archive Record"
+                                                >
+                                                    <Trash2 className="size-3" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
                                 ))}
+                                </tbody>
                             </table>
                         </div>
                     </div>
@@ -307,7 +294,7 @@ export default function SettlementHistory({ histories = [] }: { histories?: Sett
                                             </div>
                                             <div>
                                                 <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-tight">
-                                                    {selectedRecord.complainantFirstName} {selectedRecord.complainantLastName} <span className="text-amber-600 dark:text-amber-500 mx-1">vs</span> {selectedRecord.subjectFirstName} {selectedRecord.subjectLastName}
+                                                    Settlement Details
                                                 </h2>
                                                 <div className="flex items-center gap-2 mt-1 text-sm text-neutral-500">
                                                     <Scale className="size-3.5" />
@@ -348,17 +335,31 @@ export default function SettlementHistory({ histories = [] }: { histories?: Sett
                                                 {selectedRecord.complainants?.map(comp => (
                                                     <div key={comp.id} className="flex flex-col bg-neutral-50 dark:bg-neutral-800 p-3 rounded-lg border border-sidebar-border/50 gap-2">
                                                         <div className="flex justify-between items-center">
-                                                            <span className="font-bold text-neutral-900 dark:text-neutral-100">
-                                                                {comp.first_name} {comp.middle_name ? `${comp.middle_name} ` : ''}{comp.last_name}
-                                                            </span>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-bold text-neutral-900 dark:text-neutral-100">
+                                                                    {comp.first_name} {comp.middle_name ? `${comp.middle_name} ` : ''}{comp.last_name}
+                                                                </span>
+                                                                {comp.ctz_id && (
+                                                                    <button 
+                                                                        onClick={(e) => handleOpenQuickView(e, comp.ctz_id)}
+                                                                        className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-rose-50 dark:bg-rose-900/20 text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-all shadow-sm border border-rose-100 dark:border-rose-900/30 group"
+                                                                        title="Quick View Record"
+                                                                    >
+                                                                        <Info className="size-3 group-hover:scale-110 transition-transform" />
+                                                                        <span className="text-[9px] font-bold uppercase tracking-tight">Quick View</span>
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                             {comp.citizen_id ? (
                                                                 <span className="text-[10px] font-mono bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 px-1.5 py-0.5 rounded border border-rose-100 dark:border-rose-900/50 shadow-sm font-bold">
                                                                     {comp.citizen_id}
                                                                 </span>
                                                             ) : (
-                                                                <span className="text-[10px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-700 font-medium">
-                                                                    Manual Entry
-                                                                </span>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-[10px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-700 font-medium">
+                                                                        Manual Entry
+                                                                    </span>
+                                                                </div>
                                                             )}
                                                         </div>
                                                         {comp.comp_description && (
@@ -383,22 +384,45 @@ export default function SettlementHistory({ histories = [] }: { histories?: Sett
                                                 ) : selectedRecord.linked_histories?.map(sub => (
                                                     <div key={sub.id} className="flex flex-col gap-1.5 bg-neutral-50 dark:bg-neutral-800 p-3 rounded-lg border border-sidebar-border/50 hover:border-amber-200 transition-colors">
                                                         <div className="flex justify-between items-center">
-                                                            <div>
-                                                                <span className="font-bold text-neutral-900 dark:text-neutral-100 lowercase first-letter:uppercase">
-                                                                    {sub.first_name} {sub.last_name}
-                                                                </span>
-                                                                {sub.citizen_id ? (
-                                                                    <span className="text-[10px] font-mono bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-900/50 shadow-sm font-bold">
-                                                                        {sub.citizen_id}
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-center gap-2 mb-0.5">
+                                                                    <span className="font-bold text-neutral-900 dark:text-neutral-100 lowercase first-letter:uppercase truncate block">
+                                                                        {sub.first_name} {sub.last_name}
                                                                     </span>
-                                                                ) : (
-                                                                    <span className="text-[10px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-700 font-medium">
-                                                                        Manual Entry
-                                                                    </span>
-                                                                )}
-                                                                <div className="flex items-center gap-2 mt-1">
-                                                                    <span className="text-[10px] font-mono text-neutral-500">{sub.cihi_uuid}</span>
-                                                                    <span className="text-[9px] px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-700 text-neutral-500 rounded uppercase font-bold">{sub.type}</span>
+                                                                    {sub.ctz_id && (
+                                                                        <button 
+                                                                            onClick={(e) => handleOpenQuickView(e, sub.ctz_id)}
+                                                                            className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-all shadow-sm border border-amber-100 dark:border-amber-900/30 group"
+                                                                            title="Quick View Record"
+                                                                        >
+                                                                            <Info className="size-3 group-hover:scale-110 transition-transform" />
+                                                                            <span className="text-[9px] font-bold uppercase tracking-tight">Quick View</span>
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex items-center gap-2 mt-0.5">
+                                                                    {sub.citizen_id ? (
+                                                                        <span className="text-[10px] font-mono bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-900/50 shadow-sm font-bold">
+                                                                            {sub.citizen_id}
+                                                                        </span>
+                                                                    ) : (
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-[10px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-700 font-medium">
+                                                                                Manual Entry
+                                                                            </span>
+                                                                            <button 
+                                                                                onClick={(e) => handleOpenHistoryQuickView(e, sub.cihi_uuid)}
+                                                                                className="p-1 text-neutral-400 hover:text-amber-600 transition-colors"
+                                                                                title="Quick View Details"
+                                                                            >
+                                                                                <Info className="size-3.5" />
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
+                                                                    <div className="flex items-center gap-1.5 ml-1">
+                                                                        <span className="text-[10px] font-mono text-neutral-500 truncate">{sub.cihi_uuid}</span>
+                                                                        <span className="text-[9px] px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 rounded uppercase font-bold">{sub.type}</span>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                             <div className="flex items-center gap-2">
@@ -472,6 +496,19 @@ export default function SettlementHistory({ histories = [] }: { histories?: Sett
                     </div>
                 </div>
             </div>
+            {/* Quick View Modal */}
+            <CitizenQuickView 
+                isOpen={quickViewOpen} 
+                onClose={() => setQuickViewOpen(false)} 
+                citizenId={quickViewCitizenId} 
+            />
+
+            <HistoryQuickView
+                isOpen={historyQuickViewOpen}
+                onClose={() => setHistoryQuickViewOpen(false)}
+                historyUuid={historyQuickViewUuid}
+                rawHistory={rawHistoryData}
+            />
         </AppLayout>
     );
 }
