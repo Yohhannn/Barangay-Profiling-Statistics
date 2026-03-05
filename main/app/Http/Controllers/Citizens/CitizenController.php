@@ -53,13 +53,16 @@ class CitizenController extends Controller
 
         // Search (Name)
         if ($request->filled('search')) {
-            $search = $request->input('search');
+            $search = strtolower($request->input('search'));
             $citizensQuery->where(function($q) use ($search) {
-                $q->where('ctz_uuid', 'like', "%{$search}%")
+                $q->where(DB::raw('LOWER(ctz_uuid)'), 'like', "%{$search}%")
                   ->orWhereHas('info', function ($sub) use ($search) {
-                        $sub->where('first_name', 'like', "%{$search}%")
-                            ->orWhere('last_name', 'like', "%{$search}%")
-                            ->orWhere('middle_name', 'like', "%{$search}%");
+                        $sub->where(DB::raw("LOWER(CONCAT_WS(' ', first_name, middle_name, last_name))"), 'like', "%{$search}%")
+                            ->orWhere(DB::raw("LOWER(CONCAT_WS(' ', first_name, last_name))"), 'like', "%{$search}%")
+                            ->orWhere(DB::raw("LOWER(CONCAT_WS(' ', last_name, first_name))"), 'like', "%{$search}%")
+                            ->orWhere(DB::raw('LOWER(first_name)'), 'like', "%{$search}%")
+                            ->orWhere(DB::raw('LOWER(last_name)'), 'like', "%{$search}%")
+                            ->orWhere(DB::raw('LOWER(middle_name)'), 'like', "%{$search}%");
                     });
             });
         }
@@ -236,6 +239,7 @@ class CitizenController extends Controller
                 'medicalHistories' => $citizen->medicalHistories->map(function ($med) {
                     return [
                         'id' => $med->mh_id,
+                        'uuid' => $med->mh_uuid,
                         'type' => $med->type,
                         'description' => $med->description,
                         'dateDiagnosed' => $med->date_diagnosed ? Carbon::parse($med->date_diagnosed)->format('F d, Y') : null,
@@ -244,11 +248,13 @@ class CitizenController extends Controller
                 'settlementHistories' => $citizen->histories->map(function ($hist) {
                     return [
                         'id' => $hist->cihi_id,
+                        'uuid' => $hist->cihi_uuid,
                         'title' => $hist->title,
                         'type' => $hist->type,
                         'description' => $hist->description,
                         'status' => $hist->status,
                         'dateCreated' => $hist->date_created ? Carbon::parse($hist->date_created)->format('F d, Y') : null,
+                        'settlement_uuid' => $hist->settlementLog ? $hist->settlementLog->sett_uuid : null,
                     ];
                 })->values()->all(),
 
