@@ -15,6 +15,8 @@ class SettlementLog extends Model
     public $incrementing = true;
 
     protected $fillable = [
+        'sett_uuid',
+        'complaint_description',
         'settlement_description',
         'date_of_settlement',
         'date_encoded',
@@ -23,18 +25,28 @@ class SettlementLog extends Model
         'delete_reason',
         'encoded_by',
         'updated_by',
-        'comp_id',
-        'cihi_id',
+        'mediator',
     ];
 
     protected $casts = [
-        'date_of_settlement' => 'date',
-        'date_encoded' => 'date',
-        'date_updated' => 'date',
+        'date_of_settlement' => 'datetime',
+        'date_encoded' => 'datetime',
+        'date_updated' => 'datetime',
         'is_deleted' => 'boolean',
     ];
 
     public $timestamps = false;
+
+    protected static function booted()
+    {
+        static::creating(function ($settlement) {
+            do {
+                $uuid = 'SETT-' . str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+            } while (self::where('sett_uuid', $uuid)->exists());
+
+            $settlement->sett_uuid = $uuid;
+        });
+    }
 
     // Relationships
     public function encodedByAccount()
@@ -47,13 +59,13 @@ class SettlementLog extends Model
         return $this->belongsTo(SystemAccount::class, 'updated_by', 'sys_id');
     }
 
-    public function complainant()
+    public function complainants()
     {
-        return $this->belongsTo(Complainant::class, 'comp_id', 'comp_id');
+        return $this->hasMany(Complainant::class, 'sett_id', 'sett_id');
     }
 
-    public function citizenHistory()
+    public function citizenHistories()
     {
-        return $this->belongsTo(CitizenHistory::class, 'cihi_id', 'cihi_id');
+        return $this->hasMany(CitizenHistory::class, 'sett_id', 'sett_id');
     }
 }

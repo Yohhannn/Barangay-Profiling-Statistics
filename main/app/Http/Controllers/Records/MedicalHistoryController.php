@@ -193,6 +193,30 @@ class MedicalHistoryController extends Controller
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\DB::rollBack();
             return redirect()->back()->withErrors(['error' => 'Failed to archive medical record: ' . $e->getMessage()]);
-        }
+            }
+    }
+    public function getMedicalDetail($uuid)
+    {
+        $history = MedicalHistory::with(['citizen', 'encodedByAccount', 'updatedByAccount'])
+            ->where('mh_uuid', $uuid)
+            ->firstOrFail();
+
+        $encodedByName = $history->encodedByAccount ? trim($history->encodedByAccount->sys_fname . ' ' . $history->encodedByAccount->sys_lname) : 'Unknown User';
+        $updatedByName = $history->updatedByAccount ? trim($history->updatedByAccount->sys_fname . ' ' . $history->updatedByAccount->sys_lname) : $encodedByName;
+
+        return response()->json([
+            'uuid' => $history->mh_uuid,
+            'firstName' => $history->first_name,
+            'middleName' => $history->middle_name ?? '',
+            'lastName' => $history->last_name,
+            'type' => $history->type,
+            'description' => $history->description,
+            'dateDiagnosed' => $history->date_diagnosed ? \Carbon\Carbon::parse($history->date_diagnosed)->format('M d, Y') : 'N/A',
+            'dateEncoded' => $history->date_encoded ? \Carbon\Carbon::parse($history->date_encoded)->format('Y-m-d | h:i A') : 'N/A',
+            'encodedBy' => $encodedByName,
+            'dateUpdated' => $history->date_updated ? \Carbon\Carbon::parse($history->date_updated)->format('Y-m-d | h:i A') : 'N/A',
+            'updatedBy' => $updatedByName,
+            'citizen_id' => $history->citizen ? $history->citizen->ctz_uuid : null,
+        ]);
     }
 }

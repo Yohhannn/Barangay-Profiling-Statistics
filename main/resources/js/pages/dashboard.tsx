@@ -9,6 +9,7 @@ import {
     FileText, CheckCircle, Search, Database, UserCircle, ShieldCheck, UserCheck, User, Users2
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import CitizenQuickView from './main/CitizenRecords/popup/citizen-quick-view';
 
 // --- Interfaces ---
 interface DashboardStats {
@@ -59,6 +60,15 @@ export default function Dashboard({ stats, recentCitizens }: DashboardProps) {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
+
+    // Quick View State
+    const [quickViewOpen, setQuickViewOpen] = useState(false);
+    const [selectedCitizenId, setSelectedCitizenId] = useState<number | null>(null);
+
+    const handleOpenQuickView = (id: number) => {
+        setSelectedCitizenId(id);
+        setQuickViewOpen(true);
+    };
 
     // Fallback data
     const safeStats = stats || { totalCitizens: 0, totalHouseholds: 0, totalBusinesses: 0, totalInfrastructures: 0, totalVoters: 0, totalMale: 0, totalFemale: 0, totalTransactions: 0, totalSettlements: 0 };
@@ -216,9 +226,12 @@ export default function Dashboard({ stats, recentCitizens }: DashboardProps) {
                                             </td>
                                             <td className="px-5 py-3.5 text-right text-neutral-500 tabular-nums">{new Date(citizen.created_at).toLocaleDateString()}</td>
                                             <td className="px-5 py-3.5 text-center">
-                                                <Link href={`/citizen-panel/citizen-profile?search=${citizen.id}`} className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors">
-                                                    See Record
-                                                </Link>
+                                                <button 
+                                                    onClick={() => handleOpenQuickView(citizen.id)}
+                                                    className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                                                >
+                                                    Quick View
+                                                </button>
                                             </td>
                                         </tr>
                                     )) : (
@@ -276,6 +289,12 @@ export default function Dashboard({ stats, recentCitizens }: DashboardProps) {
 
                 </div>
             </div>
+
+            <CitizenQuickView 
+                isOpen={quickViewOpen}
+                onClose={() => setQuickViewOpen(false)}
+                citizenId={selectedCitizenId}
+            />
         </AppLayout>
     );
 }

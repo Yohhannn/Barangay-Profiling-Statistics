@@ -49,9 +49,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('citizen-records/medical-history/{id}', [\App\Http\Controllers\Records\MedicalHistoryController::class, 'update']);
     Route::delete('citizen-records/medical-history/{id}', [\App\Http\Controllers\Records\MedicalHistoryController::class, 'destroy']);
 
-    Route::get('citizen-records/settlement-history', function () {
-        return Inertia::render('main/CitizenRecords/settlement-history');
-    })->name('settlement-history');
+    Route::get('citizen-records/settlement-history', [\App\Http\Controllers\Records\SettlementController::class, 'index'])->name('settlement-history');
+    Route::post('citizen-records/settlement-history', [\App\Http\Controllers\Records\SettlementController::class, 'store']);
+    Route::put('citizen-records/settlement-history/{id}', [\App\Http\Controllers\Records\SettlementController::class, 'update']);
+    Route::delete('citizen-records/settlement-history/{id}', [\App\Http\Controllers\Records\SettlementController::class, 'destroy']);
 
     // --- STATISTICS ---
     Route::get('statistics', function () {
@@ -155,6 +156,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/api/household-search', [HouseholdController::class, 'search']);
     Route::get('/api/citizen-search', [CitizenController::class, 'searchForHousehold']);
+    Route::get('/api/verify-history-link', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'verifyHistoryLink']);
+    Route::get('/api/recent-histories', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'getRecentHistories']);
+    Route::get('/api/citizen-history-search', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'search']);
+    Route::get('/api/history-detail/{uuid}', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'getHistoryDetail']);
+    Route::get('/api/settlement-detail/{uuid}', [\App\Http\Controllers\Records\SettlementController::class, 'getSettlementDetail']);
+    Route::get('/api/medical-detail/{uuid}', [\App\Http\Controllers\Records\MedicalHistoryController::class, 'getMedicalDetail']);
+    Route::get('/api/citizen/{id}', [CitizenController::class, 'getQuickViewData']);
 });
 
 require __DIR__.'/settings.php';

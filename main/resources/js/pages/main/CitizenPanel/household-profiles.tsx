@@ -5,12 +5,13 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft, Search, Plus, Trash2,
     Home, MapPin, Droplets, Link as LinkIcon,
-    UserCheck, FileText, Edit3, X, SlidersHorizontal, Hash, Check, RotateCcw
+    UserCheck, FileText, Edit3, X, SlidersHorizontal, Hash, Check, RotateCcw, Info
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import Swal from 'sweetalert2';
 import HouseholdCreation from './popup/household-creation';
 import HouseholdEdit from './popup/household-edit';
+import CitizenQuickView from '../CitizenRecords/popup/citizen-quick-view';
 
 // --- Types ---
 interface HouseholdMember {
@@ -95,6 +96,14 @@ export default function HouseholdProfiles({ households = [], filters = {}, syste
 
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
+    const [citizenQuickViewOpen, setCitizenQuickViewOpen] = useState(false);
+    const [selectedCitizenId, setSelectedCitizenId] = useState<number | null>(null);
+
+    const handleOpenCitizenQuickView = (e: React.MouseEvent, id: number) => {
+        e.stopPropagation();
+        setSelectedCitizenId(id);
+        setCitizenQuickViewOpen(true);
+    };
     const [sitioOptions, setSitioOptions] = useState<string[]>([]);
     
     // Multi-select dropdown state
@@ -636,6 +645,7 @@ export default function HouseholdProfiles({ households = [], filters = {}, syste
                                         <table className="w-full text-sm text-left bg-white dark:bg-sidebar">
                                             <thead className="bg-neutral-100 dark:bg-neutral-800 text-xs text-neutral-500 uppercase">
                                             <tr>
+                                                <th className="px-4 py-3 font-semibold text-center border-r border-sidebar-border w-16">View</th>
                                                 <th className="px-4 py-3 font-semibold text-center border-r border-sidebar-border">First Name</th>
                                                 <th className="px-4 py-3 font-semibold text-center border-r border-sidebar-border">Last Name</th>
                                                 <th className="px-4 py-3 font-semibold text-center">Relationship</th>
@@ -643,7 +653,16 @@ export default function HouseholdProfiles({ households = [], filters = {}, syste
                                             </thead>
                                             <tbody className="divide-y divide-sidebar-border">
                                             {selectedHousehold.members.map((member) => (
-                                                <tr key={member.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
+                                                <tr key={member.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/50 group/member">
+                                                    <td className="px-4 py-3 text-center border-r border-sidebar-border">
+                                                        <button 
+                                                            onClick={(e) => handleOpenCitizenQuickView(e, member.id)}
+                                                            className="p-1.5 rounded-md bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 hover:bg-blue-200 transition-all shadow-sm border border-blue-200 dark:border-blue-800 inline-flex items-center justify-center"
+                                                            title="Quick View Member Profile"
+                                                        >
+                                                            <Info className="size-3.5" />
+                                                        </button>
+                                                    </td>
                                                     <td className="px-4 py-3 text-center border-r border-sidebar-border">{member.firstName}</td>
                                                     <td className="px-4 py-3 text-center border-r border-sidebar-border">{member.lastName}</td>
                                                     <td className="px-4 py-3 text-center text-neutral-500">{member.relationship}</td>
@@ -651,7 +670,7 @@ export default function HouseholdProfiles({ households = [], filters = {}, syste
                                             ))}
                                             {selectedHousehold.members.length === 0 && (
                                                 <tr>
-                                                    <td colSpan={3} className="px-4 py-6 text-center text-neutral-400 italic">No members listed</td>
+                                                    <td colSpan={4} className="px-4 py-6 text-center text-neutral-400 italic">No members listed</td>
                                                 </tr>
                                             )}
                                             </tbody>
@@ -693,6 +712,12 @@ export default function HouseholdProfiles({ households = [], filters = {}, syste
                     </div>
                 </div>
             </div>
+
+            <CitizenQuickView 
+                isOpen={citizenQuickViewOpen} 
+                onClose={() => setCitizenQuickViewOpen(false)} 
+                citizenId={selectedCitizenId} 
+            />
         </AppLayout>
     );
 }
