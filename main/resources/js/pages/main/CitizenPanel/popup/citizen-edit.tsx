@@ -569,12 +569,15 @@ export default function CitizenEdit({ isOpen, onClose, citizen, onSuccess }: Cit
                                         </div>
                                     </div>
 
-                                    {data.is_studying && (
-                                        <div className="grid grid-cols-1 gap-4 p-4 bg-indigo-50 dark:bg-indigo-900/10 rounded-lg border border-indigo-100 dark:border-indigo-900/30">
-                                            <InputGroup label="School Name" value={data.school_name} onChange={e => setData('school_name', e.target.value)} />
-                                            <SelectGroup label="Current Level" value={data.current_level} onChange={e => setData('current_level', e.target.value)} options={['College Graduate', 'College Undergraduate', 'Elementary Graduate', 'Elementary undergraduate', 'Junior High School Graduate', 'Junior High School Undergraduate', 'Senior High School Graduate', 'Senior High School Undergraduate','Kindergarten','No Formal Education', 'Postgraduate']} />
-                                        </div>
-                                    )}
+                                    <div className="space-y-4">
+                                        <SelectGroup label="Educational Level" value={data.current_level} onChange={e => setData('current_level', e.target.value)} options={['College Graduate', 'College Undergraduate', 'Elementary Graduate', 'Elementary undergraduate', 'Junior High School Graduate', 'Junior High School Undergraduate', 'Senior High School Graduate', 'Senior High School Undergraduate','Kindergarten','No Formal Education', 'Postgraduate']} />
+                                        
+                                        {data.is_studying && (
+                                            <div className="p-4 bg-indigo-50 dark:bg-indigo-900/10 rounded-lg border border-indigo-100 dark:border-indigo-900/30">
+                                                <InputGroup label="School Name" value={data.school_name} onChange={e => setData('school_name', e.target.value)} placeholder="Current Institution" />
+                                            </div>
+                                        )}
+                                    </div>
 
                                     <div className="space-y-3 pt-2">
                                         <label className="text-xs font-bold text-neutral-500 uppercase">Educational History</label>
