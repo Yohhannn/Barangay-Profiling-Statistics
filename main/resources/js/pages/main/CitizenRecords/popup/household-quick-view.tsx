@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
     X, Home, MapPin, Droplets, Users, 
-    Calendar, User, Hash, AlertCircle, Info, ExternalLink 
+    Calendar, User, Hash, AlertCircle, Info, ExternalLink,
+    Clock, UserCheck
 } from 'lucide-react';
 import axios from 'axios';
 import { Link } from '@inertiajs/react';
@@ -71,49 +72,29 @@ export default function HouseholdQuickView({ isOpen, onClose, householdUuid }: H
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm shadow-2xl transition-all duration-300">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
             <div 
-                className="bg-white dark:bg-sidebar rounded-2xl w-full max-w-4xl flex flex-col shadow-2xl border border-sidebar-border/60 overflow-hidden"
+                className="relative bg-white dark:bg-neutral-900 w-full max-w-4xl rounded-3xl shadow-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden animate-in zoom-in-95 duration-200"
                 onClick={(e) => e.stopPropagation()}
                 style={{ maxHeight: '90vh' }}
             >
-                {/* Header */}
-                <div className="flex items-center justify-between p-4 sm:p-5 border-b border-sidebar-border/60 bg-gradient-to-r from-blue-50 to-white dark:from-blue-900/10 dark:to-sidebar relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 dark:bg-blue-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
-                    <div className="flex items-center gap-3 relative z-10">
-                        <div className="size-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-200 dark:border-blue-800/50 shadow-inner">
-                            <Home className="size-5" />
-                        </div>
-                        <div>
-                            <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 leading-tight">Household Information</h2>
-                            <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[10px] font-mono text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800">
-                                    {householdUuid}
-                                </span>
-                                {loading && <span className="text-[10px] text-neutral-500 animate-pulse">Loading...</span>}
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2 relative z-10">
-                        {household && (
-                            <Link
-                                href={`/citizen-panel/household-profile?search=${household.uuid}`}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-blue-700 transition-colors"
-                            >
-                                <ExternalLink className="size-3.5" /> Full Profile
-                            </Link>
-                        )}
-                        <button 
-                            onClick={onClose}
-                            className="p-2 rounded-lg text-neutral-400 hover:text-red-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                        >
-                            <X className="size-5" />
-                        </button>
+                {/* Header Section with Gradient Background */}
+                <div className="relative h-32 bg-gradient-to-r from-orange-600 to-amber-700 dark:from-orange-700 dark:to-amber-900">
+                    <button 
+                        onClick={onClose}
+                        className="absolute top-4 right-4 p-2 bg-black/10 hover:bg-black/20 text-white rounded-full transition-colors z-10"
+                    >
+                        <X className="size-5" />
+                    </button>
+                    
+                    {/* Floating Avatar Placeholder */}
+                    <div className="absolute -bottom-10 left-8 size-24 bg-white dark:bg-neutral-800 rounded-2xl border-4 border-white dark:border-neutral-900 shadow-xl flex items-center justify-center">
+                        <Home className="size-12 text-orange-300 dark:text-orange-600" />
                     </div>
                 </div>
 
                 {/* Body */}
-                <div className="overflow-y-auto p-4 sm:p-6 custom-scrollbar bg-neutral-50/30 dark:bg-[#0f0f11] flex-1">
+                <div className="pt-12 pb-6 px-8 h-[75vh] overflow-y-auto custom-scrollbar">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center p-12 space-y-4">
                             <div className="size-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
@@ -130,48 +111,74 @@ export default function HouseholdQuickView({ isOpen, onClose, householdUuid }: H
                     ) : household ? (
                         <div className="space-y-6">
                             
-                            {/* Summary Grid */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                <SummaryBadge icon={<Hash />} label="House No." value={household.houseNumber} />
-                                <SummaryBadge icon={<MapPin />} label="Sitio" value={household.sitio} />
-                                <SummaryBadge icon={<Home />} label="Ownership" value={household.ownershipStatus} />
-                                <SummaryBadge icon={<Droplets />} label="Water Source" value={household.waterType} />
+                            {/* Identity Title */}
+                            <div>
+                                <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 leading-tight">
+                                    Household Data
+                                </h2>
+                                <div className="flex flex-wrap items-center gap-2 mt-2">
+                                    <span className="text-xs font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-2 py-0.5 rounded border border-orange-100 dark:border-orange-800">
+                                        {household.uuid}
+                                    </span>
+                                    <span className="text-xs font-medium text-neutral-500">
+                                        House No. {household.houseNumber}
+                                    </span>
+                                </div>
                             </div>
 
-                            {/* Details Container */}
-                            <div className="bg-white dark:bg-sidebar rounded-xl border border-sidebar-border shadow-sm overflow-hidden">
-                                
-                                {/* Address Section */}
-                                <div className="p-4 border-b border-sidebar-border bg-neutral-50/50 dark:bg-neutral-900/20">
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <MapPin className="size-4 text-blue-500" />
-                                        <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">Location Details</h3>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-1">
-                                            <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wide">Full Address</span>
-                                            <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200 break-words">{household.address}</p>
+                            {/* Info Grid */}
+                            <div className="grid grid-cols-2 gap-x-8 gap-y-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
+                                {/* Address details */}
+                                <div className="space-y-4">
+                                    <div className="flex items-start gap-3">
+                                        <div className="p-2 bg-neutral-50 dark:bg-neutral-800 rounded-lg text-neutral-500">
+                                            <MapPin className="size-4" />
                                         </div>
-                                        <div className="space-y-1">
-                                            <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wide">Sanitation/Toilet</span>
-                                            <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200">{household.toiletType}</p>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Sitio / Location</p>
+                                            <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">{household.sitio}</p>
+                                            <p className="text-xs text-neutral-500 leading-relaxed mt-0.5">{household.address}</p>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Members Section */}
-                                <div className="p-4">
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <Users className="size-4 text-green-500" />
-                                        <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">
-                                            Household Members ({household.members.length})
-                                        </h3>
+                                {/* Dwelling details */}
+                                <div className="space-y-4">
+                                    <div className="flex items-start gap-3">
+                                        <div className="p-2 bg-neutral-50 dark:bg-neutral-800 rounded-lg text-neutral-500">
+                                            <Home className="size-4" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Dwelling Specs</p>
+                                            <div className="flex flex-col gap-1.5 mt-1">
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-xs text-neutral-500 min-w-[70px]">Ownership:</p>
+                                                    <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">{household.ownershipStatus}</p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-xs text-neutral-500 min-w-[70px]">Water:</p>
+                                                    <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">{household.waterType}</p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-xs text-neutral-500 min-w-[70px]">Toilet:</p>
+                                                    <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">{household.toiletType}</p>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    
-                                    {household.members.length > 0 ? (
-                                        <div className="border border-sidebar-border rounded-lg overflow-hidden">
-                                            <table className="w-full text-sm text-left">
-                                                <thead className="bg-neutral-50 dark:bg-neutral-800/80 text-[10px] sm:text-xs text-neutral-500 uppercase">
+                                </div>
+                            </div>
+
+                            {/* Members Section */}
+                            <div className="space-y-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
+                                <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                                    <Users className="size-3.5" /> Household Members ({household.members.length})
+                                </h3>
+                                
+                                {household.members.length > 0 ? (
+                                    <div className="rounded-2xl border border-neutral-100 dark:border-neutral-800 overflow-hidden">
+                                        <table className="w-full text-sm text-left">
+                                            <thead className="bg-neutral-50 dark:bg-neutral-800/80 text-[10px] sm:text-xs text-neutral-500 uppercase font-bold tracking-wider border-b border-neutral-100 dark:border-neutral-800">
                                                     <tr>
                                                         <th className="px-4 py-2 sm:py-3 font-semibold">Name</th>
                                                         <th className="px-4 py-2 sm:py-3 font-semibold">Rel.</th>
@@ -180,51 +187,72 @@ export default function HouseholdQuickView({ isOpen, onClose, householdUuid }: H
                                                         <th className="px-4 py-2 sm:py-3 font-semibold text-center w-16">View</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-sidebar-border">
-                                                    {household.members.map(member => (
-                                                        <tr key={member.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
-                                                            <td className="px-4 py-2 sm:py-3 font-medium text-neutral-900 dark:text-neutral-100 truncate max-w-[120px] sm:max-w-none" title={member.name}>{member.name}</td>
-                                                            <td className="px-4 py-2 sm:py-3 text-neutral-600 dark:text-neutral-400">{member.relationship}</td>
-                                                            <td className="px-4 py-2 sm:py-3 text-center text-neutral-600 dark:text-neutral-400">{member.age}</td>
-                                                            <td className="px-4 py-2 sm:py-3 text-center text-neutral-600 dark:text-neutral-400">{member.sex}</td>
-                                                            <td className="px-4 py-2 sm:py-3 text-center">
-                                                                <button 
-                                                                    onClick={() => handleOpenCitizenQuickView(member.id)}
-                                                                    className="p-1.5 rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-colors inline-flex items-center justify-center border border-blue-100 dark:border-blue-800"
-                                                                    title="View Citizen Profile"
-                                                                >
-                                                                    <Info className="size-4" />
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    ) : (
-                                        <div className="text-center p-4 text-xs text-neutral-500 bg-neutral-50 dark:bg-neutral-900/30 rounded-lg border border-dashed border-sidebar-border">
-                                            No active members assigned to this household.
-                                        </div>
-                                    )}
+                                            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                                                {household.members.map((member, i) => (
+                                                    <tr key={member.id} className={`${i % 2 === 0 ? 'bg-white dark:bg-neutral-900' : 'bg-neutral-50/50 dark:bg-neutral-800/20'} hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors`}>
+                                                        <td className="px-4 py-3 sm:py-4 font-bold text-neutral-900 dark:text-neutral-100 truncate max-w-[120px] sm:max-w-none" title={member.name}>{member.name}</td>
+                                                        <td className="px-4 py-3 sm:py-4 font-semibold text-neutral-600 dark:text-neutral-400">{member.relationship}</td>
+                                                        <td className="px-4 py-3 sm:py-4 text-center font-medium text-neutral-600 dark:text-neutral-400">{member.age}</td>
+                                                        <td className="px-4 py-3 sm:py-4 text-center font-medium text-neutral-600 dark:text-neutral-400">{member.sex}</td>
+                                                        <td className="px-4 py-3 sm:py-4 text-center">
+                                                            <button 
+                                                                onClick={() => handleOpenCitizenQuickView(member.id)}
+                                                                className="p-1.5 rounded-lg bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-800/50 transition-colors inline-flex items-center justify-center border border-orange-100 dark:border-orange-800"
+                                                                title="View Citizen Profile"
+                                                            >
+                                                                <Info className="size-4" />
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-8 rounded-2xl border-2 border-dashed border-neutral-100 dark:border-neutral-800/50">
+                                        <Users className="size-8 text-neutral-200 dark:text-neutral-800 mb-2" />
+                                        <p className="text-xs text-neutral-400 italic font-medium">No members records discovered for this household.</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Audit Trail */}
+                            <div className="p-4 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl border border-neutral-100 dark:border-neutral-800 space-y-3 text-[10px] font-mono shadow-sm mt-6">
+                                <div className="flex justify-between border-b border-neutral-100 dark:border-neutral-700 pb-2">
+                                    <span className="text-neutral-500 flex items-center gap-1.5"><Clock className="size-3" /> DATE ENCODED</span>
+                                    <span className="text-neutral-900 dark:text-neutral-100">{household.dateEncoded}</span>
                                 </div>
+                                <div className="flex justify-between border-b border-neutral-100 dark:border-neutral-700 pb-2">
+                                    <span className="text-neutral-500 flex items-center gap-1.5"><UserCheck className="size-3" /> ENCODED BY</span>
+                                    <span className="text-neutral-900 dark:text-neutral-100 font-bold uppercase">{household.encodedBy}</span>
+                                </div>
+                                <div className="flex justify-between border-b border-neutral-100 dark:border-neutral-700 pb-2">
+                                    <span className="text-neutral-500 flex items-center gap-1.5"><Clock className="size-3" /> DATE UPDATED</span>
+                                    <span className="text-neutral-900 dark:text-neutral-100">{household.dateUpdated}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-neutral-500 flex items-center gap-1.5"><UserCheck className="size-3" /> UPDATED BY</span>
+                                    <span className="text-neutral-900 dark:text-neutral-100 font-bold uppercase">{household.updatedBy}</span>
+                                </div>
+                            </div>
+                            
+                            <div className="flex justify-between items-center pt-2">
+                                <button
+                                    onClick={onClose}
+                                    className="px-6 py-2.5 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-400 rounded-xl text-xs font-bold uppercase transition-all"
+                                >
+                                    Dismiss
+                                </button>
+                                <a 
+                                    href={`/citizen-panel/household-profile?search=${household.uuid}`}
+                                    className="flex items-center gap-2 px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold uppercase transition-all shadow-md hover:shadow-lg group"
+                                >
+                                    View Full Extensive Profile <ExternalLink className="size-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                                </a>
                             </div>
                         </div>
                     ) : null}
                 </div>
-
-                {/* Footer / Meta Data */}
-                {household && !loading && (
-                    <div className="p-4 border-t border-sidebar-border/60 bg-neutral-50 dark:bg-neutral-900/50 flex flex-col md:flex-row justify-between text-[10px] text-neutral-400 font-mono gap-2 shrink-0">
-                        <div className="space-y-1">
-                            <span className="block font-medium">Encoded: {household.dateEncoded}</span>
-                            <span className="block italic">by {household.encodedBy}</span>
-                        </div>
-                        <div className="space-y-1 md:text-right">
-                            <span className="block font-medium">Updated: {household.dateUpdated}</span>
-                            <span className="block italic">by {household.updatedBy}</span>
-                        </div>
-                    </div>
-                )}
             </div>
 
             {/* Nested Modal for Citizen Quick View */}
@@ -237,17 +265,4 @@ export default function HouseholdQuickView({ isOpen, onClose, householdUuid }: H
     );
 }
 
-// Helper Components
-function SummaryBadge({ icon, label, value }: { icon: React.ReactNode, label: string, value: string }) {
-    return (
-        <div className="bg-white dark:bg-sidebar p-3 rounded-xl border border-sidebar-border shadow-sm flex flex-col justify-between gap-2">
-            <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
-                <div className="[&>svg]:size-3.5">{icon}</div>
-                <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
-            </div>
-            <span className="font-semibold text-sm text-neutral-900 dark:text-neutral-100 line-clamp-1" title={value}>
-                {value}
-            </span>
-        </div>
-    );
-}
+
