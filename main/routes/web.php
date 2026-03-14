@@ -162,6 +162,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/api/history-detail/{uuid}', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'getHistoryDetail']);
     Route::get('/api/settlement-detail/{uuid}', [\App\Http\Controllers\Records\SettlementController::class, 'getSettlementDetail']);
     Route::get('/api/medical-detail/{uuid}', [\App\Http\Controllers\Records\MedicalHistoryController::class, 'getMedicalDetail']);
+    Route::get('/api/household-detail/{uuid}', [HouseholdController::class, 'getHouseholdDetail']);
     Route::get('/api/citizen/{id}', [CitizenController::class, 'getQuickViewData']);
 });
 
