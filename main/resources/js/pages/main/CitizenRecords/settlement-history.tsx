@@ -6,7 +6,7 @@ import {
     Scale, User, Calendar, FileText,
     Edit3, X, SlidersHorizontal, Activity, ShieldAlert, Handshake,
     Filter, ChevronDown, CheckCircle, Info, UserCheck, AlertCircle, AlertTriangle,
-    Landmark, LayoutGrid, List, Users, Clock // Added new icons
+    Landmark, LayoutGrid, List, Users, Clock, FileClock // Added new icons
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import Swal from 'sweetalert2';
@@ -68,9 +68,9 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Settlement History', href: '/citizen-records/settlement-history' },
 ];
 
-export default function SettlementHistory({ histories = [] }: { histories?: SettlementRecord[] }) {
+export default function SettlementHistory({ histories = [], filters = {} as any }: { histories?: SettlementRecord[], filters?: any }) {
     const [selectedRecord, setSelectedRecord] = useState<SettlementRecord | null>(histories.length > 0 ? histories[0] : null);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery, setSearchQuery] = useState(filters.search || '');
     const [showFilters, setShowFilters] = useState(false);
     
     // Quick View State
@@ -102,23 +102,36 @@ export default function SettlementHistory({ histories = [] }: { histories?: Sett
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
-    // Sync selected record on dataset change
+    // Keep selectedRecord synced with prop updates
     useEffect(() => {
         setSelectedRecord(prev => {
+            // Priority 1: If searching, and histories changed, pick histories[0] (which matches search)
+            if (filters.search && histories.length > 0) {
+                // If the current prev already matches search, we could keep it, but histories[0] is safer
+                return histories[0];
+            }
             if (!prev) return histories.length > 0 ? histories[0] : null;
             const updated = histories.find(h => h.id === prev.id);
             return updated || (histories.length > 0 ? histories[0] : null);
         });
-    }, [histories]);
+    }, [histories, filters.search]);
+
+    // Sync searchQuery with filters prop
+    useEffect(() => {
+        if (filters.search !== undefined) {
+            setSearchQuery(filters.search || '');
+        }
+    }, [filters.search]);
 
     // Filtering
     const filteredHistory = useMemo(() => {
         return histories.filter(record => {
             const query = searchQuery.toLowerCase();
-            const matchesSubject = record.subjectFirstName.toLowerCase().includes(query) || record.subjectLastName.toLowerCase().includes(query);
-            const matchesComplainant = record.complainantFirstName.toLowerCase().includes(query) || record.complainantLastName.toLowerCase().includes(query);
+            const matchesUuid = (record.sett_uuid || '').toLowerCase().includes(query);
+            const matchesSubject = (record.subjectFirstName || '').toLowerCase().includes(query) || (record.subjectLastName || '').toLowerCase().includes(query);
+            const matchesComplainant = (record.complainantFirstName || '').toLowerCase().includes(query) || (record.complainantLastName || '').toLowerCase().includes(query);
             
-            return matchesSubject || matchesComplainant;
+            return matchesUuid || matchesSubject || matchesComplainant;
         });
     }, [searchQuery, histories]);
 
@@ -222,7 +235,7 @@ export default function SettlementHistory({ histories = [] }: { histories?: Sett
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-400" />
                                     <input
                                         type="text"
-                                        placeholder="Search by respondent or complainant..."
+                                        placeholder="Search by respondent, complainant, or SETT-UUID..."
                                         className="w-full pl-10 pr-4 py-2 text-sm border border-sidebar-border rounded-lg bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition-all"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
@@ -392,19 +405,29 @@ export default function SettlementHistory({ histories = [] }: { histories?: Sett
                                                                     {sub.ctz_id && (
                                                                         <button 
                                                                             onClick={(e) => handleOpenQuickView(e, sub.ctz_id)}
-                                                                            className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-all shadow-sm border border-amber-100 dark:border-amber-900/30 group"
-                                                                            title="Quick View Record"
+                                                                            className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all shadow-sm border border-blue-100 dark:border-blue-900/30 group"
+                                                                            title="Quick View Profile"
                                                                         >
-                                                                            <Info className="size-3 group-hover:scale-110 transition-transform" />
-                                                                            <span className="text-[9px] font-bold uppercase tracking-tight">Quick View</span>
+                                                                            <User className="size-3 group-hover:scale-110 transition-transform" />
+                                                                            <span className="text-[9px] font-bold uppercase tracking-tight">Profile View</span>
                                                                         </button>
                                                                     )}
                                                                 </div>
                                                                 <div className="flex items-center gap-2 mt-0.5">
                                                                     {sub.citizen_id ? (
-                                                                        <span className="text-[10px] font-mono bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-900/50 shadow-sm font-bold">
-                                                                            {sub.citizen_id}
-                                                                        </span>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-[10px] font-mono bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-900/50 shadow-sm font-bold">
+                                                                                {sub.citizen_id}
+                                                                            </span>
+                                                                            <button 
+                                                                                onClick={(e) => handleOpenHistoryQuickView(e, sub.cihi_uuid)}
+                                                                                className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-600 hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-all border border-purple-100 dark:border-purple-800/50 group"
+                                                                                title="View History Details"
+                                                                            >
+                                                                                <FileClock className="size-3 group-hover:scale-110 transition-transform" />
+                                                                                <span className="text-[9px] font-bold uppercase tracking-tight">History View</span>
+                                                                            </button>
+                                                                        </div>
                                                                     ) : (
                                                                         <div className="flex items-center gap-2">
                                                                             <span className="text-[10px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-700 font-medium">
@@ -412,10 +435,11 @@ export default function SettlementHistory({ histories = [] }: { histories?: Sett
                                                                             </span>
                                                                             <button 
                                                                                 onClick={(e) => handleOpenHistoryQuickView(e, sub.cihi_uuid)}
-                                                                                className="p-1 text-neutral-400 hover:text-amber-600 transition-colors"
+                                                                                className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-600 hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-all border border-purple-100 dark:border-purple-800/50 group"
                                                                                 title="Quick View Details"
                                                                             >
-                                                                                <Info className="size-3.5" />
+                                                                                <Info className="size-3 group-hover:scale-110 transition-transform" />
+                                                                                <span className="text-[9px] font-bold uppercase tracking-tight">Record View</span>
                                                                             </button>
                                                                         </div>
                                                                     )}
@@ -426,7 +450,7 @@ export default function SettlementHistory({ histories = [] }: { histories?: Sett
                                                                 </div>
                                                             </div>
                                                             <div className="flex items-center gap-2">
-                                                                <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${sub.status === 'Pending' ? 'bg-orange-100 text-orange-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                                                                <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-bold ${sub.status === 'Pending' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'}`}>
                                                                     {sub.status || 'Resolved'}
                                                                 </span>
                                                             </div>

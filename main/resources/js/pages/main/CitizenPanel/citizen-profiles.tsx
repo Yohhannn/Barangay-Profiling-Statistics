@@ -14,11 +14,11 @@ import Swal from 'sweetalert2';
 import CitizenCreation from './popup/citizen-creation';
 import CitizenEdit from './popup/citizen-edit';
 
-// --- Quick View Imports ---
 import MedicalQuickView from '../CitizenRecords/popup/medical-quick-view';
 import SettlementQuickView from '../CitizenRecords/popup/settlement-quick-view';
 import HistoryQuickView from '../CitizenRecords/popup/history-quick-view';
 import CitizenQuickView from '../CitizenRecords/popup/citizen-quick-view';
+import HouseholdQuickView from '../CitizenRecords/popup/household-quick-view';
 
 // --- 1. Comprehensive Type Definition ---
 interface HouseholdMember {
@@ -150,6 +150,9 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
     const [citizenQuickViewOpen, setCitizenQuickViewOpen] = useState(false);
     const [selectedCitizenId, setSelectedCitizenId] = useState<number | null>(null);
 
+    const [householdQuickViewOpen, setHouseholdQuickViewOpen] = useState(false);
+    const [selectedHouseholdUuid, setSelectedHouseholdUuid] = useState<string | null>(null);
+
     const handleOpenMedicalQuickView = (e: React.MouseEvent, uuid: string) => {
         e.stopPropagation();
         setSelectedMedicalUuid(uuid);
@@ -172,6 +175,12 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
         e.stopPropagation();
         setSelectedCitizenId(id);
         setCitizenQuickViewOpen(true);
+    };
+
+    const handleOpenHouseholdQuickView = (e: React.MouseEvent, uuid: string) => {
+        e.stopPropagation();
+        setSelectedHouseholdUuid(uuid);
+        setHouseholdQuickViewOpen(true);
     };
     
     // Multi-select dropdown state
@@ -775,7 +784,25 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
 
                                                 {/* Second Row */}
                                                 <InfoItem label="NHTS Number" value={selectedCitizen.nhtsNumber || 'N/A'} />
-                                                <InfoItem label="Household ID" value={selectedCitizen.householdId} highlight />
+                                                
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wide">Household ID</span>
+                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                        <span className="text-sm truncate font-medium text-blue-600 dark:text-blue-400">
+                                                            {selectedCitizen.householdId}
+                                                        </span>
+                                                        {selectedCitizen.householdId && selectedCitizen.householdId !== 'N/A' && (
+                                                            <button 
+                                                                onClick={(e) => handleOpenHouseholdQuickView(e, selectedCitizen.householdId)}
+                                                                className="opacity-60 hover:opacity-100 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 hover:bg-blue-200 transition-all shadow-sm border border-blue-200 dark:border-blue-800"
+                                                                title="Quick View Household Profile"
+                                                            >
+                                                                <Info className="size-3.5" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+
                                                 <InfoItem label="Relationship" value={selectedCitizen.relationship} />
                                             </div>
                                         </div>
@@ -1010,6 +1037,11 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                 isOpen={citizenQuickViewOpen} 
                 onClose={() => setCitizenQuickViewOpen(false)} 
                 citizenId={selectedCitizenId} 
+            />
+            <HouseholdQuickView
+                isOpen={householdQuickViewOpen}
+                onClose={() => setHouseholdQuickViewOpen(false)}
+                householdUuid={selectedHouseholdUuid}
             />
         </AppLayout>
     );

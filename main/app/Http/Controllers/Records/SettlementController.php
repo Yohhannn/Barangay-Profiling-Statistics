@@ -22,12 +22,14 @@ class SettlementController extends Controller
 
         if ($request->filled('search')) {
             $search = strtolower($request->search);
-            $query->whereHas('complainants', function ($q) use ($search) {
-                $q->whereRaw("LOWER(first_name) LIKE ?", ["%{$search}%"])
-                  ->orWhereRaw("LOWER(last_name) LIKE ?", ["%{$search}%"]);
-            })->orWhereHas('citizenHistories', function ($q) use ($search) {
-                $q->whereRaw("LOWER(first_name) LIKE ?", ["%{$search}%"])
-                  ->orWhereRaw("LOWER(last_name) LIKE ?", ["%{$search}%"]);
+            $query->where(function($q) use ($search) {
+                $q->whereHas('complainants', function ($sub) use ($search) {
+                    $sub->whereRaw("LOWER(first_name) LIKE ?", ["%{$search}%"])
+                      ->orWhereRaw("LOWER(last_name) LIKE ?", ["%{$search}%"]);
+                })->orWhereHas('citizenHistories', function ($sub) use ($search) {
+                    $sub->whereRaw("LOWER(first_name) LIKE ?", ["%{$search}%"])
+                      ->orWhereRaw("LOWER(last_name) LIKE ?", ["%{$search}%"]);
+                })->orWhereRaw("LOWER(sett_uuid) LIKE ?", ["%{$search}%"]);
             });
         }
 
@@ -111,7 +113,7 @@ class SettlementController extends Controller
             'complainants.*.ctz_id' => 'nullable|integer',
             
 
-            'linked_history_ids' => 'nullable|array',
+            'linked_history_ids' => 'required|array|min:1',
             'linked_history_ids.*' => 'string',
             'complaint_description' => 'required|string|max:5000',
             'settlement_description' => 'required|string|max:5000',
@@ -142,9 +144,9 @@ class SettlementController extends Controller
                     ->where('is_deleted', false)
                     ->get();
                 
-                // Validate that all histories are in a linkable status
+                // Validate that all histories are in a linkable status (Only block if already assigned to ANOTHER settlement)
                 foreach ($historiesToLink as $history) {
-                    if (in_array($history->status, ['Resolved', 'Dismissed'])) {
+                    if (!empty($history->sett_id) && in_array($history->status, ['Resolved', 'Dismissed'])) {
                         throw new \Exception("Record {$history->cihi_uuid} is already {$history->status} and cannot be linked.");
                     }
                 }
@@ -192,7 +194,7 @@ class SettlementController extends Controller
             'complainants.*.last_name' => 'required|string|max:255',
             'complainants.*.ctz_id' => 'nullable|integer',
 
-            'linked_history_ids' => 'nullable|array',
+            'linked_history_ids' => 'required|array|min:1',
             'linked_history_ids.*' => 'string',
             'complaint_description' => 'required|string|max:5000',
             'settlement_description' => 'required|string|max:5000',
@@ -217,30 +219,38 @@ class SettlementController extends Controller
                 'mediator' => $validated['mediator'],
             ]);
 
-            // 2. Clear old links to this settlement if any
-            CitizenHistory::where('sett_id', $record->sett_id)
-                ->update([
-                    'sett_id' => null,
-                    'status' => 'Pending'
-                ]);
-
-            // 3. Re-link Histories if provided
+            // 2. Validate and Link Histories
             if (!empty($validated['linked_history_ids'])) {
                 $historiesToLink = CitizenHistory::whereIn('cihi_uuid', $validated['linked_history_ids'])
                     ->where('is_deleted', false)
                     ->get();
                 
-                // Validate that all histories are in a linkable status
+                // Validate that all histories are either Pending or belong to THIS settlement
                 foreach ($historiesToLink as $history) {
-                    if ($history->sett_id !== $record->sett_id && in_array($history->status, ['Resolved', 'Dismissed'])) {
+                    if (!empty($history->sett_id) && $history->sett_id != $record->sett_id && in_array($history->status, ['Resolved', 'Dismissed'])) {
                         throw new \Exception("Record {$history->cihi_uuid} is already {$history->status} and cannot be linked.");
                     }
                 }
 
+                // 3. Clear old links to this settlement if any (Move here to be safe)
+                CitizenHistory::where('sett_id', $record->sett_id)
+                    ->update([
+                        'sett_id' => null,
+                        'status' => 'Pending'
+                    ]);
+
+                // 4. Link the new set of histories
                 CitizenHistory::whereIn('cihi_uuid', $validated['linked_history_ids'])
                     ->update([
                         'sett_id' => $record->sett_id,
                         'status' => 'Resolved'
+                    ]);
+            } else {
+                // If empty, just clear all
+                CitizenHistory::where('sett_id', $record->sett_id)
+                    ->update([
+                        'sett_id' => null,
+                        'status' => 'Pending'
                     ]);
             }
 

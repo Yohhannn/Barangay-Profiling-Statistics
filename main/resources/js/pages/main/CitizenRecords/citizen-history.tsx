@@ -49,9 +49,9 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Citizen History', href: '/citizen-records/citizen-history' },
 ];
 
-export default function CitizenHistory({ histories = [] }: { histories?: HistoryRecord[] }) {
+export default function CitizenHistory({ histories = [], filters = {} as any }: { histories?: HistoryRecord[], filters?: any }) {
     const [selectedHistory, setSelectedHistory] = useState<HistoryRecord | null>(histories.length > 0 ? histories[0] : null);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery, setSearchQuery] = useState(filters.search || '');
     const [showFilters, setShowFilters] = useState(false);
     const [filterType, setFilterType] = useState('All');
 
@@ -83,22 +83,15 @@ export default function CitizenHistory({ histories = [] }: { histories?: History
         }
     };
 
-    // Keep selectedHistory synced with prop updates
-    useEffect(() => {
-        setSelectedHistory(prev => {
-            if (!prev) return histories.length > 0 ? histories[0] : null;
-            const updated = histories.find(h => h.id === prev.id);
-            return updated || (histories.length > 0 ? histories[0] : null);
-        });
-    }, [histories]);
-
     // Filter Logic
     const filteredHistory = useMemo(() => {
         return histories.filter(record => {
+            const query = searchQuery.toLowerCase();
             const matchesSearch =
-                record.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                record.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                record.title.toLowerCase().includes(searchQuery.toLowerCase());
+                (record.cihi_uuid || '').toLowerCase().includes(query) ||
+                (record.lastName || '').toLowerCase().includes(query) ||
+                (record.firstName || '').toLowerCase().includes(query) ||
+                (record.title || '').toLowerCase().includes(query);
 
             const matchesType = filterType === 'All' || record.type === filterType;
 
@@ -123,6 +116,30 @@ export default function CitizenHistory({ histories = [] }: { histories?: History
             records,
         })).sort((a, b) => a.lastName.localeCompare(b.lastName));
     }, [filteredHistory]);
+
+    // Keep selectedHistory synced with prop updates
+    useEffect(() => {
+        setSelectedHistory(prev => {
+            if (filters.search && histories.length > 0) return histories[0];
+            if (!prev) return histories.length > 0 ? histories[0] : null;
+            const updated = histories.find(h => h.id === prev.id);
+            return updated || (histories.length > 0 ? histories[0] : null);
+        });
+    }, [histories, filters.search]);
+
+    // Sync searchQuery with filters prop
+    useEffect(() => {
+        if (filters.search !== undefined) {
+            setSearchQuery(filters.search || '');
+        }
+    }, [filters.search]);
+
+    // Auto-expand groups on search match
+    useEffect(() => {
+        if (searchQuery.trim() && groupedHistory.length > 0) {
+            setExpandedGroups(new Set(groupedHistory.map(g => g.key)));
+        }
+    }, [searchQuery, groupedHistory]);
 
     const toggleGroup = (key: string) => {
         setExpandedGroups(prev => {
