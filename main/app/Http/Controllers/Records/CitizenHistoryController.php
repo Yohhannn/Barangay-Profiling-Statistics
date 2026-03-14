@@ -19,7 +19,8 @@ class CitizenHistoryController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->whereRaw("LOWER(title) LIKE ?", ["%{$search}%"])
                   ->orWhereRaw("LOWER(first_name) LIKE ?", ["%{$search}%"])
-                  ->orWhereRaw("LOWER(last_name) LIKE ?", ["%{$search}%"]);
+                  ->orWhereRaw("LOWER(last_name) LIKE ?", ["%{$search}%"])
+                  ->orWhereRaw("LOWER(cihi_uuid) LIKE ?", ["%{$search}%"]);
             });
         }
 
@@ -218,18 +219,27 @@ class CitizenHistoryController extends Controller
         $query = $request->query('id');
         if (empty($query)) return response()->json(['found' => false]);
 
-        // If it's a 4-digit number, search for matching last 4 digits of UUID
+        $currentSettId = $request->query('sett_id');
+
+        $queryBuilder = CitizenHistory::with('citizen')->where('is_deleted', false);
+
+        // Filter by UUID
         if (is_numeric($query) && strlen($query) === 4) {
-            $history = CitizenHistory::where('cihi_uuid', 'LIKE', "%-{$query}")
-                ->where('is_deleted', false)
-                ->whereNotIn('status', ['Resolved', 'Dismissed'])
-                ->first();
+            $queryBuilder->where('cihi_uuid', 'LIKE', "%-{$query}");
         } else {
-            $history = CitizenHistory::where('cihi_uuid', $query)
-                ->where('is_deleted', false)
-                ->whereNotIn('status', ['Resolved', 'Dismissed'])
-                ->first();
+            $queryBuilder->where('cihi_uuid', $query);
         }
+
+        // Filter by Status (Allow if (Not Resolved/Dismissed) OR if it belongs to current settlement OR if link is broken)
+        $queryBuilder->where(function($q) use ($currentSettId) {
+            $q->whereNotIn('status', ['Resolved', 'Dismissed'])
+              ->orWhereNull('sett_id');
+            if ($currentSettId) {
+                $q->orWhere('sett_id', $currentSettId);
+            }
+        });
+
+        $history = $queryBuilder->first();
 
         if ($history) {
             return response()->json([
@@ -237,13 +247,14 @@ class CitizenHistoryController extends Controller
                 'id' => $history->cihi_id, 
                 'uuid' => $history->cihi_uuid,
                 'title' => $history->title,
-                'date' => $history->date_created ? \Carbon\Carbon::parse($history->date_created)->format('M d, Y') : 'N/A',
-                'status' => $history->status,
                 'type' => $history->type,
-                'is_linked' => !empty($history->sett_id),
-                'linked_to' => $history->sett_id
+                'status' => $history->status,
+                'name' => trim($history->first_name . ' ' . $history->last_name),
+                'is_assigned' => !empty($history->sett_id),
+                'sett_id' => $history->sett_id
             ]);
         }
+
         return response()->json(['found' => false]);
     }
 
@@ -273,6 +284,7 @@ class CitizenHistoryController extends Controller
     public function search(Request $request)
     {
         $search = strtolower($request->query('q', ''));
+        $currentSettId = $request->query('sett_id');
         if (empty($search)) return response()->json([]);
 
         $results = CitizenHistory::with('citizen')
@@ -283,7 +295,13 @@ class CitizenHistoryController extends Controller
                   ->orWhereRaw("LOWER(last_name) LIKE ?", ["%{$search}%"])
                   ->orWhere('cihi_uuid', 'LIKE', "%{$search}%");
             })
-            ->whereNotIn('status', ['Resolved', 'Dismissed'])
+            ->where(function($q) use ($currentSettId) {
+                $q->whereNotIn('status', ['Resolved', 'Dismissed'])
+                  ->orWhereNull('sett_id');
+                if ($currentSettId) {
+                    $q->orWhere('sett_id', $currentSettId);
+                }
+            })
             ->limit(10)
             ->get()
             ->map(function($h) {
@@ -297,7 +315,7 @@ class CitizenHistoryController extends Controller
                     'title' => $h->title,
                     'type' => $h->type,
                     'status' => $h->status,
-                    'citizen_id' => $h->citizen ? 'CTZ-' . $h->citizen->ctz_id : null,
+                    'citizen_id' => $h->citizen ? $h->citizen->ctz_uuid : null,
                     'date' => $h->date_created ? \Carbon\Carbon::parse($h->date_created)->format('M d, Y') : 'N/A',
                     'is_assigned' => !empty($h->sett_id),
                     'sett_id' => $h->sett_id
