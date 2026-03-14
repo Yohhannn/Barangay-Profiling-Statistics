@@ -379,4 +379,48 @@ class HouseholdController extends Controller
 
         return response()->json($results);
     }
+
+    public function getHouseholdDetail(string $uuid)
+    {
+        $household = HouseholdInfo::with(['sitio', 'encodedByAccount', 'updatedByAccount', 'citizen_informations.citizens'])
+            ->where('hh_uuid', $uuid)
+            ->first();
+
+        if (!$household) {
+            return response()->json(['error' => 'Household not found'], 404);
+        }
+
+        $encodedByName = $household->encodedByAccount ? trim($household->encodedByAccount->sys_fname . ' ' . $household->encodedByAccount->sys_lname) : 'Unknown User';
+        $updatedByName = $household->updatedByAccount ? trim($household->updatedByAccount->sys_fname . ' ' . $household->updatedByAccount->sys_lname) : $encodedByName;
+
+        $members = $household->citizen_informations->filter(function($info) {
+            return $info->citizens->where('is_deleted', false)->isNotEmpty();
+        })->map(function($info) {
+            $citizen = $info->citizens->where('is_deleted', false)->first();
+            return [
+                'id' => $citizen ? $citizen->ctz_id : ($info->ctz_info_id ?? mt_rand()),
+                'name' => trim(($info->first_name ?? '') . ' ' . ($info->last_name ?? '')),
+                'relationship' => $info->relationship_type ?? 'Member',
+                'age' => $info->date_of_birth ? \Carbon\Carbon::parse($info->date_of_birth)->age : 'N/A',
+                'sex' => $info->sex ?? 'N/A',
+            ];
+        })->values()->all();
+
+        return response()->json([
+            'id' => $household->hh_id,
+            'uuid' => $household->hh_uuid,
+            'houseNumber' => $household->house_number ?? 'N/A',
+            'sitio' => $household->sitio ? $household->sitio->sitio_name : 'Unknown',
+            'address' => $household->address,
+            'waterType' => $household->water_type,
+            'toiletType' => $household->toilet_type,
+            'ownershipStatus' => $household->ownership_status,
+            'members' => $members,
+            'dateEncoded' => $household->date_encoded ? \Carbon\Carbon::parse($household->date_encoded)->format('M d, Y | h:i A') : 'N/A',
+            'encodedBy' => $encodedByName,
+            'dateUpdated' => $household->date_updated ? \Carbon\Carbon::parse($household->date_updated)->format('M d, Y | h:i A') : 'N/A',
+            'updatedBy' => $household->date_updated ? $updatedByName : 'N/A',
+            'isDeleted' => $household->is_deleted,
+        ]);
+    }
 }
