@@ -18,7 +18,8 @@ class MedicalHistoryController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->whereRaw("LOWER(first_name) LIKE ?", ["%{$search}%"])
                   ->orWhereRaw("LOWER(last_name) LIKE ?", ["%{$search}%"])
-                  ->orWhereRaw("LOWER(type) LIKE ?", ["%{$search}%"]);
+                  ->orWhereRaw("LOWER(type) LIKE ?", ["%{$search}%"])
+                  ->orWhereRaw("LOWER(mh_uuid) LIKE ?", ["%{$search}%"]);
             });
         }
 

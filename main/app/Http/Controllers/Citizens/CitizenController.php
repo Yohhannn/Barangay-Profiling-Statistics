@@ -743,6 +743,8 @@ class CitizenController extends Controller
                 'info.demographic.philhealth',
                 'info.demographic.educationStatus',
                 'info.householdInfo',
+                'encodedBy',
+                'updatedBy',
                 'histories' => function($q) {
                     $q->where('is_deleted', false)->orderBy('date_created', 'desc')->limit(5);
                 }
@@ -794,6 +796,11 @@ class CitizenController extends Controller
                         'status' => $h->status,
                     ];
                 }),
+                // Audit
+                'dateEncoded' => Carbon::parse($citizen->date_encoded)->format('M d, Y | h:i A'),
+                'encodedBy' => ($citizen->encodedBy ? trim($citizen->encodedBy->sys_fname . ' ' . $citizen->encodedBy->sys_lname) : 'System'),
+                'dateUpdated' => $citizen->date_updated ? Carbon::parse($citizen->date_updated)->format('M d, Y | h:i A') : 'N/A',
+                'updatedBy' => $citizen->date_updated && $citizen->updatedBy ? trim($citizen->updatedBy->sys_fname . ' ' . $citizen->updatedBy->sys_lname) : ($citizen->date_updated ? 'System' : 'N/A'),
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Citizen not found or error occurred.'], 404);

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
     X, User, MapPin, Phone, Mail, 
     Briefcase, Hash, ExternalLink, Loader2, 
-    AlertCircle, Scale, Baby, HeartPulse, ChevronDown, FileText
+    AlertCircle, Scale, Baby, HeartPulse, ChevronDown, FileText,
+    Clock, UserCheck
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -48,6 +49,10 @@ interface QuickViewData {
         date: string;
         status: string;
     }>;
+    dateEncoded: string;
+    encodedBy: string;
+    dateUpdated: string;
+    updatedBy: string;
 }
 
 export default function CitizenQuickView({ isOpen, onClose, citizenId }: CitizenQuickViewProps) {
@@ -315,6 +320,30 @@ export default function CitizenQuickView({ isOpen, onClose, citizenId }: Citizen
                                 <QuickBadge icon={<Baby className="size-3" />} label="Indigenous" active={data.isIp} color="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" />
                                 <QuickBadge icon={<Briefcase className="size-3" />} label="Gov. Employee" active={data.isGovWorker} color="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" />
                                 <QuickBadge icon={<HeartPulse className="size-3" />} label={data.healthClassification} active={true} color="bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400" />
+                            </div>
+
+                            {/* Audit Trail Section */}
+                            <div className="grid grid-cols-2 gap-4 py-4 px-6 bg-neutral-50 dark:bg-neutral-900/50 rounded-2xl border border-neutral-100 dark:border-neutral-800">
+                                <div className="space-y-3">
+                                    <div className="flex justify-between">
+                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5"><Clock className="size-3" /> DATE ENCODED</span>
+                                        <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">{data.dateEncoded}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5"><UserCheck className="size-3" /> ENCODED BY</span>
+                                        <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-tight">{data.encodedBy}</span>
+                                    </div>
+                                </div>
+                                <div className="space-y-3 border-l border-neutral-200 dark:border-neutral-800 pl-4">
+                                    <div className="flex justify-between">
+                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5"><Clock className="size-3" /> DATE UPDATED</span>
+                                        <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">{data.dateUpdated}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5"><UserCheck className="size-3" /> UPDATED BY</span>
+                                        <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-tight">{data.updatedBy}</span>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="flex justify-between items-center pt-2">

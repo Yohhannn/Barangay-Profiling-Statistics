@@ -39,9 +39,9 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Medical History', href: '/citizen-records/medical-history' },
 ];
 
-export default function MedicalHistory({ histories = [] }: { histories?: MedicalRecord[] }) {
+export default function MedicalHistory({ histories = [], filters = {} as any }: { histories?: MedicalRecord[], filters?: any }) {
     const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(histories.length > 0 ? histories[0] : null);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery, setSearchQuery] = useState(filters.search || '');
     const [showFilters, setShowFilters] = useState(false);
     const [filterType, setFilterType] = useState('All');
 
@@ -72,21 +72,14 @@ export default function MedicalHistory({ histories = [] }: { histories?: Medical
         }
     };
 
-    // Keep selectedRecord synced with prop updates
-    useEffect(() => {
-        setSelectedRecord(prev => {
-            if (!prev) return histories.length > 0 ? histories[0] : null;
-            const updated = histories.find(h => h.id === prev.id);
-            return updated || (histories.length > 0 ? histories[0] : null);
-        });
-    }, [histories]);
-
     // Filter Logic
     const filteredHistory = useMemo(() => {
         return histories.filter(record => {
+            const query = searchQuery.toLowerCase();
             const matchesSearch =
-                record.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                record.firstName.toLowerCase().includes(searchQuery.toLowerCase());
+                (record.uuid || '').toLowerCase().includes(query) ||
+                (record.lastName || '').toLowerCase().includes(query) ||
+                (record.firstName || '').toLowerCase().includes(query);
 
             const matchesType = filterType === 'All' || record.type === filterType;
 
@@ -111,6 +104,30 @@ export default function MedicalHistory({ histories = [] }: { histories?: Medical
             records,
         })).sort((a, b) => a.lastName.localeCompare(b.lastName));
     }, [filteredHistory]);
+
+    // Keep selectedRecord synced with prop updates
+    useEffect(() => {
+        setSelectedRecord(prev => {
+            if (filters.search && histories.length > 0) return histories[0];
+            if (!prev) return histories.length > 0 ? histories[0] : null;
+            const updated = histories.find(h => h.id === prev.id);
+            return updated || (histories.length > 0 ? histories[0] : null);
+        });
+    }, [histories, filters.search]);
+    
+    // Sync searchQuery with filters prop
+    useEffect(() => {
+        if (filters.search !== undefined) {
+            setSearchQuery(filters.search || '');
+        }
+    }, [filters.search]);
+
+    // Auto-expand groups on search match
+    useEffect(() => {
+        if (searchQuery.trim() && groupedHistory.length > 0) {
+            setExpandedGroups(new Set(groupedHistory.map(g => g.key)));
+        }
+    }, [searchQuery, groupedHistory]);
 
     const toggleGroup = (key: string) => {
         setExpandedGroups(prev => {

@@ -76,7 +76,14 @@ export default function SettlementHistoryEdit({ isOpen, onClose, history }: Sett
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         
-        
+        if (data.linked_history_ids.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Missing Record Linkage',
+                text: 'A settlement must have at least one linked history record.',
+            });
+            return;
+        }
         put(`/citizen-records/settlement-history/${history.id}`, {
             preserveScroll: true,
             onSuccess: () => {
@@ -202,6 +209,7 @@ export default function SettlementHistoryEdit({ isOpen, onClose, history }: Sett
                                         }));
                                     }}
                                     error={errors.linked_history_ids}
+                                    currentSettId={history.id}
                                 />
                             </div>
                         </div>
@@ -222,12 +230,12 @@ export default function SettlementHistoryEdit({ isOpen, onClose, history }: Sett
 }
 
 // --- NEW COMPONENT FOR HISTORY SEARCH ---
-function HistorySearch({ selectedIds, selectedDetails, onSelect, onRemove, error }: any) {
+function HistorySearch({ selectedIds, selectedDetails, onSelect, onRemove, error, currentSettId }: any) {
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [recentHistories, setRecentHistories] = useState<any[]>([]);
     const [showRecent, setShowRecent] = useState(false);
-    const [searchResult, setSearchResult] = useState<any>(null);
+    const [searchResults, setSearchResults] = useState<any[]>([]);
 
     useEffect(() => {
         fetch('/api/recent-histories')
@@ -240,21 +248,20 @@ function HistorySearch({ selectedIds, selectedDetails, onSelect, onRemove, error
         if (searchQuery.trim().length > 1) {
             setIsSearching(true);
             const debounceTimer = setTimeout(() => {
-                fetch(`/api/verify-history-link?id=${encodeURIComponent(searchQuery)}`)
+                fetch(`/api/citizen-history/search?q=${encodeURIComponent(searchQuery)}&sett_id=${currentSettId || ''}`)
                     .then(res => res.json())
                     .then(data => {
-                        if (data.found) {
-                            setSearchResult(data);
-                        } else {
-                            setSearchResult({ not_found: true });
-                        }
+                        setSearchResults(data);
                         setIsSearching(false);
                     })
-                    .catch(() => setIsSearching(false));
+                    .catch(() => {
+                        setSearchResults([]);
+                        setIsSearching(false);
+                    });
             }, 500); 
             return () => clearTimeout(debounceTimer);
         } else {
-            setSearchResult(null);
+            setSearchResults([]);
             setIsSearching(false);
         }
     }, [searchQuery]);
@@ -318,34 +325,43 @@ function HistorySearch({ selectedIds, selectedDetails, onSelect, onRemove, error
                         </div>
                     )}
 
-                    {searchResult && !searchResult.not_found && (
-                        <div className={`p-3 border rounded-lg animate-in slide-in-from-top-2 duration-200 ${searchResult.is_assigned || searchResult.is_linked ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800/30' : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800/50'}`}>
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <p className={`text-xs font-bold ${searchResult.is_assigned || searchResult.is_linked ? 'text-amber-800 dark:text-amber-300' : 'text-green-800 dark:text-green-300'}`}>
-                                        {searchResult.is_assigned || searchResult.is_linked ? 'Already Assigned' : 'Record Found!'}
-                                    </p>
-                                    <p className={`text-[11px] mt-0.5 ${searchResult.is_linked ? 'text-amber-700 dark:text-amber-400' : 'text-green-700 dark:text-green-400'}`}>{searchResult.title}</p>
-                                    <p className={`text-[10px] opacity-80 ${searchResult.is_linked ? 'text-amber-600 dark:text-amber-500' : 'text-green-600 dark:text-green-500'}`}>{searchResult.uuid || searchResult.cihi_uuid} • {searchResult.type}</p>
-                                </div>
-                                {!searchResult.is_assigned && !searchResult.is_linked && !selectedIds.includes(searchResult.uuid || searchResult.cihi_uuid) && (
-                                    <button 
-                                        type="button"
-                                        onClick={() => { onSelect(searchResult); setSearchResult(null); setSearchQuery(''); }}
-                                        className="px-3 py-1.5 bg-green-600 text-white rounded text-[10px] font-bold uppercase tracking-wider hover:bg-green-700 transition-colors"
-                                    >
-                                        Add to List
-                                    </button>
-                                )}
-                                {selectedIds.includes(searchResult.uuid || searchResult.cihi_uuid) && (
-                                    <span className="text-[10px] font-bold text-neutral-400 uppercase italic">Already Added</span>
-                                )}
-                            </div>
+                    {searchResults.length > 0 && (
+                        <div className="absolute top-12 left-0 right-0 mt-1 bg-white dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700 shadow-xl max-h-60 overflow-y-auto z-[60] p-1 divide-y divide-neutral-100 dark:divide-neutral-700/50">
+                            <p className="p-2 text-[10px] font-bold uppercase text-neutral-400">Search Results</p>
+                            {searchResults.map(res => {
+                                const isAlreadyLinked = res.is_assigned;
+                                const isAdded = selectedIds.includes(res.uuid || res.cihi_uuid);
+                                
+                                return (
+                                    <div key={res.id} className={`p-2 transition-colors ${isAlreadyLinked || isAdded ? 'opacity-60 bg-neutral-50 dark:bg-neutral-900/40' : 'hover:bg-amber-50 dark:hover:bg-amber-900/20'}`}>
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex-1 min-w-0 pr-2">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`text-[11px] font-bold truncate ${isAlreadyLinked || isAdded ? 'text-neutral-500' : 'text-neutral-800 dark:text-neutral-200'}`}>{res.title}</span>
+                                                    {isAlreadyLinked && <span className="text-[8px] font-bold uppercase tracking-tight bg-neutral-100 text-neutral-500 px-1 rounded shrink-0">Assigned</span>}
+                                                    {isAdded && <span className="text-[8px] font-bold uppercase tracking-tight bg-amber-100 text-amber-600 px-1 rounded shrink-0">Added</span>}
+                                                </div>
+                                                <div className="text-[10px] text-neutral-500 mt-0.5 truncate">{res.name} • {res.type}</div>
+                                                <div className="text-[9px] font-mono text-neutral-400 mt-0.5">{res.uuid}</div>
+                                            </div>
+                                            {!isAlreadyLinked && !isAdded && (
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => onSelect(res)}
+                                                    className="px-2.5 py-1 bg-amber-600 text-white rounded text-[9px] font-bold uppercase tracking-wider hover:bg-amber-700 transition-colors shrink-0 shadow-sm"
+                                                >
+                                                    Link
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
 
-                    {searchResult?.not_found && (
-                        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg text-xs text-red-700 dark:text-red-400 animate-in slide-in-from-top-2">
+                    {searchQuery.length > 2 && !isSearching && searchResults.length === 0 && (
+                        <div className="absolute top-12 left-0 right-0 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg text-[10px] text-red-700 dark:text-red-400 z-50">
                             No record found matching "{searchQuery}".
                         </div>
                     )}
@@ -465,7 +481,7 @@ function ComplainantForm({ data, index, canRemove, onUpdate, onRemove, errors, a
                                 className="accent-rose-600 h-3.5 w-3.5" 
                                 checked={data.has_record} 
                                 onChange={() => { 
-                                    onUpdate({ has_record: true, citizen_id: '', first_name: '', middle_name: '', last_name: '' }); 
+                                    onUpdate({ has_record: true, citizen_id: '', first_name: '', middle_name: '', last_name: '', ctz_id: null }); 
                                     setIsLocked(false); setSearchQuery(''); 
                                 }} 
                             />
@@ -478,7 +494,7 @@ function ComplainantForm({ data, index, canRemove, onUpdate, onRemove, errors, a
                                 className="accent-rose-600 h-3.5 w-3.5" 
                                 checked={!data.has_record} 
                                 onChange={() => { 
-                                    onUpdate({ has_record: false, citizen_id: '', first_name: '', middle_name: '', last_name: '' }); 
+                                    onUpdate({ has_record: false, citizen_id: '', first_name: '', middle_name: '', last_name: '', ctz_id: null }); 
                                     setIsLocked(false); setSearchQuery(''); 
                                 }} 
                             />

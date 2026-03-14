@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { 
     X, User, Loader2, 
     AlertCircle, Stethoscope, FileText, Info,
-    Calendar, UserCheck, Activity, Clock, Hash
+    Calendar, UserCheck, Activity, Clock, Hash, ExternalLink
 } from 'lucide-react';
 import axios from 'axios';
+import { Link } from '@inertiajs/react';
 
 interface MedicalQuickViewProps {
     isOpen: boolean;
@@ -175,13 +176,19 @@ export default function MedicalQuickView({ isOpen, onClose, medicalUuid }: Medic
                                 </div>
                             </div>
 
-                            <div className="flex justify-end pt-2">
+                            <div className="flex justify-between items-center pt-2">
                                 <button 
                                     onClick={onClose}
-                                    className="px-8 py-2.5 bg-neutral-200 hover:bg-neutral-300 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-xl text-xs font-bold uppercase transition-all shadow-sm active:scale-95"
+                                    className="px-6 py-2.5 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-400 rounded-xl text-xs font-bold uppercase transition-all shadow-sm active:scale-95"
                                 >
                                     Dismiss View
                                 </button>
+                                <a 
+                                    href={`/citizen-records/medical-history?search=${data.uuid}`}
+                                    className="flex items-center gap-2 px-6 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold uppercase transition-all shadow-md hover:shadow-lg group"
+                                >
+                                    View Full Details <ExternalLink className="size-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                                </a>
                             </div>
                         </div>
                     ) : null}
