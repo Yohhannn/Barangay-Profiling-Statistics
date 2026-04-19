@@ -1,7 +1,7 @@
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft, Calendar, Filter, GraduationCap,
     BookOpen, School, TrendingUp, BarChart3,
@@ -9,41 +9,57 @@ import {
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 
-// --- Mock Data ---
-const educationStatus = {
-    studying: 850,
-    notStudying: 2692,
-    total: 3542
-};
-
-const educationAttainment = [
-    { label: 'No Formal Education', count: 120, color: 'bg-slate-500' },
-    { label: 'Kindergarten', count: 95, color: 'bg-pink-500' },
-    { label: 'Elementary Undergraduate', count: 450, color: 'bg-blue-400' },
-    { label: 'Elementary Graduate', count: 320, color: 'bg-blue-600' },
-    { label: 'Junior High Undergraduate', count: 500, color: 'bg-indigo-400' },
-    { label: 'Junior High Graduate', count: 480, color: 'bg-indigo-600' },
-    { label: 'Senior High Undergraduate', count: 300, color: 'bg-purple-400' },
-    { label: 'Senior High Graduate', count: 350, color: 'bg-purple-600' },
-    { label: 'Vocational / Technical', count: 210, color: 'bg-orange-500' },
-    { label: 'College Undergraduate', count: 400, color: 'bg-teal-400' },
-    { label: 'College Graduate', count: 280, color: 'bg-teal-600' },
-    { label: 'Postgraduate', count: 37, color: 'bg-emerald-600' },
-];
-
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Statistics', href: '/statistics' },
     { title: 'Education', href: '/statistics/education' },
 ];
 
-export default function EducationStats() {
+export default function EducationStats({ originalData, filteredData, filters }: any) {
     // State
-    const [startDate, setStartDate] = useState('2025-01-01');
-    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
-    const [dateFilterType, setDateFilterType] = useState<'created' | 'updated'>('created');
+    const [startDate, setStartDate] = useState(filters?.startDate || '2025-01-01');
+    const [endDate, setEndDate] = useState(filters?.endDate || new Date().toISOString().split('T')[0]);
+    const [dateFilterType, setDateFilterType] = useState<'created' | 'updated'>(filters?.dateFilterType || 'created');
 
-    // Calculate percentages for visual bars
-    const maxCount = Math.max(...educationAttainment.map(i => i.count));
+    const currentData = filteredData || originalData;
+    const educationStatus = currentData?.educationStatus || { studying: 0, notStudying: 0, total: 0 };
+    const originalStatus = originalData?.educationStatus || { studying: 0, notStudying: 0, total: 0 };
+    const educationAttainment = currentData?.educationAttainment || [];
+    const originalAttainment = originalData?.educationAttainment || [];
+
+    const handleFilter = () => {
+        router.get('/statistics/education', {
+            startDate,
+            endDate,
+            dateFilterType
+        }, {
+            preserveState: true,
+            preserveScroll: true
+        });
+    };
+
+    // Helper to render strike-out for values
+    const ValDisp = ({ original, filtered, mono = false, colorClass = "" }: { original: number, filtered: number | undefined, mono?: boolean, colorClass?: string }) => {
+        if (filtered !== undefined) {
+            return (
+                <div className="flex items-center gap-1.5 justify-center sm:justify-start flex-wrap">
+                    <span className="text-neutral-400 line-through text-[10px] sm:text-xs font-normal">
+                        {original.toLocaleString()}
+                    </span>
+                    <span className={`${mono ? 'font-mono' : ''} ${colorClass} text-sm sm:text-base font-bold`}>
+                        {filtered.toLocaleString()}
+                    </span>
+                </div>
+            );
+        }
+        return <span className={`${mono ? 'font-mono' : ''} ${colorClass} font-bold`}>{original.toLocaleString()}</span>;
+    };
+
+    const getOriginalAttainmentItem = (label: string) => {
+        return originalAttainment.find((a: any) => a.label === label);
+    };
+
+    // Calculate max count for bars based on original data so scaling remains consistent
+    const maxCount = Math.max(...originalAttainment.map((i: any) => i.count), 10);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -109,7 +125,9 @@ export default function EducationStats() {
                                 />
                             </div>
                         </div>
-                        <button className="flex items-center gap-2 px-4 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold uppercase rounded transition-all active:scale-95">
+                        <button 
+                            onClick={handleFilter}
+                            className="flex items-center gap-2 px-4 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold uppercase rounded transition-all active:scale-95">
                             <Filter className="size-3.5" /> Filter
                         </button>
                     </div>
@@ -123,11 +141,11 @@ export default function EducationStats() {
                         <div className="relative z-10">
                             <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Currently Studying</span>
                             <div className="flex items-baseline gap-2 mt-1">
-                                <div className="text-4xl font-black text-indigo-600 dark:text-indigo-400">
-                                    {educationStatus.studying.toLocaleString()}
+                                <div className="text-4xl font-black text-indigo-600 dark:text-indigo-400 flex items-center gap-3">
+                                    <ValDisp original={originalStatus.studying} filtered={filteredData ? educationStatus.studying : undefined} />
                                 </div>
                                 <span className="text-xs font-medium text-neutral-500">
-                                    ({Math.round((educationStatus.studying / educationStatus.total) * 100)}%)
+                                    ({originalStatus.total ? Math.round((educationStatus.studying / educationStatus.total) * 100) : 0}%)
                                 </span>
                             </div>
                             <div className="text-[10px] text-neutral-400 mt-1">Enrolled in Government Programs</div>
@@ -143,11 +161,11 @@ export default function EducationStats() {
                         <div className="relative z-10">
                             <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Not Currently Studying</span>
                             <div className="flex items-baseline gap-2 mt-1">
-                                <div className="text-4xl font-black text-neutral-900 dark:text-neutral-100">
-                                    {educationStatus.notStudying.toLocaleString()}
+                                <div className="text-4xl font-black text-neutral-900 dark:text-neutral-100 flex items-center gap-3">
+                                    <ValDisp original={originalStatus.notStudying} filtered={filteredData ? educationStatus.notStudying : undefined} />
                                 </div>
                                 <span className="text-xs font-medium text-neutral-500">
-                                    ({Math.round((educationStatus.notStudying / educationStatus.total) * 100)}%)
+                                    ({originalStatus.total ? Math.round((educationStatus.notStudying / educationStatus.total) * 100) : 0}%)
                                 </span>
                             </div>
                             <div className="text-[10px] text-neutral-400 mt-1">Out of School Youth / Adults</div>
@@ -175,19 +193,27 @@ export default function EducationStats() {
 
                         {/* Left Column: List View */}
                         <div className="space-y-1">
-                            {educationAttainment.map((item, idx) => (
-                                <div key={idx} className="group flex justify-between items-center p-3 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-900/20 transition-all">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-2 h-2 rounded-full ${item.color}`} />
-                                        <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                                            {item.label}
+                            {educationAttainment.map((item: any, idx: number) => {
+                                const origItem = getOriginalAttainmentItem(item.label) || { count: 0 };
+                                return (
+                                    <div key={idx} className="group flex justify-between items-center p-3 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-900/20 transition-all">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-2 h-2 rounded-full ${item.color}`} />
+                                            <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                                {item.label}
+                                            </span>
+                                        </div>
+                                        <span className="text-sm font-bold font-mono text-neutral-900 dark:text-neutral-100">
+                                            <ValDisp 
+                                                original={origItem.count} 
+                                                filtered={filteredData ? item.count : undefined} 
+                                                mono 
+                                                colorClass="text-neutral-900 dark:text-neutral-100" 
+                                            />
                                         </span>
                                     </div>
-                                    <span className="text-sm font-bold font-mono text-neutral-900 dark:text-neutral-100">
-                                        {item.count.toLocaleString()}
-                                    </span>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
 
                         {/* Right Column: Visual Distribution */}
@@ -196,19 +222,29 @@ export default function EducationStats() {
                                 <BarChart3 className="size-3.5" /> Data Distribution
                             </h4>
                             <div className="space-y-5">
-                                {educationAttainment.map((item, idx) => {
+                                {educationAttainment.map((item: any, idx: number) => {
                                     const percent = (item.count / maxCount) * 100;
+                                    const origItem = getOriginalAttainmentItem(item.label) || { count: 0 };
+                                    const origPercent = (origItem.count / maxCount) * 100;
                                     return (
                                         <div key={idx} className="flex flex-col gap-1.5">
                                             <div className="flex justify-between items-end text-[10px] font-bold text-neutral-500 uppercase">
                                                 <span>{item.label}</span>
-                                                <span className="text-neutral-400">{Math.round((item.count / educationStatus.total) * 100)}%</span>
+                                                <span className="text-neutral-400">
+                                                    {educationStatus.total ? Math.round((item.count / educationStatus.total) * 100) : 0}%
+                                                </span>
                                             </div>
-                                            <div className="w-full h-2 bg-white dark:bg-neutral-800 rounded-full overflow-hidden border border-sidebar-border/50">
+                                            <div className="w-full h-2 bg-white dark:bg-neutral-800 rounded-full overflow-hidden border border-sidebar-border/50 relative">
                                                 <div
-                                                    className={`h-full ${item.color} rounded-full transition-all duration-700 ease-out`}
-                                                    style={{ width: `${percent}%` }}
+                                                    className={`absolute top-0 left-0 h-full ${item.color} rounded-full transition-all duration-700 ease-out`}
+                                                    style={{ width: `${percent}%`, opacity: filteredData ? 1 : 1, zIndex: 10 }}
                                                 />
+                                                {filteredData && (
+                                                     <div
+                                                        className={`absolute top-0 left-0 h-full bg-neutral-300 dark:bg-neutral-600 rounded-full transition-all duration-700 ease-out`}
+                                                        style={{ width: `${origPercent}%`, zIndex: 5 }}
+                                                     />
+                                                )}
                                             </div>
                                         </div>
                                     );
@@ -223,3 +259,4 @@ export default function EducationStats() {
         </AppLayout>
     );
 }
+
