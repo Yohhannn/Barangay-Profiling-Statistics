@@ -60,37 +60,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('statistics');
 
     // Sub-modules
-    Route::get('statistics/demographic', function () {
-        return Inertia::render('main/Statistics/demographic-stats');
-    })->name('demographic-stats');
+    Route::get('statistics/demographic', [\App\Http\Controllers\Statistics\DemographicStatController::class, 'index'])->name('demographic-stats');
 
-    Route::get('statistics/neighborhood', function () {
-        return Inertia::render('main/Statistics/neighborhood-stats');
-    })->name('neighborhood-stats');
+    Route::get('statistics/neighborhood', [\App\Http\Controllers\Statistics\NeighborhoodController::class, 'index'])->name('neighborhood-stats');
 
-    Route::get('statistics/household', function () {
-        return Inertia::render('main/Statistics/household-stats');
-    })->name('household-stats');
+    Route::get('statistics/household', [\App\Http\Controllers\Statistics\HouseholdStatController::class, 'index'])->name('household-stats');
 
-    Route::get('statistics/education', function () {
-        return Inertia::render('main/Statistics/education-stats');
-    })->name('education-stats');
+    Route::get('statistics/education', [\App\Http\Controllers\Statistics\EducationStatController::class, 'index'])->name('education-stats');
 
-    Route::get('statistics/employment', function () {
-        return Inertia::render('main/Statistics/employment-stats');
-    })->name('employment-stats');
+    Route::get('statistics/employment', [\App\Http\Controllers\Statistics\EmploymentStatController::class, 'index'])->name('employment-stats');
 
-    Route::get('statistics/health', function () {
-        return Inertia::render('main/Statistics/health-stats');
-    })->name('health-stats');
+    Route::get('statistics/health', [\App\Http\Controllers\Statistics\HealthStatController::class, 'index'])->name('health-stats');
 
-    Route::get('statistics/business', function () {
-        return Inertia::render('main/Statistics/business-stats');
-    })->name('business-stats');
+    Route::get('statistics/business', [\App\Http\Controllers\Statistics\BusinessStatController::class, 'index'])->name('business-stats');
 
-    Route::get('statistics/infrastructure', function () {
-        return Inertia::render('main/Statistics/infrastructure-stats');
-    })->name('infrastructure-stats');
+    Route::get('statistics/infrastructure', [\App\Http\Controllers\Statistics\InfrastructureStatController::class, 'index'])->name('infrastructure-stats');
 
     // --- INSTITUTIONS ---
     Route::get('institutions', function () {

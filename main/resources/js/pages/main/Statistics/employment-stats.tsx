@@ -1,63 +1,71 @@
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft, Calendar, Filter, Search, Briefcase,
     Building2, Users, PieChart, TrendingUp, Download
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 
-// --- Mock Data ---
-const employmentData = [
-    { name: 'Cadulang 1', employed: 45, unemployed: 5, selfEmployed: 10, notInLabor: 20 },
-    { name: 'Cadulang 2', employed: 50, unemployed: 8, selfEmployed: 12, notInLabor: 15 },
-    { name: 'Cambiohan', employed: 30, unemployed: 4, selfEmployed: 5, notInLabor: 10 },
-    { name: 'Chocolate Hills', employed: 110, unemployed: 12, selfEmployed: 25, notInLabor: 30 },
-    { name: 'Hawaiian 1', employed: 25, unemployed: 3, selfEmployed: 8, notInLabor: 12 },
-    { name: 'Hawaiian 2', employed: 20, unemployed: 2, selfEmployed: 4, notInLabor: 8 },
-    { name: 'Ibabao', employed: 85, unemployed: 10, selfEmployed: 20, notInLabor: 25 },
-    { name: 'Ikaseg', employed: 40, unemployed: 5, selfEmployed: 10, notInLabor: 15 },
-    { name: 'Kaisid', employed: 60, unemployed: 7, selfEmployed: 15, notInLabor: 18 },
-    { name: 'Kalubihan', employed: 75, unemployed: 9, selfEmployed: 18, notInLabor: 22 },
-    { name: 'Kolo', employed: 35, unemployed: 4, selfEmployed: 8, notInLabor: 10 },
-    { name: 'Likoan', employed: 15, unemployed: 2, selfEmployed: 3, notInLabor: 5 },
-    { name: 'Marigondon Proper', employed: 200, unemployed: 25, selfEmployed: 45, notInLabor: 50 },
-    { name: 'Suba-Basbas', employed: 95, unemployed: 11, selfEmployed: 22, notInLabor: 28 },
-    { name: 'Sangi', employed: 120, unemployed: 15, selfEmployed: 30, notInLabor: 35 },
-];
-
-const governmentData = {
-    govWorkers: 150,
-    nonGovWorkers: 1850
-};
-
-const overallStatus = {
-    employed: 1200,
-    unemployed: 200,
-    selfEmployed: 450,
-    notInLabor: 600,
-    total: 2450 // sum of above
-};
-
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Statistics', href: '/statistics' },
     { title: 'Employment', href: '/statistics/employment' },
 ];
 
-export default function EmploymentStats() {
+export default function EmploymentStats({ originalData, filteredData, filters }: any) {
     // State
     const [searchQuery, setSearchQuery] = useState('');
-    const [startDate, setStartDate] = useState('2025-01-01');
-    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
-    const [dateFilterType, setDateFilterType] = useState<'created' | 'updated'>('created');
+    const [startDate, setStartDate] = useState(filters?.startDate || '2025-01-01');
+    const [endDate, setEndDate] = useState(filters?.endDate || new Date().toISOString().split('T')[0]);
+    const [dateFilterType, setDateFilterType] = useState<'created' | 'updated'>(filters?.dateFilterType || 'created');
+
+    const currentData = filteredData || originalData;
 
     // Computed Data
     const processedData = useMemo(() => {
-        return employmentData.filter(row =>
+        if (!currentData?.employmentData) return [];
+        return currentData.employmentData.filter((row: any) =>
             row.name.toLowerCase().includes(searchQuery.toLowerCase())
-        ).sort((a, b) => a.name.localeCompare(b.name));
-    }, [searchQuery]);
+        ).sort((a: any, b: any) => a.name.localeCompare(b.name));
+    }, [searchQuery, currentData]);
+
+    const overallStatus = currentData?.overallStatus || { employed: 0, unemployed: 0, selfEmployed: 0, notInLabor: 0, total: 0 };
+    const governmentData = currentData?.governmentData || { govWorkers: 0, nonGovWorkers: 0 };
+
+    const handleFilter = () => {
+        router.get('/statistics/employment', {
+            startDate,
+            endDate,
+            dateFilterType
+        }, {
+            preserveState: true,
+            preserveScroll: true
+        });
+    };
+
+    // Helper to render strike-out for values
+    const ValDisp = ({ original, filtered, mono = false, colorClass = "" }: { original: number, filtered: number | undefined, mono?: boolean, colorClass?: string }) => {
+        if (filtered !== undefined) {
+            return (
+                <div className="flex items-center gap-1.5 justify-center sm:justify-start flex-wrap">
+                    <span className="text-neutral-400 line-through text-[10px] sm:text-xs">
+                        {original.toLocaleString()}
+                    </span>
+                    <span className={`${mono ? 'font-mono' : ''} ${colorClass} text-sm sm:text-base font-bold`}>
+                        {filtered.toLocaleString()}
+                    </span>
+                </div>
+            );
+        }
+        return <span className={`${mono ? 'font-mono' : ''} ${colorClass} font-bold`}>{original.toLocaleString()}</span>;
+    };
+
+    // Helper for rows
+    const getOriginalRow = (sitioName: string) => {
+        if (!originalData?.employmentData) return null;
+        return originalData.employmentData.find((r: any) => r.name === sitioName) || null;
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -123,7 +131,9 @@ export default function EmploymentStats() {
                                 />
                             </div>
                         </div>
-                        <button className="flex items-center gap-2 px-4 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold uppercase rounded transition-all active:scale-95">
+                        <button 
+                            onClick={handleFilter}
+                            className="flex items-center gap-2 px-4 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold uppercase rounded transition-all active:scale-95">
                             <Filter className="size-3.5" /> Filter
                         </button>
                     </div>
@@ -164,15 +174,26 @@ export default function EmploymentStats() {
                                 </thead>
                                 <tbody className="divide-y divide-sidebar-border/50">
                                 {processedData.length > 0 ? (
-                                    processedData.map((row, idx) => (
-                                        <tr key={idx} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/20 transition-colors">
-                                            <td className="px-6 py-3 font-medium text-neutral-900 dark:text-neutral-100">{row.name}</td>
-                                            <td className="px-6 py-3 text-center font-mono text-neutral-600 dark:text-neutral-300">{row.employed}</td>
-                                            <td className="px-6 py-3 text-center font-mono text-neutral-600 dark:text-neutral-300">{row.unemployed}</td>
-                                            <td className="px-6 py-3 text-center font-mono text-neutral-600 dark:text-neutral-300">{row.selfEmployed}</td>
-                                            <td className="px-6 py-3 text-center font-mono text-neutral-400">{row.notInLabor}</td>
-                                        </tr>
-                                    ))
+                                    processedData.map((row: any, idx: number) => {
+                                        const origRow = getOriginalRow(row.name);
+                                        return (
+                                            <tr key={idx} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/20 transition-colors">
+                                                <td className="px-6 py-3 font-medium text-neutral-900 dark:text-neutral-100">{row.name}</td>
+                                                <td className="px-6 py-3 text-center">
+                                                    <ValDisp mono colorClass="text-neutral-600 dark:text-neutral-300" original={origRow?.employed || 0} filtered={filteredData ? row.employed : undefined} />
+                                                </td>
+                                                <td className="px-6 py-3 text-center">
+                                                    <ValDisp mono colorClass="text-neutral-600 dark:text-neutral-300" original={origRow?.unemployed || 0} filtered={filteredData ? row.unemployed : undefined} />
+                                                </td>
+                                                <td className="px-6 py-3 text-center">
+                                                    <ValDisp mono colorClass="text-neutral-600 dark:text-neutral-300" original={origRow?.selfEmployed || 0} filtered={filteredData ? row.selfEmployed : undefined} />
+                                                </td>
+                                                <td className="px-6 py-3 text-center text-xs">
+                                                    <ValDisp mono colorClass="text-neutral-400" original={origRow?.notInLabor || 0} filtered={filteredData ? row.notInLabor : undefined} />
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
                                 ) : (
                                     <tr>
                                         <td colSpan={5} className="px-6 py-12 text-center text-neutral-400 text-xs">
@@ -198,12 +219,26 @@ export default function EmploymentStats() {
                             </div>
 
                             <div className="space-y-4">
-                                <StatItem label="Government Workers" value={governmentData.govWorkers} color="bg-blue-500" />
-                                <StatItem label="Non-Government Workers" value={governmentData.nonGovWorkers} color="bg-neutral-400" />
+                                <StatItem 
+                                    label="Government Workers" 
+                                    value={governmentData.govWorkers} 
+                                    original={originalData?.governmentData?.govWorkers || 0} 
+                                    filtered={filteredData ? governmentData.govWorkers : undefined} 
+                                    color="bg-blue-500" 
+                                />
+                                <StatItem 
+                                    label="Non-Government Workers" 
+                                    value={governmentData.nonGovWorkers} 
+                                    original={originalData?.governmentData?.nonGovWorkers || 0}
+                                    filtered={filteredData ? governmentData.nonGovWorkers : undefined}
+                                    color="bg-neutral-400" 
+                                />
 
                                 <div className="p-3 bg-neutral-50 dark:bg-neutral-900/20 rounded-xl flex justify-between items-center text-xs text-neutral-500">
                                     <span>Total Workforce:</span>
-                                    <span className="font-bold text-neutral-900 dark:text-neutral-100">{governmentData.govWorkers + governmentData.nonGovWorkers}</span>
+                                    <span className="font-bold text-neutral-900 dark:text-neutral-100">
+                                        <ValDisp original={(originalData?.governmentData?.govWorkers || 0) + (originalData?.governmentData?.nonGovWorkers || 0)} filtered={filteredData ? governmentData.govWorkers + governmentData.nonGovWorkers : undefined} />
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -218,10 +253,10 @@ export default function EmploymentStats() {
                             </div>
 
                             <div className="space-y-3">
-                                <StatItem label="Employed" value={overallStatus.employed} color="bg-teal-500" total={overallStatus.total} />
-                                <StatItem label="Unemployed" value={overallStatus.unemployed} color="bg-rose-500" total={overallStatus.total} />
-                                <StatItem label="Self-Employed" value={overallStatus.selfEmployed} color="bg-blue-500" total={overallStatus.total} />
-                                <StatItem label="Not in Labor Force" value={overallStatus.notInLabor} color="bg-neutral-300" total={overallStatus.total} />
+                                <StatItem label="Employed" value={overallStatus.employed} original={originalData?.overallStatus?.employed || 0} filtered={filteredData ? overallStatus.employed : undefined} color="bg-teal-500" total={originalData?.overallStatus?.total} currentTotal={overallStatus.total} />
+                                <StatItem label="Unemployed" value={overallStatus.unemployed} original={originalData?.overallStatus?.unemployed || 0} filtered={filteredData ? overallStatus.unemployed : undefined} color="bg-rose-500" total={originalData?.overallStatus?.total} currentTotal={overallStatus.total} />
+                                <StatItem label="Self-Employed" value={overallStatus.selfEmployed} original={originalData?.overallStatus?.selfEmployed || 0} filtered={filteredData ? overallStatus.selfEmployed : undefined} color="bg-blue-500" total={originalData?.overallStatus?.total} currentTotal={overallStatus.total} />
+                                <StatItem label="Not in Labor Force" value={overallStatus.notInLabor} original={originalData?.overallStatus?.notInLabor || 0} filtered={filteredData ? overallStatus.notInLabor : undefined} color="bg-neutral-300" total={originalData?.overallStatus?.total} currentTotal={overallStatus.total} />
                             </div>
                         </div>
 
@@ -234,23 +269,32 @@ export default function EmploymentStats() {
 }
 
 // --- Reusable Component: Stat Bar ---
-function StatItem({ label, value, color, total }: { label: string, value: number, color: string, total?: number }) {
-    // If total is provided, calculate percentage, otherwise assume simplified scaling
-    const maxVal = total || 2000;
+function StatItem({ label, value, original, filtered, color, total, currentTotal }: { label: string, value: number, original: number, filtered: number | undefined, color: string, total?: number, currentTotal?: number }) {
+    // If total is provided, calculate percentage based on original for width scaling
+    const maxVal = total || Math.max(original, 100);
     const widthPercent = Math.min((value / maxVal) * 100, 100);
-    const percentage = total ? Math.round((value / total) * 100) : null;
+    const origWidthPercent = Math.min((original / maxVal) * 100, 100);
+    const percentage = currentTotal ? Math.round((value / currentTotal) * 100) : null;
 
     return (
         <div className="group">
             <div className="flex justify-between items-center mb-1">
                 <span className="text-xs font-medium text-neutral-500 group-hover:text-neutral-700 dark:group-hover:text-neutral-300 transition-colors">{label}</span>
-                <div className="flex gap-1.5 items-center">
+                <div className="flex gap-2 items-center">
+                    {filtered !== undefined && (
+                        <span className="text-neutral-400 line-through text-xs font-normal">
+                            {original.toLocaleString()}
+                        </span>
+                    )}
                     <span className="text-sm font-bold font-mono text-neutral-900 dark:text-neutral-100">{value.toLocaleString()}</span>
                     {percentage !== null && <span className="text-[10px] text-neutral-400 font-mono">({percentage}%)</span>}
                 </div>
             </div>
-            <div className="w-full h-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
-                <div className={`h-full ${color} rounded-full transition-all duration-500`} style={{ width: `${widthPercent}%` }} />
+            <div className="w-full h-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden relative">
+                <div className={`absolute top-0 left-0 h-full ${color} rounded-full transition-all duration-500`} style={{ width: `${widthPercent}%`, zIndex: 10 }} />
+                {filtered !== undefined && (
+                    <div className={`absolute top-0 left-0 h-full bg-neutral-300 dark:bg-neutral-600 rounded-full transition-all duration-500`} style={{ width: `${origWidthPercent}%`, zIndex: 5 }} />
+                )}
             </div>
         </div>
     );

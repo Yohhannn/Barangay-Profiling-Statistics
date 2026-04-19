@@ -1,66 +1,74 @@
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft, Calendar, Filter, Search,
     Briefcase, Building, Store, BarChart3, Download
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 
-// --- Mock Data ---
-const businessData = [
-    { name: 'Cadulang 1', active: 1, inactive: 0, closed: 0, suspended: 0 },
-    { name: 'Cadulang 2', active: 1, inactive: 0, closed: 0, suspended: 0 },
-    { name: 'Cambiohan', active: 0, inactive: 0, closed: 0, suspended: 0 },
-    { name: 'Chocolate Hills', active: 0, inactive: 0, closed: 0, suspended: 0 },
-    { name: 'Hawaiian 1', active: 0, inactive: 0, closed: 0, suspended: 0 },
-    { name: 'Hawaiian 2', active: 0, inactive: 0, closed: 0, suspended: 0 },
-    { name: 'Ibabao', active: 0, inactive: 0, closed: 0, suspended: 0 },
-    { name: 'Ikaseg', active: 0, inactive: 0, closed: 0, suspended: 0 },
-    { name: 'Kaisid', active: 0, inactive: 0, closed: 0, suspended: 0 },
-    { name: 'Kalubihan', active: 0, inactive: 0, closed: 0, suspended: 0 },
-    { name: 'Kolo', active: 0, inactive: 0, closed: 0, suspended: 0 },
-    { name: 'Likoan', active: 0, inactive: 0, closed: 0, suspended: 0 },
-    { name: 'Limogmog', active: 0, inactive: 0, closed: 0, suspended: 0 },
-    { name: 'Mahayahay', active: 0, inactive: 0, closed: 0, suspended: 0 },
-    { name: 'Marbeach', active: 0, inactive: 0, closed: 0, suspended: 0 },
-    { name: 'Marigondon Proper', active: 0, inactive: 0, closed: 0, suspended: 0 },
-    { name: 'Masiwa', active: 0, inactive: 0, closed: 0, suspended: 0 },
-    { name: 'Matab-ang', active: 0, inactive: 0, closed: 0, suspended: 0 },
-    { name: 'Osflor', active: 0, inactive: 0, closed: 0, suspended: 0 },
-];
-
-const businessTypes = [
-    { label: 'Sole Proprietorship', count: 2, color: 'bg-blue-500' },
-    { label: 'Partnership', count: 0, color: 'bg-green-500' },
-    { label: 'Corporation', count: 0, color: 'bg-purple-500' },
-    { label: 'Cooperative', count: 0, color: 'bg-orange-500' },
-    { label: 'Franchise', count: 0, color: 'bg-rose-500' },
-    { label: 'Others', count: 0, color: 'bg-neutral-400' },
-];
-
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Statistics', href: '/statistics' },
     { title: 'Business', href: '/statistics/business' },
 ];
 
-export default function BusinessStats() {
+export default function BusinessStats({ originalData, filteredData, filters }: any) {
     // State
     const [searchQuery, setSearchQuery] = useState('');
-    const [startDate, setStartDate] = useState('2025-01-01');
-    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
-    const [dateFilterType, setDateFilterType] = useState<'created' | 'updated'>('created');
+    const [startDate, setStartDate] = useState(filters?.startDate || '2025-01-01');
+    const [endDate, setEndDate] = useState(filters?.endDate || new Date().toISOString().split('T')[0]);
+    const [dateFilterType, setDateFilterType] = useState<'created' | 'updated'>(filters?.dateFilterType || 'created');
+
+    // Use filteredData if it exists, otherwise use originalData for everything
+    const currentData = filteredData || originalData;
 
     // Computed Data
     const processedData = useMemo(() => {
-        return businessData.filter(row =>
+        if (!currentData?.businessData) return [];
+        return currentData.businessData.filter((row: any) =>
             row.name.toLowerCase().includes(searchQuery.toLowerCase())
-        ).sort((a, b) => a.name.localeCompare(b.name));
-    }, [searchQuery]);
+        ).sort((a: any, b: any) => a.name.localeCompare(b.name));
+    }, [searchQuery, currentData]);
 
-    // Summary Metrics
-    const totalActive = processedData.reduce((acc, curr) => acc + curr.active, 0);
+    const handleFilter = () => {
+        router.get('/statistics/business', {
+            startDate,
+            endDate,
+            dateFilterType
+        }, {
+            preserveState: true,
+            preserveScroll: true
+        });
+    };
+
+    // Helper to render strike-out for values
+    const ValDisp = ({ original, filtered, mono = false, colorClass = "" }: { original: number, filtered: number | undefined, mono?: boolean, colorClass?: string }) => {
+        if (filtered !== undefined) {
+            return (
+                <div className="flex items-center gap-1.5 justify-center sm:justify-start flex-wrap">
+                    <span className="text-neutral-400 line-through text-[10px] sm:text-xs">
+                        {original.toLocaleString()}
+                    </span>
+                    <span className={`${mono ? 'font-mono' : ''} ${colorClass} text-sm sm:text-base font-bold`}>
+                        {filtered.toLocaleString()}
+                    </span>
+                </div>
+            );
+        }
+        return <span className={`${mono ? 'font-mono' : ''} ${colorClass} font-bold`}>{original.toLocaleString()}</span>;
+    };
+
+    // Helper to get original value for rows
+    const getOriginalRow = (sitioName: string) => {
+        if (!originalData?.businessData) return null;
+        return originalData.businessData.find((r: any) => r.name === sitioName) || null;
+    };
+
+    const getOriginalType = (label: string) => {
+        if (!originalData?.businessTypes) return null;
+        return originalData.businessTypes.find((r: any) => r.label === label) || null;
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -126,7 +134,9 @@ export default function BusinessStats() {
                                 />
                             </div>
                         </div>
-                        <button className="flex items-center gap-2 px-4 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold uppercase rounded transition-all active:scale-95">
+                        <button 
+                            onClick={handleFilter}
+                            className="flex items-center gap-2 px-4 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold uppercase rounded transition-all active:scale-95">
                             <Filter className="size-3.5" /> Filter
                         </button>
                     </div>
@@ -167,15 +177,26 @@ export default function BusinessStats() {
                                 </thead>
                                 <tbody className="divide-y divide-sidebar-border/50">
                                 {processedData.length > 0 ? (
-                                    processedData.map((row, idx) => (
-                                        <tr key={idx} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/20 transition-colors">
-                                            <td className="px-6 py-3 font-medium text-neutral-900 dark:text-neutral-100">{row.name}</td>
-                                            <td className="px-6 py-3 text-center font-mono font-bold text-green-600 dark:text-green-400">{row.active}</td>
-                                            <td className="px-6 py-3 text-center font-mono text-neutral-500">{row.inactive}</td>
-                                            <td className="px-6 py-3 text-center font-mono text-neutral-500">{row.closed}</td>
-                                            <td className="px-6 py-3 text-center font-mono text-neutral-500">{row.suspended}</td>
-                                        </tr>
-                                    ))
+                                    processedData.map((row: any, idx: number) => {
+                                        const origRow = getOriginalRow(row.name);
+                                        return (
+                                            <tr key={idx} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/20 transition-colors">
+                                                <td className="px-6 py-3 font-medium text-neutral-900 dark:text-neutral-100">{row.name}</td>
+                                                <td className="px-6 py-3 text-center">
+                                                    <ValDisp original={origRow?.active || 0} filtered={filteredData ? row.active : undefined} mono colorClass="text-green-600 dark:text-green-400" />
+                                                </td>
+                                                <td className="px-6 py-3 text-center">
+                                                    <ValDisp original={origRow?.inactive || 0} filtered={filteredData ? row.inactive : undefined} mono colorClass="text-neutral-500" />
+                                                </td>
+                                                <td className="px-6 py-3 text-center">
+                                                    <ValDisp original={origRow?.closed || 0} filtered={filteredData ? row.closed : undefined} mono colorClass="text-neutral-500" />    
+                                                </td>
+                                                <td className="px-6 py-3 text-center">
+                                                    <ValDisp original={origRow?.suspended || 0} filtered={filteredData ? row.suspended : undefined} mono colorClass="text-neutral-500" />    
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
                                 ) : (
                                     <tr>
                                         <td colSpan={5} className="px-6 py-12 text-center text-neutral-400 text-xs">
@@ -203,7 +224,9 @@ export default function BusinessStats() {
 
                             <div className="space-y-4 relative z-10">
                                 <div className="text-center py-4">
-                                    <span className="text-4xl font-black text-neutral-900 dark:text-neutral-100">{totalActive.toLocaleString()}</span>
+                                    <span className="text-4xl font-black text-neutral-900 dark:text-neutral-100 flex justify-center">
+                                        <ValDisp original={originalData?.totalActive || 0} filtered={filteredData ? currentData.totalActive : undefined} />
+                                    </span>
                                     <span className="block text-xs text-neutral-500 mt-1 font-medium">Currently Active Businesses</span>
                                 </div>
                             </div>
@@ -219,14 +242,24 @@ export default function BusinessStats() {
                             </div>
 
                             <div className="space-y-3">
-                                {businessTypes.map((type, idx) => (
-                                    <StatItem key={idx} label={type.label} value={type.count} color={type.color} />
-                                ))}
+                                {currentData?.businessTypes?.map((type: any, idx: number) => {
+                                    const origType = getOriginalType(type.label);
+                                    return (
+                                        <StatItem 
+                                            key={idx} 
+                                            label={type.label} 
+                                            value={type.count} 
+                                            color={type.color} 
+                                            original={origType?.count || 0}
+                                            filtered={filteredData ? type.count : undefined}
+                                        />
+                                    );
+                                })}
                             </div>
                         </div>
 
                         {/* 3. Export Card */}
-                        <div className="bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-2xl p-6 text-center">
+                        <div className="bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-2xl p-6 text-center mt-auto">
                             <Building className="size-8 mx-auto text-neutral-400 mb-2" />
                             <h3 className="text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-1">Export Data</h3>
                             <p className="text-xs text-neutral-500 mb-4">Download comprehensive report for analysis.</p>
@@ -244,16 +277,23 @@ export default function BusinessStats() {
 }
 
 // --- Reusable Component: Stat Bar ---
-function StatItem({ label, value, color }: { label: string, value: number, color: string }) {
+function StatItem({ label, value, color, original, filtered }: { label: string, value: number, color: string, original: number, filtered: number | undefined }) {
     // Max assumed 100 for bar width scaling (visual purposes)
-    const maxVal = 10;
+    const maxVal = Math.max(original, 10);
     const widthPercent = Math.min((value / maxVal) * 100, 100);
 
     return (
         <div className="group">
             <div className="flex justify-between items-center mb-1">
                 <span className="text-xs font-medium text-neutral-500 group-hover:text-neutral-700 dark:group-hover:text-neutral-300 transition-colors">{label}</span>
-                <span className="text-sm font-bold font-mono text-neutral-900 dark:text-neutral-100">{value}</span>
+                <span className="text-sm font-bold font-mono text-neutral-900 dark:text-neutral-100 flex gap-2">
+                    {filtered !== undefined && (
+                        <span className="text-neutral-400 line-through text-xs font-normal">
+                            {original.toLocaleString()}
+                        </span>
+                    )}
+                    <span>{value.toLocaleString()}</span>
+                </span>
             </div>
             <div className="w-full h-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
                 <div className={`h-full ${color} rounded-full transition-all duration-500`} style={{ width: `${widthPercent}%` }} />

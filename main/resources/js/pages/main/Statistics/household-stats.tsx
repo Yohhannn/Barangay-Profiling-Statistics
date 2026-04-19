@@ -1,74 +1,78 @@
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
-    ArrowLeft, Calendar, Filter, Search, Home,
-    TrendingUp, TrendingDown, Key, Droplets,
-    PieChart, ChevronDown, Download
+    ArrowLeft, Calendar, Filter, Search,
+    Home, Users, Droplets, Droplet, Download
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
-
-// --- Mock Data ---
-const householdData = [
-    { name: 'Cadulang 1', total: 45, avgMale: 2.1, avgFemale: 2.0, avgMembers: 4.1 },
-    { name: 'Cadulang 2', total: 52, avgMale: 2.3, avgFemale: 2.1, avgMembers: 4.4 },
-    { name: 'Cambiohan', total: 30, avgMale: 1.8, avgFemale: 1.9, avgMembers: 3.7 },
-    { name: 'Chocolate Hills', total: 110, avgMale: 2.5, avgFemale: 2.4, avgMembers: 4.9 },
-    { name: 'Hawaiian 1', total: 25, avgMale: 1.5, avgFemale: 1.6, avgMembers: 3.1 },
-    { name: 'Hawaiian 2', total: 20, avgMale: 1.4, avgFemale: 1.5, avgMembers: 2.9 },
-    { name: 'Ibabao', total: 85, avgMale: 2.2, avgFemale: 2.2, avgMembers: 4.4 },
-    { name: 'Ikaseg', total: 40, avgMale: 2.0, avgFemale: 2.0, avgMembers: 4.0 },
-    { name: 'Kaisid', total: 60, avgMale: 2.1, avgFemale: 2.1, avgMembers: 4.2 },
-    { name: 'Kalubihan', total: 75, avgMale: 2.3, avgFemale: 2.2, avgMembers: 4.5 },
-    { name: 'Kolo', total: 35, avgMale: 1.9, avgFemale: 1.8, avgMembers: 3.7 },
-    { name: 'Likoan', total: 15, avgMale: 1.2, avgFemale: 1.3, avgMembers: 2.5 },
-    { name: 'Marigondon Proper', total: 200, avgMale: 2.6, avgFemale: 2.5, avgMembers: 5.1 }, // Highest
-    { name: 'Suba-Basbas', total: 95, avgMale: 2.4, avgFemale: 2.3, avgMembers: 4.7 },
-    { name: 'Sangi', total: 120, avgMale: 2.5, avgFemale: 2.4, avgMembers: 4.9 },
-];
-
-const ownershipData = {
-    owned: 850,
-    rented: 240,
-    leased: 45,
-    informal: 112
-};
-
-const utilitiesData = {
-    level1: 150, // Point Source
-    level2: 320, // Communal Faucet
-    level3: 750, // Individual Connection
-    others: 27
-};
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Statistics', href: '/statistics' },
     { title: 'Household', href: '/statistics/household' },
 ];
 
-export default function HouseholdStats() {
+export default function HouseholdStats({ originalData, filteredData, filters }: any) {
     // State
     const [searchQuery, setSearchQuery] = useState('');
-    const [startDate, setStartDate] = useState('2025-01-01');
-    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
-    const [dateFilterType, setDateFilterType] = useState<'created' | 'updated'>('created');
+    const [startDate, setStartDate] = useState(filters?.startDate || '2025-01-01');
+    const [endDate, setEndDate] = useState(filters?.endDate || new Date().toISOString().split('T')[0]);
+    const [dateFilterType, setDateFilterType] = useState<'created' | 'updated'>(filters?.dateFilterType || 'created');
+
+    const handleFilter = () => {
+        router.get('/statistics/household', {
+            startDate,
+            endDate,
+            dateFilterType
+        }, {
+            preserveState: true,
+            preserveScroll: true
+        });
+    };
+
+    const currentData = filteredData || originalData;
+    const ownershipData = currentData?.ownershipData || [];
+    const utilitiesData = currentData?.utilitiesData || [];
+    const totalHouseholds = currentData?.totalHouseholds || 0;
+
+    // Original references
+    const origOwnership = originalData?.ownershipData || [];
+    const origUtilities = originalData?.utilitiesData || [];
+    const origTotalHouseholds = originalData?.totalHouseholds || 0;
 
     // Computed Data
     const processedData = useMemo(() => {
-        return householdData.filter(hh =>
-            hh.name.toLowerCase().includes(searchQuery.toLowerCase())
-        ).sort((a, b) => a.name.localeCompare(b.name));
-    }, [searchQuery]);
+        if (!currentData?.householdData) return [];
+        return currentData.householdData.filter((row: any) =>
+            row.name.toLowerCase().includes(searchQuery.toLowerCase())
+        ).sort((a: any, b: any) => a.name.localeCompare(b.name));
+    }, [searchQuery, currentData]);
 
-    // Metrics Overview
-    const metrics = useMemo(() => {
-        const highest = householdData.reduce((prev, current) => (prev.total > current.total) ? prev : current);
-        const lowest = householdData.reduce((prev, current) => (prev.total < current.total) ? prev : current);
-        const totalHouseholds = householdData.reduce((acc, curr) => acc + curr.total, 0);
+    const getOrigOwnership = (label: string) => origOwnership.find((o: any) => o.label === label)?.count || 0;
+    const getOrigUtility = (label: string) => origUtilities.find((u: any) => u.label === label)?.count || 0;
+    const getOrigRow = (sitioName: string) => {
+        if (!originalData?.householdData) return null;
+        return originalData.householdData.find((r: any) => r.name === sitioName) || null;
+    };
 
-        return { highest, lowest, totalHouseholds };
-    }, []);
+    // Helper to render strike-out for values
+    const ValDisp = ({ original, filtered, mono = false, minidec = false, colorClass = "" }: { original: number, filtered: number | undefined, mono?: boolean, minidec?: boolean, colorClass?: string }) => {
+        if (filtered !== undefined) {
+            return (
+                <div className="flex items-center gap-1.5 justify-center sm:justify-start flex-wrap">
+                    <span className="text-neutral-400 line-through text-[10px] sm:text-xs">
+                        {minidec ? Number(original).toFixed(1) : original.toLocaleString()}
+                    </span>
+                    <span className={`${mono ? 'font-mono' : ''} ${colorClass} text-sm sm:text-base font-bold`}>
+                        {minidec ? Number(filtered).toFixed(1) : filtered.toLocaleString()}
+                    </span>
+                </div>
+            );
+        }
+        const valStr = minidec ? Number(original).toFixed(1) : original.toLocaleString();
+        return <span className={`${mono ? 'font-mono' : ''} ${colorClass} font-bold`}>{valStr}</span>;
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -84,9 +88,9 @@ export default function HouseholdStats() {
                         </Link>
                         <div>
                             <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-tight">
-                                Statistics: <span className="text-orange-600 dark:text-orange-400">Household</span>
+                                Statistics: <span className="text-indigo-600 dark:text-indigo-400">Household</span>
                             </h1>
-                            <p className="text-xs text-neutral-500">Analysis of household distribution and amenities</p>
+                            <p className="text-xs text-neutral-500">Housing details and family scale patterns</p>
                         </div>
                     </div>
 
@@ -134,28 +138,30 @@ export default function HouseholdStats() {
                                 />
                             </div>
                         </div>
-                        <button className="flex items-center gap-2 px-4 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold uppercase rounded transition-all active:scale-95">
+                        <button 
+                            onClick={handleFilter}
+                            className="flex items-center gap-2 px-4 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold uppercase rounded transition-all active:scale-95">
                             <Filter className="size-3.5" /> Filter
                         </button>
                     </div>
                 </div>
 
                 {/* --- Main Grid Layout --- */}
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start opacity-0 animate-fade-in-up">
 
                     {/* === LEFT COLUMN: Detailed Table (Spans 2) === */}
                     <div className="xl:col-span-2 bg-white dark:bg-sidebar border border-sidebar-border rounded-2xl shadow-sm overflow-hidden flex flex-col h-full min-h-[500px]">
 
                         <div className="p-4 border-b border-sidebar-border bg-neutral-50/50 dark:bg-neutral-900/20 flex flex-col sm:flex-row justify-between items-center gap-4">
                             <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300 flex items-center gap-2">
-                                <Home className="size-4" /> Household Per Street
+                                <Users className="size-4" /> Scale Averages Per Sitio
                             </h3>
                             <div className="relative w-full sm:w-64">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-neutral-400" />
                                 <input
                                     type="text"
                                     placeholder="Search Sitio..."
-                                    className="w-full pl-9 pr-4 py-1.5 text-xs border border-sidebar-border rounded-lg bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all"
+                                    className="w-full pl-9 pr-4 py-1.5 text-xs border border-sidebar-border rounded-lg bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
@@ -167,26 +173,33 @@ export default function HouseholdStats() {
                                 <thead className="text-[10px] uppercase text-neutral-500 bg-neutral-50 dark:bg-neutral-800/50 sticky top-0 z-10 backdrop-blur-sm border-b border-sidebar-border">
                                 <tr>
                                     <th className="px-6 py-3 font-bold tracking-wider">Sitio Name</th>
-                                    <th className="px-6 py-3 text-center text-orange-600 dark:text-orange-400 font-bold">Total HH</th>
-                                    <th className="px-6 py-3 text-center text-neutral-500">Avg Male/HH</th>
-                                    <th className="px-6 py-3 text-center text-neutral-500">Avg Female/HH</th>
-                                    <th className="px-6 py-3 text-center text-neutral-900 dark:text-neutral-100 font-bold bg-neutral-100/50 dark:bg-neutral-800/50">Avg Members</th>
+                                    <th className="px-6 py-3 text-center text-indigo-600 dark:text-indigo-400 font-bold">Avg Size</th>
+                                    <th className="px-6 py-3 text-center text-neutral-500">Avg Male</th>
+                                    <th className="px-6 py-3 text-center text-neutral-500">Avg Female</th>
                                 </tr>
                                 </thead>
                                 <tbody className="divide-y divide-sidebar-border/50">
                                 {processedData.length > 0 ? (
-                                    processedData.map((row, idx) => (
-                                        <tr key={idx} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/20 transition-colors">
-                                            <td className="px-6 py-3 font-medium text-neutral-900 dark:text-neutral-100">{row.name}</td>
-                                            <td className="px-6 py-3 text-center font-mono font-bold text-orange-600 dark:text-orange-400">{row.total}</td>
-                                            <td className="px-6 py-3 text-center font-mono text-neutral-600 dark:text-neutral-400">{row.avgMale}</td>
-                                            <td className="px-6 py-3 text-center font-mono text-neutral-600 dark:text-neutral-400">{row.avgFemale}</td>
-                                            <td className="px-6 py-3 text-center font-mono font-bold bg-neutral-50/50 dark:bg-neutral-800/20">{row.avgMembers}</td>
-                                        </tr>
-                                    ))
+                                    processedData.map((row: any, idx: number) => {
+                                        const origRow = getOrigRow(row.name);
+                                        return (
+                                            <tr key={idx} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/20 transition-colors">
+                                                <td className="px-6 py-3 font-medium text-neutral-900 dark:text-neutral-100">{row.name}</td>
+                                                <td className="px-6 py-3 text-center">
+                                                    <ValDisp minidec mono colorClass="text-indigo-600 dark:text-indigo-400" original={origRow?.avgScale || 0} filtered={filteredData ? row.avgScale : undefined} />
+                                                </td>
+                                                <td className="px-6 py-3 text-center">
+                                                    <ValDisp minidec mono colorClass="text-neutral-500" original={origRow?.avgMale || 0} filtered={filteredData ? row.avgMale : undefined} />
+                                                </td>
+                                                <td className="px-6 py-3 text-center">
+                                                    <ValDisp minidec mono colorClass="text-neutral-500" original={origRow?.avgFemale || 0} filtered={filteredData ? row.avgFemale : undefined} />
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
                                 ) : (
                                     <tr>
-                                        <td colSpan={5} className="px-6 py-12 text-center text-neutral-400 text-xs">
+                                        <td colSpan={4} className="px-6 py-12 text-center text-neutral-400 text-xs">
                                             No records found for "{searchQuery}"
                                         </td>
                                     </tr>
@@ -201,82 +214,72 @@ export default function HouseholdStats() {
 
                         {/* 1. Overview Card */}
                         <div className="bg-white dark:bg-sidebar border border-sidebar-border rounded-2xl p-6 shadow-sm relative overflow-hidden">
-                            <PlaceholderPattern className="absolute top-0 right-0 w-32 h-32 text-orange-500/5 -z-0" />
+                            <PlaceholderPattern className="absolute top-0 right-0 w-32 h-32 text-indigo-500/5 -z-0" />
                             <div className="flex items-center gap-2 mb-4 relative z-10">
-                                <div className="p-2 bg-orange-100 dark:bg-orange-900/20 rounded-lg text-orange-600">
-                                    <PieChart className="size-5" />
+                                <div className="p-2 bg-indigo-100 dark:bg-indigo-900/20 rounded-lg text-indigo-600">
+                                    <Home className="size-5" />
                                 </div>
-                                <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">Household Overview</h3>
+                                <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">Total Encoded</h3>
                             </div>
 
                             <div className="space-y-4 relative z-10">
-                                <div className="flex justify-between items-center pb-4 border-b border-dashed border-sidebar-border">
-                                    <span className="text-xs text-neutral-500 font-medium">Total Number of Households</span>
-                                    <span className="text-2xl font-black text-neutral-900 dark:text-neutral-100">{metrics.totalHouseholds.toLocaleString()}</span>
-                                </div>
-
-                                <div className="space-y-3">
-                                    <div className="bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/20 rounded-xl p-3 flex justify-between items-center">
-                                        <div className="flex items-center gap-2">
-                                            <TrendingUp className="size-4 text-green-600" />
-                                            <span className="text-xs font-bold text-green-700 dark:text-green-400">Highest</span>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="text-sm font-bold text-green-800 dark:text-green-200">{metrics.highest.name}</div>
-                                            <div className="text-[10px] text-green-600 dark:text-green-400 font-mono">{metrics.highest.total} HH</div>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 rounded-xl p-3 flex justify-between items-center">
-                                        <div className="flex items-center gap-2">
-                                            <TrendingDown className="size-4 text-red-600" />
-                                            <span className="text-xs font-bold text-red-700 dark:text-red-400">Lowest</span>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="text-sm font-bold text-red-800 dark:text-red-200">{metrics.lowest.name}</div>
-                                            <div className="text-[10px] text-red-600 dark:text-red-400 font-mono">{metrics.lowest.total} HH</div>
-                                        </div>
-                                    </div>
+                                <div className="text-center py-4">
+                                    <span className="text-4xl font-black text-neutral-900 dark:text-neutral-100 flex justify-center">
+                                        <ValDisp mono original={origTotalHouseholds} filtered={filteredData ? totalHouseholds : undefined} />
+                                    </span>
+                                    <span className="block text-xs text-neutral-500 mt-1 font-medium">Valid Households Nationwide</span>
                                 </div>
                             </div>
                         </div>
 
-                        {/* 2. Ownership Status */}
+                        {/* 2. Ownership Distribution */}
                         <div className="bg-white dark:bg-sidebar border border-sidebar-border rounded-2xl p-6 shadow-sm">
                             <div className="flex items-center gap-2 mb-4">
-                                <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg text-blue-600">
-                                    <Key className="size-5" />
-                                </div>
-                                <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">Ownership Status</h3>
+                                <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">House Ownership</h3>
                             </div>
 
                             <div className="space-y-3">
-                                <StatItem label="Owned" value={ownershipData.owned} color="bg-blue-500" />
-                                <StatItem label="Rented" value={ownershipData.rented} color="bg-cyan-500" />
-                                <StatItem label="Leased" value={ownershipData.leased} color="bg-purple-500" />
-                                <StatItem label="Informal Settlers" value={ownershipData.informal} color="bg-rose-500" />
+                                {ownershipData.map((stat: any, idx: number) => {
+                                    const origStat = getOrigOwnership(stat.label);
+                                    return (
+                                        <StatItem 
+                                            key={idx} 
+                                            label={stat.label} 
+                                            value={stat.count} 
+                                            original={origStat} 
+                                            filtered={filteredData ? stat.count : undefined}
+                                            color={stat.color} 
+                                        />
+                                    );
+                                })}
                             </div>
                         </div>
 
-                        {/* 3. Water Sources (Utilities) */}
+                        {/* 3. Water Source Distribution */}
                         <div className="bg-white dark:bg-sidebar border border-sidebar-border rounded-2xl p-6 shadow-sm">
-                            <div className="flex items-center gap-2 mb-4">
-                                <div className="p-2 bg-teal-100 dark:bg-teal-900/20 rounded-lg text-teal-600">
-                                    <Droplets className="size-5" />
-                                </div>
-                                <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">Water Source Data</h3>
+                            <div className="flex flex-col mb-4">
+                                <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300 flex items-center gap-2">
+                                    <Droplets className="size-4" /> Water Source
+                                </h3>
+                                <p className="text-[10px] text-neutral-400 mt-1">Classification across households</p>
                             </div>
 
                             <div className="space-y-3">
-                                <StatItem label="Point Source (Level 1)" value={utilitiesData.level1} color="bg-teal-500" />
-                                <StatItem label="Communal Faucet (Level 2)" value={utilitiesData.level2} color="bg-emerald-500" />
-                                <StatItem label="Individual Connection (Level 3)" value={utilitiesData.level3} color="bg-sky-500" />
-                                <StatItem label="Others" value={utilitiesData.others} color="bg-neutral-400" />
+                                {utilitiesData.map((s: any, idx: number) => {
+                                    const origVal = getOrigUtility(s.label);
+                                    return (
+                                        <div key={idx} className="flex justify-between items-center py-2 border-b border-dashed border-sidebar-border">
+                                            <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400">{s.label}</span>
+                                            <span className="text-sm font-bold font-mono text-neutral-900 dark:text-neutral-100">
+                                                <ValDisp mono original={origVal} filtered={filteredData ? s.count : undefined} />
+                                            </span>
+                                        </div>
+                                    )
+                                })}
                             </div>
                         </div>
 
                     </div>
-
                 </div>
             </div>
         </AppLayout>
@@ -284,19 +287,29 @@ export default function HouseholdStats() {
 }
 
 // --- Reusable Component: Stat Bar ---
-function StatItem({ label, value, color }: { label: string, value: number, color: string }) {
-    // Just a visual representation, max assumed 1000 for bar width scaling
-    const maxVal = 1000;
+function StatItem({ label, value, original, filtered, color }: { label: string, value: number, original: number, filtered: number | undefined, color: string }) {
+    const maxVal = Math.max(original, 10);
     const widthPercent = Math.min((value / maxVal) * 100, 100);
+    const origWidthPercent = Math.min((original / maxVal) * 100, 100);
 
     return (
         <div className="group">
             <div className="flex justify-between items-center mb-1">
                 <span className="text-xs font-medium text-neutral-500 group-hover:text-neutral-700 dark:group-hover:text-neutral-300 transition-colors">{label}</span>
-                <span className="text-sm font-bold font-mono text-neutral-900 dark:text-neutral-100">{value}</span>
+                <span className="text-sm font-bold font-mono text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
+                    {filtered !== undefined && (
+                        <span className="text-neutral-400 line-through text-xs font-normal">
+                            {original.toLocaleString()}
+                        </span>
+                    )}
+                    <span>{value.toLocaleString()}</span>
+                </span>
             </div>
-            <div className="w-full h-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
-                <div className={`h-full ${color} rounded-full transition-all duration-500`} style={{ width: `${widthPercent}%` }} />
+            <div className="w-full h-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden relative">
+                <div className={`absolute top-0 left-0 h-full ${color} rounded-full transition-all duration-500`} style={{ width: `${widthPercent}%`, zIndex: 10 }} />
+                {filtered !== undefined && (
+                    <div className={`absolute top-0 left-0 h-full bg-neutral-300 dark:bg-neutral-600 rounded-full transition-all duration-500`} style={{ width: `${origWidthPercent}%`, zIndex: 5 }} />
+                )}
             </div>
         </div>
     );

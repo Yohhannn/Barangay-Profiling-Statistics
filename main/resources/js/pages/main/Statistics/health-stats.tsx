@@ -1,65 +1,70 @@
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft, Calendar, Filter, HeartPulse,
     Stethoscope, Activity, FilePlus, Baby, Droplets
 } from 'lucide-react';
 import { useState } from 'react';
 
-// --- Mock Data ---
-const riskGroups = [
-    { label: 'Pregnant', count: 12, color: 'bg-pink-500' },
-    { label: 'Adolescent Pregnant', count: 3, color: 'bg-rose-500' },
-    { label: 'Postpartum', count: 8, color: 'bg-fuchsia-500' },
-    { label: 'Infants (0-11 mos)', count: 45, color: 'bg-blue-400' },
-    { label: 'Under 5 y/o', count: 120, color: 'bg-cyan-500' },
-    { label: 'PWDs', count: 35, color: 'bg-amber-500' },
-];
-
-const bloodTypes = [
-    { type: 'A+', count: 150 }, { type: 'A-', count: 12 },
-    { type: 'B+', count: 180 }, { type: 'B-', count: 8 },
-    { type: 'O+', count: 450 }, { type: 'O-', count: 45 },
-    { type: 'AB+', count: 60 }, { type: 'AB-', count: 5 },
-    { type: 'Unknown', count: 500 },
-];
-
-const medicalCases = [
-    { rank: 1, name: 'Hypertension', count: 450 },
-    { rank: 2, name: 'Diabetes', count: 320 },
-    { rank: 3, name: 'Asthma', count: 180 },
-    { rank: 4, name: 'Tuberculosis', count: 45 },
-    { rank: 5, name: 'Dengue', count: 22 },
-];
-
-const philhealthData = [
-    { label: 'Formal Economy Private', count: 850 },
-    { label: 'Formal Economy Government', count: 150 },
-    { label: 'Informal Economy', count: 420 },
-    { label: 'NHTS (Indigent)', count: 350 },
-    { label: 'Senior Citizen', count: 437 },
-    { label: 'Indigenous Person', count: 45 },
-    { label: 'Unknown / None', count: 1200 },
-];
-
-const recordSummary = {
-    male: 1500,
-    female: 1700,
-    total: 3200
-};
-
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Statistics', href: '/statistics' },
     { title: 'Health', href: '/statistics/health' },
 ];
 
-export default function HealthStats() {
+export default function HealthStats({ originalData, filteredData, filters }: any) {
     // State
-    const [startDate, setStartDate] = useState('2025-01-01');
-    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
-    const [dateFilterType, setDateFilterType] = useState<'created' | 'updated'>('created');
+    const [startDate, setStartDate] = useState(filters?.startDate || '2025-01-01');
+    const [endDate, setEndDate] = useState(filters?.endDate || new Date().toISOString().split('T')[0]);
+    const [dateFilterType, setDateFilterType] = useState<'created' | 'updated'>(filters?.dateFilterType || 'created');
+
+    const handleFilter = () => {
+        router.get('/statistics/health', {
+            startDate,
+            endDate,
+            dateFilterType
+        }, {
+            preserveState: true,
+            preserveScroll: true
+        });
+    };
+
+    const currentData = filteredData || originalData;
+    const riskGroups = currentData?.riskGroups || [];
+    const bloodTypes = currentData?.bloodTypes || [];
+    const medicalCases = currentData?.medicalCases || [];
+    const philhealthData = currentData?.philhealthData || [];
+    const recordSummary = currentData?.recordSummary || { male: 0, female: 0, total: 0 };
+    
+    // Original for strikethrough logic
+    const origRiskGroups = originalData?.riskGroups || [];
+    const origBloodTypes = originalData?.bloodTypes || [];
+    const origMedicalCases = originalData?.medicalCases || [];
+    const origPhilhealthData = originalData?.philhealthData || [];
+    const origRecordSummary = originalData?.recordSummary || { male: 0, female: 0, total: 0 };
+
+    // Find original values
+    const getOrigRisk = (label: string) => origRiskGroups.find((g: any) => g.label === label)?.count || 0;
+    const getOrigBlood = (type: string) => origBloodTypes.find((b: any) => b.type === type)?.count || 0;
+    const getOrigPhilhealth = (label: string) => origPhilhealthData.find((p: any) => p.label === label)?.count || 0;
+
+    // Helper to render strike-out for values
+    const ValDisp = ({ original, filtered, mono = false, colorClass = "" }: { original: number, filtered: number | undefined, mono?: boolean, colorClass?: string }) => {
+        if (filtered !== undefined) {
+            return (
+                <div className="flex items-center gap-1.5 justify-center sm:justify-start flex-wrap">
+                    <span className="text-neutral-400 line-through text-[10px] sm:text-xs">
+                        {original.toLocaleString()}
+                    </span>
+                    <span className={`${mono ? 'font-mono' : ''} ${colorClass} text-sm sm:text-base font-bold`}>
+                        {filtered.toLocaleString()}
+                    </span>
+                </div>
+            );
+        }
+        return <span className={`${mono ? 'font-mono' : ''} ${colorClass} font-bold`}>{original.toLocaleString()}</span>;
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -70,7 +75,7 @@ export default function HealthStats() {
                 {/* --- Header & Filter --- */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-sidebar-border/60">
                     <div className="flex items-center gap-4">
-                        <Link href="/statistics" className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+                        <Link href="/statistics" className="p-2 rounded-full hover:bg-neutral-100 dark:bg-neutral-800 transition-colors">
                             <ArrowLeft className="size-6 text-neutral-600 dark:text-neutral-300" />
                         </Link>
                         <div>
@@ -125,7 +130,9 @@ export default function HealthStats() {
                                 />
                             </div>
                         </div>
-                        <button className="flex items-center gap-2 px-4 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold uppercase rounded transition-all active:scale-95">
+                        <button 
+                            onClick={handleFilter}
+                            className="flex items-center gap-2 px-4 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold uppercase rounded transition-all active:scale-95">
                             <Filter className="size-3.5" /> Filter
                         </button>
                     </div>
@@ -144,17 +151,25 @@ export default function HealthStats() {
                         </div>
 
                         <div className="space-y-4">
-                            {riskGroups.map((group, idx) => (
-                                <div key={idx} className="flex flex-col gap-1.5">
-                                    <div className="flex justify-between items-end text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                                        <span>{group.label}</span>
-                                        <span className="font-bold font-mono text-neutral-900 dark:text-neutral-100">{group.count}</span>
+                            {riskGroups.map((group: any, idx: number) => {
+                                const origVal = getOrigRisk(group.label);
+                                return (
+                                    <div key={idx} className="flex flex-col gap-1.5">
+                                        <div className="flex justify-between items-end text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                                            <span>{group.label}</span>
+                                            <span className="font-bold font-mono text-neutral-900 dark:text-neutral-100">
+                                                <ValDisp original={origVal} filtered={filteredData ? group.count : undefined} />
+                                            </span>
+                                        </div>
+                                        <div className="w-full h-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden relative">
+                                            <div className={`absolute top-0 left-0 h-full ${group.color} rounded-full z-10`} style={{ width: `${Math.min((group.count / 200) * 100, 100)}%` }} />
+                                            {filteredData && (
+                                                <div className={`absolute top-0 left-0 h-full bg-neutral-300 dark:bg-neutral-600 rounded-full z-0`} style={{ width: `${Math.min((origVal / 200) * 100, 100)}%` }} />
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="w-full h-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
-                                        <div className={`h-full ${group.color} rounded-full`} style={{ width: `${Math.min((group.count / 200) * 100, 100)}%` }} />
-                                    </div>
-                                </div>
-                            ))}
+                                )
+                            })}
                         </div>
                     </div>
 
@@ -168,10 +183,12 @@ export default function HealthStats() {
                         </div>
 
                         <div className="grid grid-cols-3 gap-3">
-                            {bloodTypes.map((bt, idx) => (
+                            {bloodTypes.map((bt: any, idx: number) => (
                                 <div key={idx} className="flex flex-col items-center justify-center p-3 border border-sidebar-border rounded-xl bg-neutral-50/50 dark:bg-neutral-900/20">
                                     <span className="text-lg font-black text-rose-600 dark:text-rose-400">{bt.type}</span>
-                                    <span className="text-[10px] font-mono text-neutral-500">{bt.count}</span>
+                                    <span className="text-[10px] font-mono text-neutral-500">
+                                        <ValDisp original={getOrigBlood(bt.type)} filtered={filteredData ? bt.count : undefined} colorClass="text-neutral-500" />
+                                    </span>
                                 </div>
                             ))}
                         </div>
@@ -187,17 +204,24 @@ export default function HealthStats() {
                         </div>
 
                         <div className="space-y-3">
-                            {medicalCases.map((c, idx) => (
-                                <div key={idx} className="flex items-center justify-between p-3 rounded-lg border border-sidebar-border/60 hover:bg-neutral-50 dark:hover:bg-neutral-900/20 transition-colors">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold ${idx < 3 ? 'bg-rose-500 text-white' : 'bg-neutral-200 text-neutral-600'}`}>
-                                            {c.rank}
+                            {medicalCases.map((c: any, idx: number) => {
+                                // For ranks, original tracking is tricky if rank positions change, so we will display straight up or match by case name
+                                const origCase = origMedicalCases.find((o: any) => o.name === c.name);
+                                const origCount = origCase?.count || 0;
+                                return (
+                                    <div key={idx} className="flex items-center justify-between p-3 rounded-lg border border-sidebar-border/60 hover:bg-neutral-50 dark:hover:bg-neutral-900/20 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold ${idx < 3 ? 'bg-rose-500 text-white' : 'bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300'}`}>
+                                                {c.rank}
+                                            </div>
+                                            <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{c.name}</span>
                                         </div>
-                                        <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{c.name}</span>
+                                        <span className="text-sm font-bold font-mono text-neutral-900 dark:text-neutral-100">
+                                            <ValDisp original={origCount} filtered={filteredData ? c.count : undefined} mono />
+                                        </span>
                                     </div>
-                                    <span className="text-sm font-bold font-mono text-neutral-900 dark:text-neutral-100">{c.count}</span>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -211,10 +235,12 @@ export default function HealthStats() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                            {philhealthData.map((item, idx) => (
+                            {philhealthData.map((item: any, idx: number) => (
                                 <div key={idx} className="flex justify-between items-center py-2 border-b border-dashed border-sidebar-border">
                                     <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400">{item.label}</span>
-                                    <span className="text-sm font-bold font-mono text-neutral-900 dark:text-neutral-100">{item.count.toLocaleString()}</span>
+                                    <span className="text-sm font-bold font-mono text-neutral-900 dark:text-neutral-100">
+                                        <ValDisp original={getOrigPhilhealth(item.label)} filtered={filteredData ? item.count : undefined} mono />
+                                    </span>
                                 </div>
                             ))}
                         </div>
@@ -232,15 +258,21 @@ export default function HealthStats() {
                         <div className="space-y-4">
                             <div className="flex justify-between items-center p-4 bg-blue-50 dark:bg-blue-900/10 rounded-xl">
                                 <span className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase">Male w/ Record</span>
-                                <span className="text-xl font-black text-blue-800 dark:text-blue-200">{recordSummary.male.toLocaleString()}</span>
+                                <span className="text-xl font-black text-blue-800 dark:text-blue-200">
+                                    <ValDisp mono original={origRecordSummary.male} filtered={filteredData ? recordSummary.male : undefined} />
+                                </span>
                             </div>
                             <div className="flex justify-between items-center p-4 bg-pink-50 dark:bg-pink-900/10 rounded-xl">
                                 <span className="text-xs font-bold text-pink-700 dark:text-pink-400 uppercase">Female w/ Record</span>
-                                <span className="text-xl font-black text-pink-800 dark:text-pink-200">{recordSummary.female.toLocaleString()}</span>
+                                <span className="text-xl font-black text-pink-800 dark:text-pink-200">
+                                    <ValDisp mono original={origRecordSummary.female} filtered={filteredData ? recordSummary.female : undefined} />
+                                </span>
                             </div>
                             <div className="pt-4 border-t border-sidebar-border text-center">
                                 <span className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Total Citizens with Records</span>
-                                <span className="text-3xl font-black text-neutral-900 dark:text-neutral-100 mt-1">{recordSummary.total.toLocaleString()}</span>
+                                <span className="text-3xl font-black text-neutral-900 dark:text-neutral-100 mt-1 flex justify-center">
+                                    <ValDisp mono original={origRecordSummary.total} filtered={filteredData ? recordSummary.total : undefined} />
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -250,3 +282,4 @@ export default function HealthStats() {
         </AppLayout>
     );
 }
+
