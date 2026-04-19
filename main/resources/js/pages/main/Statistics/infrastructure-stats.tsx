@@ -55,6 +55,7 @@ export default function InfrastructureStats() {
     const [searchQuery, setSearchQuery] = useState('');
     const [startDate, setStartDate] = useState('2025-01-01');
     const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+    const [dateFilterType, setDateFilterType] = useState<'created' | 'updated'>('created');
 
     // Computed Data
     const processedData = useMemo(() => {
@@ -84,7 +85,31 @@ export default function InfrastructureStats() {
                     </div>
 
                     {/* Date Filter Bar */}
-                    <div className="flex items-center gap-2 bg-white dark:bg-sidebar border border-sidebar-border p-1.5 rounded-lg shadow-sm">
+                    <div className="flex flex-wrap items-center gap-2 bg-white dark:bg-sidebar border border-sidebar-border p-1.5 rounded-lg shadow-sm">
+                        <div className="flex items-center gap-3 px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 rounded">
+                            <label className="flex items-center gap-1.5 cursor-pointer">
+                                <input 
+                                    type="radio" 
+                                    name="dateFilterType" 
+                                    value="created" 
+                                    checked={dateFilterType === 'created'} 
+                                    onChange={() => setDateFilterType('created')} 
+                                    className="size-3 text-neutral-900 border-neutral-300 focus:ring-neutral-900 dark:border-neutral-600 dark:bg-neutral-700"
+                                />
+                                <span className="text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase">Created</span>
+                            </label>
+                            <label className="flex items-center gap-1.5 cursor-pointer">
+                                <input 
+                                    type="radio" 
+                                    name="dateFilterType" 
+                                    value="updated" 
+                                    checked={dateFilterType === 'updated'} 
+                                    onChange={() => setDateFilterType('updated')} 
+                                    className="size-3 text-neutral-900 border-neutral-300 focus:ring-neutral-900 dark:border-neutral-600 dark:bg-neutral-700"
+                                />
+                                <span className="text-xs font-bold text-neutral-600 dark:text-neutral-300 uppercase">Updated</span>
+                            </label>
+                        </div>
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 rounded">
                             <Calendar className="size-3.5 text-neutral-500" />
                             <div className="flex items-center gap-2">
