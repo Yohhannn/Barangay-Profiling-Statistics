@@ -3,7 +3,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import {
-    ArrowLeft, Calendar, Filter, Search,
+    ArrowLeft, Calendar, Filter, Search, X,
     Building, MapPin, Grid, Layers, Download
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
@@ -29,6 +29,13 @@ export default function InfrastructureStats({ originalData, filteredData, filter
             preserveState: true,
             preserveScroll: true
         });
+    };
+
+    const handleClearFilter = () => {
+        setStartDate('2025-01-01');
+        setEndDate(new Date().toISOString().split('T')[0]);
+        setDateFilterType('created');
+        router.get('/statistics/infrastructure', {}, { preserveState: false });
     };
 
     const currentData = filteredData || originalData;
@@ -143,6 +150,13 @@ export default function InfrastructureStats({ originalData, filteredData, filter
                             className="flex items-center gap-2 px-4 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold uppercase rounded transition-all active:scale-95">
                             <Filter className="size-3.5" /> Filter
                         </button>
+                        {filteredData && (
+                            <button
+                                onClick={handleClearFilter}
+                                className="flex items-center gap-2 px-4 py-1.5 bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold uppercase rounded transition-all active:scale-95">
+                                <X className="size-3.5" /> Clear
+                            </button>
+                        )}
                     </div>
                 </div>
 

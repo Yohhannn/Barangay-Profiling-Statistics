@@ -3,7 +3,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import {
-    ArrowLeft, Calendar, Filter, Users, Baby,
+    ArrowLeft, Calendar, Filter, Users, Baby, X,
     UserCheck, HeartHandshake, Cross, Flag, Activity,
     BookOpen
 } from 'lucide-react';
@@ -48,6 +48,13 @@ export default function DemographicStats({ originalData, filteredData, filters }
         router.get('/statistics/demographic', {
             startDate, endDate, dateFilterType
         }, { preserveState: true, preserveScroll: true });
+    };
+
+    const handleClearFilter = () => {
+        setStartDate('2025-01-01');
+        setEndDate(new Date().toISOString().split('T')[0]);
+        setDateFilterType('created');
+        router.get('/statistics/demographic', {}, { preserveState: false });
     };
 
     const hasFilter = !!filteredData;
@@ -136,6 +143,13 @@ export default function DemographicStats({ originalData, filteredData, filters }
                         >
                             <Filter className="size-3.5" /> Filter
                         </button>
+                        {hasFilter && (
+                            <button
+                                onClick={handleClearFilter}
+                                className="flex items-center gap-2 px-4 py-1.5 bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold uppercase rounded transition-all active:scale-95">
+                                <X className="size-3.5" /> Clear
+                            </button>
+                        )}
                     </div>
                 </div>
 
