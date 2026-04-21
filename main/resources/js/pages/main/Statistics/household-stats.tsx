@@ -147,7 +147,7 @@ export default function HouseholdStats({ originalData, filteredData, filters }: 
                 </div>
 
                 {/* --- Main Grid Layout --- */}
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start opacity-0 animate-fade-in-up">
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
 
                     {/* === LEFT COLUMN: Detailed Table (Spans 2) === */}
                     <div className="xl:col-span-2 bg-white dark:bg-sidebar border border-sidebar-border rounded-2xl shadow-sm overflow-hidden flex flex-col h-full min-h-[500px]">

@@ -37,6 +37,8 @@ class demographic extends Model
     // Alias
     public function socioEconomic() { return $this->socioEconomicStatus(); }
     public function healthRisk() { return $this->classificationHealthRisk(); }
+    public function healthRiskStatus() { return $this->classificationHealthRisk(); }
+    public function educationLevel() { return $this->educationStatus(); }
 
     public function familyPlanning()
     {
