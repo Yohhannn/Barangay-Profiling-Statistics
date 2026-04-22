@@ -14,7 +14,6 @@ interface Owner {
     fname: string;
     lname: string;
     mname: string;
-    suffix: string;
     fullName: string;
     ctzId: number | null;
     ctzUuid: string | null;
@@ -33,6 +32,7 @@ interface Business {
     sitioId: number;
     description: string;
     isDti: boolean;
+    dtiPhoto: string | null;
     dateRegistered: string;
     dateEncoded: string;
     encodedBy: string;
@@ -318,6 +318,24 @@ export default function BusinessProfile() {
                                             {selectedBusiness.description || <span className="text-neutral-400 italic">No description provided.</span>}
                                         </div>
                                     </div>
+
+                                    {/* DTI Certificate Photo */}
+                                    {selectedBusiness.isDti && (
+                                        <div className="space-y-2">
+                                            <h3 className="text-xs font-bold text-blue-600 uppercase tracking-widest flex items-center gap-2">
+                                                <BadgeCheck className="size-3.5" /> DTI Certificate
+                                            </h3>
+                                            {selectedBusiness.dtiPhoto ? (
+                                                <div className="rounded-xl overflow-hidden border border-blue-200 dark:border-blue-800">
+                                                    <img src={selectedBusiness.dtiPhoto} alt="DTI Certificate" className="w-full max-h-64 object-contain bg-neutral-50 dark:bg-neutral-900" />
+                                                </div>
+                                            ) : (
+                                                <div className="p-4 border border-dashed border-blue-200 rounded-xl text-center text-xs text-blue-400 italic">
+                                                    No DTI certificate photo uploaded.
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Footer Audit */}
