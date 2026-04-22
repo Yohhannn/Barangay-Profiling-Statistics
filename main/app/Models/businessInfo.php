@@ -15,6 +15,7 @@ class businessInfo extends Model
     public $incrementing = true;
 
     protected $fillable = [
+        'bs_uuid',
         'name',
         'type',
         'description',

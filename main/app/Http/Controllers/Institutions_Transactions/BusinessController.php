@@ -9,11 +9,27 @@ use App\Models\Sitio;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use Inertia\Inertia;
 
 class BusinessController extends Controller
 {
+    /**
+     * Generate a unique business UUID: BUS-<YY><3 random digits>
+     * e.g. BUS-26242 (year 2026, random 242)
+     */
+    private function generateUuid(): string
+    {
+        $year = substr(date('Y'), 2); // "26" for 2026
+        do {
+            $random = rand(100, 999);
+            $uuid = "BUS-{$year}{$random}";
+        } while (businessInfo::where('bs_uuid', $uuid)->exists());
+
+        return $uuid;
+    }
+
     /**
      * Display a listing of businesses.
      */
@@ -27,34 +43,30 @@ class BusinessController extends Controller
 
                 $getSystemName = function ($account) {
                     if (!$account) return 'System';
-                    $fullname = trim(($account->sys_fname ?? '') . ' ' . ($account->sys_lname ?? ''));
-                    return $fullname ?: 'System';
+                    return trim(($account->sys_fname ?? '') . ' ' . ($account->sys_lname ?? '')) ?: 'System';
                 };
 
                 $owners = $b->owners->map(function ($o) {
                     return [
-                        'id'      => $o->bo_id,
-                        'fname'   => $o->bo_fname,
-                        'lname'   => $o->bo_lname,
-                        'mname'   => $o->bo_mname ?? '',
-                        'suffix'  => $o->bo_suffix ?? '',
+                        'id'       => $o->bo_id,
+                        'fname'    => $o->bo_fname,
+                        'lname'    => $o->bo_lname,
+                        'mname'    => $o->bo_mname ?? '',
                         'fullName' => trim(
                             $o->bo_fname . ' ' .
                             ($o->bo_mname ? $o->bo_mname . ' ' : '') .
-                            $o->bo_lname .
-                            ($o->bo_suffix ? ', ' . $o->bo_suffix : '')
+                            $o->bo_lname
                         ),
-                        'ctzId'   => $o->ctz_id,
-                        'ctzUuid' => $o->citizen?->ctz_uuid ?? null,
+                        'ctzId'    => $o->ctz_id,
+                        'ctzUuid'  => $o->citizen?->ctz_uuid ?? null,
                     ];
                 })->values()->all();
 
                 return [
                     'id'             => $b->bs_id,
-                    'businessId'     => 'BUS-' . Carbon::parse($b->date_encoded)->format('Y') . '-' . str_pad($b->bs_id, 3, '0', STR_PAD_LEFT),
+                    'businessId'     => $b->bs_uuid ?? ('BUS-' . Carbon::parse($b->date_encoded)->format('Y') . '-' . str_pad($b->bs_id, 3, '0', STR_PAD_LEFT)),
                     'businessName'   => $b->name,
                     'owners'         => $owners,
-                    // Convenience: first owner name for list display
                     'primaryOwner'   => !empty($owners) ? $owners[0]['fullName'] : 'No Owner',
                     'businessType'   => $b->type,
                     'status'         => $b->status,
@@ -63,6 +75,7 @@ class BusinessController extends Controller
                     'sitioId'        => $b->sitio_id,
                     'description'    => $b->description ?? '',
                     'isDti'          => (bool) $b->is_dti,
+                    'dtiPhoto'       => $b->dti_photo ? Storage::url($b->dti_photo) : null,
                     'dateRegistered' => $b->date_encoded ? Carbon::parse($b->date_encoded)->format('F d, Y') : 'N/A',
                     'dateEncoded'    => $b->date_encoded ? Carbon::parse($b->date_encoded)->format('M d, Y') : 'N/A',
                     'encodedBy'      => $getSystemName($b->encodedByAccount),
@@ -90,13 +103,13 @@ class BusinessController extends Controller
             'sitio_id'    => 'required|exists:sitios,sitio_id',
             'description' => 'nullable|string',
             'is_dti'      => 'boolean',
+            'dti_photo'   => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
             // Owners array
-            'owners'               => 'required|array|min:1',
-            'owners.*.fname'       => 'required|string|max:60',
-            'owners.*.lname'       => 'required|string|max:60',
-            'owners.*.mname'       => 'nullable|string|max:60',
-            'owners.*.suffix'      => 'nullable|string',
-            'owners.*.ctz_id'      => 'nullable|exists:citizens,ctz_id',
+            'owners'            => 'required|array|min:1',
+            'owners.*.fname'    => 'required|string|max:60',
+            'owners.*.lname'    => 'required|string|max:60',
+            'owners.*.mname'    => 'nullable|string|max:60',
+            'owners.*.ctz_id'   => 'nullable|integer|exists:citizens,ctz_id',
         ]);
 
         try {
@@ -104,7 +117,14 @@ class BusinessController extends Controller
 
             $systemUserId = Auth::id() ?? 1;
 
+            // Handle DTI photo upload
+            $dtiPhotoPath = null;
+            if ($request->hasFile('dti_photo') && $request->file('dti_photo')->isValid()) {
+                $dtiPhotoPath = $request->file('dti_photo')->store('dti_photos', 'public');
+            }
+
             $business = businessInfo::create([
+                'bs_uuid'      => $this->generateUuid(),
                 'name'         => $validated['name'],
                 'type'         => $validated['type'],
                 'status'       => $validated['status'],
@@ -112,6 +132,7 @@ class BusinessController extends Controller
                 'sitio_id'     => $validated['sitio_id'],
                 'description'  => $validated['description'] ?? null,
                 'is_dti'       => $request->boolean('is_dti'),
+                'dti_photo'    => $dtiPhotoPath,
                 'date_encoded' => now(),
                 'date_updated' => now(),
                 'is_deleted'   => false,
@@ -121,12 +142,11 @@ class BusinessController extends Controller
 
             foreach ($validated['owners'] as $owner) {
                 BusinessOwner::create([
-                    'bs_id'     => $business->bs_id,
-                    'bo_fname'  => $owner['fname'],
-                    'bo_lname'  => $owner['lname'],
-                    'bo_mname'  => $owner['mname'] ?? null,
-                    'bo_suffix' => $owner['suffix'] ?? null,
-                    'ctz_id'    => $owner['ctz_id'] ?? null,
+                    'bs_id'    => $business->bs_id,
+                    'bo_fname' => $owner['fname'],
+                    'bo_lname' => $owner['lname'],
+                    'bo_mname' => $owner['mname'] ?? null,
+                    'ctz_id'   => $owner['ctz_id'] ?? null,
                 ]);
             }
 
@@ -152,18 +172,26 @@ class BusinessController extends Controller
             'sitio_id'    => 'required|exists:sitios,sitio_id',
             'description' => 'nullable|string',
             'is_dti'      => 'boolean',
-            'owners'               => 'required|array|min:1',
-            'owners.*.fname'       => 'required|string|max:60',
-            'owners.*.lname'       => 'required|string|max:60',
-            'owners.*.mname'       => 'nullable|string|max:60',
-            'owners.*.suffix'      => 'nullable|string',
-            'owners.*.ctz_id'      => 'nullable|exists:citizens,ctz_id',
+            'dti_photo'   => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'owners'            => 'required|array|min:1',
+            'owners.*.fname'    => 'required|string|max:60',
+            'owners.*.lname'    => 'required|string|max:60',
+            'owners.*.mname'    => 'nullable|string|max:60',
+            'owners.*.ctz_id'   => 'nullable|integer|exists:citizens,ctz_id',
         ]);
 
         try {
             DB::beginTransaction();
 
             $business = businessInfo::findOrFail($id);
+
+            // Handle DTI photo upload (replace old if new provided)
+            $dtiPhotoPath = $business->dti_photo;
+            if ($request->hasFile('dti_photo') && $request->file('dti_photo')->isValid()) {
+                if ($dtiPhotoPath) Storage::disk('public')->delete($dtiPhotoPath);
+                $dtiPhotoPath = $request->file('dti_photo')->store('dti_photos', 'public');
+            }
+
             $business->update([
                 'name'         => $validated['name'],
                 'type'         => $validated['type'],
@@ -172,21 +200,20 @@ class BusinessController extends Controller
                 'sitio_id'     => $validated['sitio_id'],
                 'description'  => $validated['description'] ?? null,
                 'is_dti'       => $request->boolean('is_dti'),
+                'dti_photo'    => $dtiPhotoPath,
                 'date_updated' => now(),
                 'updated_by'   => Auth::id() ?? 1,
             ]);
 
-            // Sync owners: delete all and re-insert
             BusinessOwner::where('bs_id', $id)->delete();
 
             foreach ($validated['owners'] as $owner) {
                 BusinessOwner::create([
-                    'bs_id'     => $business->bs_id,
-                    'bo_fname'  => $owner['fname'],
-                    'bo_lname'  => $owner['lname'],
-                    'bo_mname'  => $owner['mname'] ?? null,
-                    'bo_suffix' => $owner['suffix'] ?? null,
-                    'ctz_id'    => $owner['ctz_id'] ?? null,
+                    'bs_id'    => $business->bs_id,
+                    'bo_fname' => $owner['fname'],
+                    'bo_lname' => $owner['lname'],
+                    'bo_mname' => $owner['mname'] ?? null,
+                    'ctz_id'   => $owner['ctz_id'] ?? null,
                 ]);
             }
 
@@ -200,7 +227,7 @@ class BusinessController extends Controller
     }
 
     /**
-     * Soft-delete the specified business (owners cascade-deleted by FK).
+     * Soft-delete the specified business.
      */
     public function destroy(Request $request, $id)
     {

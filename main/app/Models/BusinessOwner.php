@@ -18,7 +18,6 @@ class BusinessOwner extends Model
         'bo_fname',
         'bo_lname',
         'bo_mname',
-        'bo_suffix',
         'bs_id',
         'ctz_id',
     ];
