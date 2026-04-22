@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Models\Sitio;
 use App\Http\Controllers\Citizens\CitizenController;
 use App\Http\Controllers\Citizens\HouseholdController;
+use App\Http\Controllers\Institutions_Transactions\BusinessController;
+use App\Http\Controllers\Institutions_Transactions\InfrastructureController;
 use Inertia\Inertia;
 
 // Root route
@@ -82,13 +84,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('institutions');
 
     // Sub-modules
-    Route::get('institutions/business-profile', function () {
-        return Inertia::render('main/Institutions/business-profile');
-    })->name('business-profile');
+    Route::get('institutions/business-profile', [BusinessController::class, 'index'])->name('business-profile');
+    Route::post('/institutions/business', [BusinessController::class, 'store']);
+    Route::put('/institutions/business/{id}', [BusinessController::class, 'update']);
+    Route::delete('/institutions/business/{id}', [BusinessController::class, 'destroy']);
 
-    Route::get('institutions/infrastructures-profile', function () {
-        return Inertia::render('main/Institutions/infrastructures-profile');
-    })->name('infrastructures-profile');
+    Route::get('institutions/infrastructures-profile', [InfrastructureController::class, 'index'])->name('infrastructures-profile');
+    Route::post('/institutions/infrastructure', [InfrastructureController::class, 'store']);
+    Route::put('/institutions/infrastructure/{id}', [InfrastructureController::class, 'update']);
+    Route::delete('/institutions/infrastructure/{id}', [InfrastructureController::class, 'destroy']);
 
     // --- TRANSACTIONS ---
     Route::get('transactions', function () {

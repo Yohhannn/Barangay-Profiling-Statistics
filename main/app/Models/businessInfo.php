@@ -22,33 +22,30 @@ class businessInfo extends Model
         'is_dti',
         'dti_photo',
         'address',
-        'owner_fname',
-        'owner_lname',
-        'owner_mname',
-        'owner_suffix',
         'date_encoded',
         'date_updated',
         'is_deleted',
         'delete_reason',
-        'ctz_id',
         'sitio_id',
         'encoded_by',
         'updated_by',
     ];
 
     protected $casts = [
-        'is_dti' => 'boolean',
+        'is_dti'       => 'boolean',
         'date_encoded' => 'date',
         'date_updated' => 'date',
-        'is_deleted' => 'boolean',
+        'is_deleted'   => 'boolean',
     ];
 
     public $timestamps = false;
 
     // Relationships
-    public function citizen()
+
+    /** One business can have many owners */
+    public function owners()
     {
-        return $this->belongsTo(Citizen::class, 'ctz_id', 'ctz_id');
+        return $this->hasMany(BusinessOwner::class, 'bs_id', 'bs_id');
     }
 
     public function sitio()
