@@ -56,8 +56,16 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function BusinessProfile() {
     const { businesses, sitios } = usePage<{ businesses: Business[]; sitios: Sitio[] }>().props;
 
-    const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(businesses[0] ?? null);
-    const [searchQuery, setSearchQuery] = useState('');
+    const initialSearch = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('search') || '' : '';
+
+    const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(() => {
+        if (initialSearch) {
+            const found = businesses.find(b => b.businessId === initialSearch || b.businessName.toLowerCase().includes(initialSearch.toLowerCase()));
+            if (found) return found;
+        }
+        return businesses[0] ?? null;
+    });
+    const [searchQuery, setSearchQuery] = useState(initialSearch);
     const [showFilters, setShowFilters] = useState(false);
     const [filterStatus, setFilterStatus] = useState('All');
     const [isCreateOpen, setIsCreateOpen] = useState(false);

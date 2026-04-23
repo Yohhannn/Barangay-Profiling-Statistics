@@ -228,7 +228,7 @@ export default function BusinessQuickView({ isOpen, onClose, businessUuid }: Bus
 
                             <div className="flex justify-between pt-2">
                                 <a
-                                    href={`/institutions/business-profile`}
+                                    href={`/institutions/business-profile?search=${data.uuid}`}
                                     className="px-6 py-2.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-900/50 rounded-xl text-xs font-bold uppercase transition-all"
                                 >
                                     View Full Details
