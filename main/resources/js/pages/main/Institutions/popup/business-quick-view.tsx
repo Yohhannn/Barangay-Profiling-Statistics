@@ -30,8 +30,8 @@ interface QuickViewData {
     }>;
     dateEncoded: string;
     encodedBy: string;
-    dateUpdated: string;
-    updatedBy: string;
+    dateUpdated: string | null;
+    updatedBy: string | null;
 }
 
 export default function BusinessQuickView({ isOpen, onClose, businessUuid }: BusinessQuickViewProps) {
@@ -214,16 +214,18 @@ export default function BusinessQuickView({ isOpen, onClose, businessUuid }: Bus
                                         <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-tight">{data.encodedBy}</span>
                                     </div>
                                 </div>
-                                <div className="space-y-3 border-l border-neutral-200 dark:border-neutral-800 pl-4">
-                                    <div className="flex justify-between">
-                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5"><Clock className="size-3" /> DATE UPDATED</span>
-                                        <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">{data.dateUpdated}</span>
+                                {data.dateUpdated && (
+                                    <div className="space-y-3 border-l border-neutral-200 dark:border-neutral-800 pl-4">
+                                        <div className="flex justify-between">
+                                            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5"><Clock className="size-3" /> DATE UPDATED</span>
+                                            <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">{data.dateUpdated}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5"><UserCheck className="size-3" /> UPDATED BY</span>
+                                            <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-tight">{data.updatedBy}</span>
+                                        </div>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5"><UserCheck className="size-3" /> UPDATED BY</span>
-                                        <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-tight">{data.updatedBy}</span>
-                                    </div>
-                                </div>
+                                )}
                             </div>
 
                             <div className="flex justify-end pt-2">
