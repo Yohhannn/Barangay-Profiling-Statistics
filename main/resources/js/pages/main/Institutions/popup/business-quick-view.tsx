@@ -214,21 +214,25 @@ export default function BusinessQuickView({ isOpen, onClose, businessUuid }: Bus
                                         <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-tight">{data.encodedBy}</span>
                                     </div>
                                 </div>
-                                {data.dateUpdated && (
-                                    <div className="space-y-3 border-l border-neutral-200 dark:border-neutral-800 pl-4">
-                                        <div className="flex justify-between">
-                                            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5"><Clock className="size-3" /> DATE UPDATED</span>
-                                            <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">{data.dateUpdated}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5"><UserCheck className="size-3" /> UPDATED BY</span>
-                                            <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-tight">{data.updatedBy}</span>
-                                        </div>
+                                <div className="space-y-3 border-l border-neutral-200 dark:border-neutral-800 pl-4">
+                                    <div className="flex justify-between">
+                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5"><Clock className="size-3" /> DATE UPDATED</span>
+                                        <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">{data.dateUpdated || 'N/A'}</span>
                                     </div>
-                                )}
+                                    <div className="flex justify-between">
+                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5"><UserCheck className="size-3" /> UPDATED BY</span>
+                                        <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-tight">{data.updatedBy || 'N/A'}</span>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div className="flex justify-end pt-2">
+                            <div className="flex justify-between pt-2">
+                                <a
+                                    href={`/institutions/business-profile`}
+                                    className="px-6 py-2.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-900/50 rounded-xl text-xs font-bold uppercase transition-all"
+                                >
+                                    View Full Details
+                                </a>
                                 <button
                                     onClick={onClose}
                                     className="px-6 py-2.5 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-400 rounded-xl text-xs font-bold uppercase transition-all"
