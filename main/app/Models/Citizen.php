@@ -98,8 +98,8 @@ class Citizen extends Model
         return $this->hasMany(Infrastructure::class, 'ctz_id', 'ctz_id');
     }
 
-    public function businessInfos()
+    public function businessOwnerships()
     {
-        return $this->hasMany(BusinessInfo::class, 'ctz_id', 'ctz_id');
+        return $this->hasMany(BusinessOwner::class, 'ctz_id', 'ctz_id');
     }
 }

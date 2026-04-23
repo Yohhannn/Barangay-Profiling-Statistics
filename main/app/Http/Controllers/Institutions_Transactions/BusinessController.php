@@ -185,11 +185,14 @@ class BusinessController extends Controller
 
             $business = businessInfo::findOrFail($id);
 
-            // Handle DTI photo upload (replace old if new provided)
+            // Handle DTI photo: replace, remove, or keep existing
             $dtiPhotoPath = $business->dti_photo;
             if ($request->hasFile('dti_photo') && $request->file('dti_photo')->isValid()) {
                 if ($dtiPhotoPath) Storage::disk('public')->delete($dtiPhotoPath);
                 $dtiPhotoPath = $request->file('dti_photo')->store('dti_photos', 'public');
+            } elseif ($request->input('remove_dti_photo') === '1') {
+                if ($dtiPhotoPath) Storage::disk('public')->delete($dtiPhotoPath);
+                $dtiPhotoPath = null;
             }
 
             $business->update([
@@ -248,5 +251,37 @@ class BusinessController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => 'Error archiving business: ' . $e->getMessage()]);
         }
+    }
+
+    public function getQuickViewData($uuid)
+    {
+        $business = businessInfo::with(['sitio', 'owners', 'encodedByAccount', 'updatedByAccount'])
+            ->where('bs_uuid', $uuid)
+            ->where('is_deleted', false)
+            ->firstOrFail();
+
+        return response()->json([
+            'id' => $business->bs_id,
+            'uuid' => $business->bs_uuid,
+            'businessName' => $business->name,
+            'businessType' => $business->type,
+            'status' => $business->status,
+            'address' => $business->address,
+            'sitio' => $business->sitio->sitio_name ?? 'Unknown',
+            'description' => $business->description,
+            'isDti' => (bool)$business->is_dti,
+            'dtiPhoto' => $business->dti_photo,
+            'owners' => $business->owners->map(function ($owner) {
+                return [
+                    'id' => $owner->bo_id,
+                    'fullName' => trim($owner->bo_fname . ' ' . ($owner->bo_mname ? $owner->bo_mname . ' ' : '') . $owner->bo_lname),
+                    'ctzUuid' => $owner->citizen ? $owner->citizen->ctz_uuid : null,
+                ];
+            })->values()->all(),
+            'dateEncoded' => \Carbon\Carbon::parse($business->date_encoded)->format('M d, Y | h:i A'),
+            'encodedBy' => $business->encodedByAccount ? trim($business->encodedByAccount->sys_fname . ' ' . $business->encodedByAccount->sys_lname) : 'System',
+            'dateUpdated' => $business->date_updated ? \Carbon\Carbon::parse($business->date_updated)->format('M d, Y | h:i A') : 'N/A',
+            'updatedBy' => $business->updatedByAccount ? trim($business->updatedByAccount->sys_fname . ' ' . $business->updatedByAccount->sys_lname) : 'N/A',
+        ]);
     }
 }
