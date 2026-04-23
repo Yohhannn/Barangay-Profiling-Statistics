@@ -77,10 +77,10 @@ class BusinessController extends Controller
                     'isDti'          => (bool) $b->is_dti,
                     'dtiPhoto'       => $b->dti_photo ? Storage::url($b->dti_photo) : null,
                     'dateRegistered' => $b->date_encoded ? Carbon::parse($b->date_encoded)->format('F d, Y') : 'N/A',
-                    'dateEncoded'    => $b->date_encoded ? Carbon::parse($b->date_encoded)->format('M d, Y') : 'N/A',
+                    'dateEncoded'    => $b->date_encoded ? \Carbon\Carbon::parse($b->date_encoded)->format('F d, Y | h:i A') : 'N/A',
                     'encodedBy'      => $getSystemName($b->encodedByAccount),
-                    'dateUpdated'    => $b->date_updated ? Carbon::parse($b->date_updated)->format('M d, Y') : 'N/A',
-                    'updatedBy'      => $b->date_updated ? $getSystemName($b->updatedByAccount) : 'N/A',
+                    'dateUpdated'    => ($b->date_updated && $b->date_encoded != $b->date_updated) ? \Carbon\Carbon::parse($b->date_updated)->format('F d, Y | h:i A') : null,
+                    'updatedBy'      => ($b->date_updated && $b->date_encoded != $b->date_updated) ? $getSystemName($b->updatedByAccount) : null,
                 ];
             });
 
@@ -278,10 +278,10 @@ class BusinessController extends Controller
                     'ctzUuid' => $owner->citizen ? $owner->citizen->ctz_uuid : null,
                 ];
             })->values()->all(),
-            'dateEncoded' => \Carbon\Carbon::parse($business->date_encoded)->format('M d, Y | h:i A'),
+            'dateEncoded' => \Carbon\Carbon::parse($business->date_encoded)->format('F d, Y | h:i A'),
             'encodedBy' => $business->encodedByAccount ? trim($business->encodedByAccount->sys_fname . ' ' . $business->encodedByAccount->sys_lname) : 'System',
-            'dateUpdated' => $business->date_updated ? \Carbon\Carbon::parse($business->date_updated)->format('M d, Y | h:i A') : 'N/A',
-            'updatedBy' => $business->updatedByAccount ? trim($business->updatedByAccount->sys_fname . ' ' . $business->updatedByAccount->sys_lname) : 'N/A',
+            'dateUpdated' => ($business->date_updated && $business->date_encoded != $business->date_updated) ? \Carbon\Carbon::parse($business->date_updated)->format('F d, Y | h:i A') : null,
+            'updatedBy' => ($business->date_updated && $business->date_encoded != $business->date_updated) ? ($business->updatedByAccount ? trim($business->updatedByAccount->sys_fname . ' ' . $business->updatedByAccount->sys_lname) : 'System') : null,
         ]);
     }
 }
