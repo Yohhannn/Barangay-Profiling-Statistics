@@ -257,6 +257,15 @@ class CitizenController extends Controller
                         'settlement_uuid' => $hist->settlementLog ? $hist->settlementLog->sett_uuid : null,
                     ];
                 })->values()->all(),
+                'ownedBusinesses' => $citizen->businessOwnerships->map(function ($bo) {
+                    return [
+                        'id' => $bo->business->bs_id,
+                        'uuid' => $bo->business->bs_uuid,
+                        'name' => $bo->business->bs_name,
+                        'type' => $bo->business->bs_type,
+                        'status' => $bo->business->bs_status,
+                    ];
+                })->values()->all(),
 
                 // Audit
                 'dateEncoded' => Carbon::parse($citizen->date_encoded)->format('M d, Y | h:i A'),
@@ -745,6 +754,7 @@ class CitizenController extends Controller
                 'info.householdInfo',
                 'encodedBy',
                 'updatedBy',
+                'businessOwnerships.business',
                 'histories' => function($q) {
                     $q->where('is_deleted', false)->orderBy('date_created', 'desc')->limit(5);
                 }
@@ -796,6 +806,15 @@ class CitizenController extends Controller
                         'status' => $h->status,
                     ];
                 }),
+                'ownedBusinesses' => $citizen->businessOwnerships->map(function ($bo) {
+                    return [
+                        'id' => $bo->business->bs_id,
+                        'uuid' => $bo->business->bs_uuid,
+                        'name' => $bo->business->bs_name,
+                        'type' => $bo->business->bs_type,
+                        'status' => $bo->business->bs_status,
+                    ];
+                })->values()->all(),
                 // Audit
                 'dateEncoded' => Carbon::parse($citizen->date_encoded)->format('M d, Y | h:i A'),
                 'encodedBy' => ($citizen->encodedBy ? trim($citizen->encodedBy->sys_fname . ' ' . $citizen->encodedBy->sys_lname) : 'System'),

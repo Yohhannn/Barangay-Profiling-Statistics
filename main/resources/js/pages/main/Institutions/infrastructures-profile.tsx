@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import InfrastructureCreation from './popup/infrastructures-creation';
+import InfrastructureEdit from './popup/infrastructures-edit';
 
 interface Infrastructure {
     id: number;
@@ -49,6 +50,7 @@ export default function InfrastructureProfile() {
     const [showFilters, setShowFilters] = useState(false);
     const [filterType, setFilterType] = useState('All');
     const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [isEditOpen, setIsEditOpen] = useState(false);
 
     const infraTypes = useMemo(() => {
         const types = Array.from(new Set(infrastructures.map(i => i.type)));
@@ -85,6 +87,13 @@ export default function InfrastructureProfile() {
                 isOpen={isCreateOpen}
                 onClose={() => setIsCreateOpen(false)}
                 sitios={sitios}
+            />
+
+            <InfrastructureEdit
+                isOpen={isEditOpen}
+                onClose={() => setIsEditOpen(false)}
+                sitios={sitios}
+                infrastructure={selectedInfra}
             />
 
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
@@ -224,7 +233,7 @@ export default function InfrastructureProfile() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all hover:shadow-md">
+                                        <button onClick={() => setIsEditOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all hover:shadow-md">
                                             <Edit3 className="size-3.5" /> Edit Infra
                                         </button>
                                     </div>

@@ -7,7 +7,7 @@ import {
     User, MapPin, Briefcase, UserX, GraduationCap,
     HeartPulse, Baby, Phone, Hash, Home,
     Filter, X, SlidersHorizontal, Edit3, ScanFace, Check, RotateCcw,
-    Activity, FileText, Info
+    Activity, FileText, Info, Store
 } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import Swal from 'sweetalert2';
@@ -19,6 +19,7 @@ import SettlementQuickView from '../CitizenRecords/popup/settlement-quick-view';
 import HistoryQuickView from '../CitizenRecords/popup/history-quick-view';
 import CitizenQuickView from '../CitizenRecords/popup/citizen-quick-view';
 import HouseholdQuickView from '../CitizenRecords/popup/household-quick-view';
+import BusinessQuickView from '../Institutions/popup/business-quick-view';
 
 // --- 1. Comprehensive Type Definition ---
 interface HouseholdMember {
@@ -44,6 +45,14 @@ interface SettlementHistory {
     status: string;
     dateCreated?: string;
     settlement_uuid?: string | null;
+}
+
+interface OwnedBusiness {
+    id: number;
+    uuid: string;
+    name: string;
+    type: string;
+    status: string;
 }
 
 interface Citizen {
@@ -113,6 +122,7 @@ interface Citizen {
     householdMembers: HouseholdMember[];
     medicalHistories: MedicalHistory[];
     settlementHistories: SettlementHistory[];
+    ownedBusinesses: OwnedBusiness[];
 
     // Audit
     dateEncoded: string;
@@ -153,6 +163,9 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
     const [householdQuickViewOpen, setHouseholdQuickViewOpen] = useState(false);
     const [selectedHouseholdUuid, setSelectedHouseholdUuid] = useState<string | null>(null);
 
+    const [businessQuickViewOpen, setBusinessQuickViewOpen] = useState(false);
+    const [selectedBusinessUuid, setSelectedBusinessUuid] = useState<string | null>(null);
+
     const handleOpenMedicalQuickView = (e: React.MouseEvent, uuid: string) => {
         e.stopPropagation();
         setSelectedMedicalUuid(uuid);
@@ -181,6 +194,12 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
         e.stopPropagation();
         setSelectedHouseholdUuid(uuid);
         setHouseholdQuickViewOpen(true);
+    };
+
+    const handleOpenBusinessQuickView = (e: React.MouseEvent, uuid: string) => {
+        e.stopPropagation();
+        setSelectedBusinessUuid(uuid);
+        setBusinessQuickViewOpen(true);
     };
     
     // Multi-select dropdown state
@@ -344,6 +363,13 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                     // which matches creation behavior
                 }}
             />
+
+            <MedicalQuickView isOpen={medicalQuickViewOpen} onClose={() => setMedicalQuickViewOpen(false)} medicalUuid={selectedMedicalUuid} />
+            <HistoryQuickView isOpen={historyQuickViewOpen} onClose={() => setHistoryQuickViewOpen(false)} historyUuid={selectedHistoryUuid} />
+            <SettlementQuickView isOpen={settlementQuickViewOpen} onClose={() => setSettlementQuickViewOpen(false)} settlementUuid={selectedSettlementUuid} />
+            <CitizenQuickView isOpen={citizenQuickViewOpen} onClose={() => setCitizenQuickViewOpen(false)} citizenId={selectedCitizenId} />
+            <HouseholdQuickView isOpen={householdQuickViewOpen} onClose={() => setHouseholdQuickViewOpen(false)} householdUuid={selectedHouseholdUuid} />
+            <BusinessQuickView isOpen={businessQuickViewOpen} onClose={() => setBusinessQuickViewOpen(false)} businessUuid={selectedBusinessUuid} />
 
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
 
@@ -973,6 +999,37 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                                                                     </button>
                                                                 )}
                                                             </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Business Ownership Section */}
+                                        {selectedCitizen.ownedBusinesses && selectedCitizen.ownedBusinesses.length > 0 && (
+                                            <div className="col-span-1 md:col-span-2 lg:col-span-3 space-y-4">
+                                                <SectionHeader icon={<Store className="size-4 text-indigo-500" />} title="Owned Businesses" />
+                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                    {selectedCitizen.ownedBusinesses.map((biz) => (
+                                                        <div key={biz.id} className="bg-indigo-50/30 dark:bg-indigo-900/10 border border-indigo-100 rounded-xl p-4 space-y-3 flex flex-col">
+                                                            <div className="flex justify-between items-start">
+                                                                <div>
+                                                                    <h4 className="font-bold text-sm text-neutral-900 dark:text-neutral-100 leading-tight">{biz.name}</h4>
+                                                                    <div className="flex items-center gap-2 mt-1 text-[10px]">
+                                                                        <span className="font-mono text-indigo-600 font-bold bg-indigo-100/50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded">{biz.uuid}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${biz.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-neutral-100 text-neutral-600'}`}>
+                                                                    {biz.status}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-xs text-neutral-500 line-clamp-1">{biz.type}</p>
+                                                            <button 
+                                                                onClick={(e) => handleOpenBusinessQuickView(e, biz.uuid)}
+                                                                className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-[10px] font-bold uppercase rounded-lg shadow-sm hover:bg-indigo-700 transition-all active:scale-95"
+                                                            >
+                                                                <Store className="size-3" /> Quick View Business
+                                                            </button>
                                                         </div>
                                                     ))}
                                                 </div>

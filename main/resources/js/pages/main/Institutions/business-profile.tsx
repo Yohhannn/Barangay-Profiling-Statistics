@@ -8,6 +8,9 @@ import {
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import BusinessCreation from './popup/business-creation';
+import BusinessEdit from './popup/business-edit';
+import CitizenQuickView from '../CitizenRecords/popup/citizen-quick-view';
+import { Info } from 'lucide-react';
 
 interface Owner {
     id: number;
@@ -58,6 +61,17 @@ export default function BusinessProfile() {
     const [showFilters, setShowFilters] = useState(false);
     const [filterStatus, setFilterStatus] = useState('All');
     const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [isEditOpen, setIsEditOpen] = useState(false);
+
+    // Citizen Quick View State
+    const [citizenQuickViewOpen, setCitizenQuickViewOpen] = useState(false);
+    const [selectedCitizenId, setSelectedCitizenId] = useState<number | null>(null);
+
+    const handleOpenCitizenQuickView = (e: React.MouseEvent, id: number) => {
+        e.stopPropagation();
+        setSelectedCitizenId(id);
+        setCitizenQuickViewOpen(true);
+    };
 
     const filteredBusinesses = useMemo(() => {
         return businesses.filter(biz => {
@@ -88,6 +102,19 @@ export default function BusinessProfile() {
                 isOpen={isCreateOpen}
                 onClose={() => setIsCreateOpen(false)}
                 sitios={sitios}
+            />
+
+            <BusinessEdit
+                isOpen={isEditOpen}
+                onClose={() => setIsEditOpen(false)}
+                sitios={sitios}
+                business={selectedBusiness}
+            />
+
+            <CitizenQuickView 
+                isOpen={citizenQuickViewOpen} 
+                onClose={() => setCitizenQuickViewOpen(false)} 
+                citizenId={selectedCitizenId} 
             />
 
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
@@ -242,7 +269,7 @@ export default function BusinessProfile() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all hover:shadow-md">
+                                        <button onClick={() => setIsEditOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all hover:shadow-md">
                                             <Edit3 className="size-3.5" /> Edit Business
                                         </button>
                                     </div>
@@ -287,9 +314,20 @@ export default function BusinessProfile() {
                                                             {idx + 1}
                                                         </div>
                                                         <div className="flex-1 min-w-0">
-                                                            <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-100 truncate">
-                                                                {owner.fullName}
-                                                            </p>
+                                                            <div className="flex items-center justify-between">
+                                                                <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-100 truncate">
+                                                                    {owner.fullName}
+                                                                </p>
+                                                                {owner.ctzId && (
+                                                                    <button 
+                                                                        onClick={(e) => handleOpenCitizenQuickView(e, owner.ctzId as number)}
+                                                                        className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-200 transition-all shadow-sm border border-indigo-200 dark:border-indigo-800 shrink-0"
+                                                                        title="Quick View Owner Profile"
+                                                                    >
+                                                                        <Info className="size-3" />
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                             {owner.ctzUuid && (
                                                                 <p className="text-[10px] text-indigo-500 font-mono flex items-center gap-1 mt-0.5">
                                                                     <BadgeCheck className="size-3" />
