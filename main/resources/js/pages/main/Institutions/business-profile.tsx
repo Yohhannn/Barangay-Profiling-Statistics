@@ -382,12 +382,10 @@ export default function BusinessProfile() {
                                         <div className="flex gap-2"><span className="font-bold w-20">DATE ENCODED:</span><span>{selectedBusiness.dateEncoded}</span></div>
                                         <div className="flex gap-2"><span className="font-bold w-20">ENCODED BY:</span><span>{selectedBusiness.encodedBy}</span></div>
                                     </div>
-                                    {selectedBusiness.dateUpdated && (
-                                        <div className="space-y-1 text-right">
-                                            <div className="flex gap-2 justify-end"><span className="font-bold">DATE UPDATED:</span><span>{selectedBusiness.dateUpdated}</span></div>
-                                            <div className="flex gap-2 justify-end"><span className="font-bold">UPDATED BY:</span><span>{selectedBusiness.updatedBy}</span></div>
-                                        </div>
-                                    )}
+                                    <div className="space-y-1 text-right">
+                                        <div className="flex gap-2 justify-end"><span className="font-bold">DATE UPDATED:</span><span>{selectedBusiness.dateUpdated || 'N/A'}</span></div>
+                                        <div className="flex gap-2 justify-end"><span className="font-bold">UPDATED BY:</span><span>{selectedBusiness.updatedBy || 'N/A'}</span></div>
+                                    </div>
                                 </div>
                             </div>
                         ) : (

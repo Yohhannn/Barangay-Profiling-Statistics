@@ -261,9 +261,9 @@ class CitizenController extends Controller
                     return [
                         'id' => $bo->business->bs_id,
                         'uuid' => $bo->business->bs_uuid,
-                        'name' => $bo->business->bs_name,
-                        'type' => $bo->business->bs_type,
-                        'status' => $bo->business->bs_status,
+                        'name' => $bo->business->name,
+                        'type' => $bo->business->type,
+                        'status' => $bo->business->status,
                     ];
                 })->values()->all(),
 
@@ -810,9 +810,9 @@ class CitizenController extends Controller
                     return [
                         'id' => $bo->business->bs_id,
                         'uuid' => $bo->business->bs_uuid,
-                        'name' => $bo->business->bs_name,
-                        'type' => $bo->business->bs_type,
-                        'status' => $bo->business->bs_status,
+                        'name' => $bo->business->name,
+                        'type' => $bo->business->type,
+                        'status' => $bo->business->status,
                     ];
                 })->values()->all(),
                 // Audit
