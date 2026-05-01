@@ -32,6 +32,7 @@ class TransactionLogController extends Controller
 
                 return [
                     'id'             => $trx->tl_id,
+                    'tlUuid'         => $trx->tl_uuid,
                     'transactionId'  => $trxIdStr,
                     'firstName'      => $trx->first_name,
                     'lastName'       => $trx->last_name,

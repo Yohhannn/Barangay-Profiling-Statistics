@@ -248,7 +248,7 @@ export default function BusinessProfile() {
                                             onClick={() => setSelectedBusiness(biz)}
                                             className={`cursor-pointer transition-all hover:bg-indigo-50 dark:hover:bg-indigo-900/10 ${selectedBusiness?.id === biz.id ? 'bg-indigo-50 dark:bg-indigo-900/20 border-l-4 border-l-indigo-500' : 'border-l-4 border-l-transparent'}`}
                                         >
-                                            <td className="px-4 py-3 font-mono text-xs text-neutral-500">{biz.id}</td>
+                                            <td className="px-4 py-3 font-mono text-xs text-neutral-500">{biz.businessId}</td>
                                             <td className="px-4 py-3">
                                                 <div className="font-bold text-neutral-900 dark:text-neutral-100">{biz.businessName}</div>
                                                 <div className="text-[10px] text-neutral-500">{biz.businessId}</div>

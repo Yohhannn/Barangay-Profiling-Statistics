@@ -21,6 +21,7 @@ import CitizenQuickView from '../CitizenRecords/popup/citizen-quick-view';
 import HouseholdQuickView from '../CitizenRecords/popup/household-quick-view';
 import BusinessQuickView from '../Institutions/popup/business-quick-view';
 import InfrastructureQuickView from '../Institutions/popup/infrastructures-quick-view';
+import ServicesQuickView from '../Transactions/popup/services-quick-view';
 
 // --- 1. Comprehensive Type Definition ---
 interface HouseholdMember {
@@ -61,6 +62,14 @@ interface OwnedInfrastructure {
     infraId: string;
     name: string;
     type: string;
+}
+
+interface CitizenTransaction {
+    id: number;
+    transactionId: string;
+    type: string;
+    status: string;
+    dateRequested: string;
 }
 
 interface Citizen {
@@ -132,6 +141,7 @@ interface Citizen {
     settlementHistories: SettlementHistory[];
     ownedBusinesses: OwnedBusiness[];
     ownedInfrastructures: OwnedInfrastructure[];
+    transactionLogs: CitizenTransaction[];
 
     // Audit
     dateEncoded: string;
@@ -178,6 +188,9 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
     const [infrastructureQuickViewOpen, setInfrastructureQuickViewOpen] = useState(false);
     const [selectedInfrastructureId, setSelectedInfrastructureId] = useState<number | null>(null);
 
+    const [servicesQuickViewOpen, setServicesQuickViewOpen] = useState(false);
+    const [selectedTransactionId, setSelectedTransactionId] = useState<number | null>(null);
+
     const handleOpenMedicalQuickView = (e: React.MouseEvent, uuid: string) => {
         e.stopPropagation();
         setSelectedMedicalUuid(uuid);
@@ -218,6 +231,12 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
         e.stopPropagation();
         setSelectedInfrastructureId(id);
         setInfrastructureQuickViewOpen(true);
+    };
+
+    const handleOpenServicesQuickView = (e: React.MouseEvent, id: number) => {
+        e.stopPropagation();
+        setSelectedTransactionId(id);
+        setServicesQuickViewOpen(true);
     };
     
     // Multi-select dropdown state
@@ -389,6 +408,7 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
             <HouseholdQuickView isOpen={householdQuickViewOpen} onClose={() => setHouseholdQuickViewOpen(false)} householdUuid={selectedHouseholdUuid} />
             <BusinessQuickView isOpen={businessQuickViewOpen} onClose={() => setBusinessQuickViewOpen(false)} businessUuid={selectedBusinessUuid} />
             <InfrastructureQuickView isOpen={infrastructureQuickViewOpen} onClose={() => setInfrastructureQuickViewOpen(false)} infrastructureId={selectedInfrastructureId} />
+            <ServicesQuickView isOpen={servicesQuickViewOpen} onClose={() => setServicesQuickViewOpen(false)} transactionId={selectedTransactionId} />
 
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
 
@@ -1078,6 +1098,41 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                                                                 className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-sky-600 text-white text-[10px] font-bold uppercase rounded-lg shadow-sm hover:bg-sky-700 transition-all active:scale-95"
                                                             >
                                                                 <Building className="size-3" /> Quick View Infrastructure
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Transaction Logs Section */}
+                                        {selectedCitizen.transactionLogs && selectedCitizen.transactionLogs.length > 0 && (
+                                            <div className="col-span-1 md:col-span-2 lg:col-span-3 space-y-4">
+                                                <SectionHeader icon={<FileText className="size-4 text-violet-500" />} title="Transaction Records" />
+                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                    {selectedCitizen.transactionLogs.map((trx) => (
+                                                        <div key={trx.id} className="bg-violet-50/30 dark:bg-violet-900/10 border border-violet-100 rounded-xl p-4 space-y-3 flex flex-col">
+                                                            <div className="flex justify-between items-start">
+                                                                <div>
+                                                                    <h4 className="font-bold text-sm text-neutral-900 dark:text-neutral-100 leading-tight">{trx.type}</h4>
+                                                                    <div className="flex items-center gap-2 mt-1 text-[10px]">
+                                                                        <span className="font-mono text-violet-600 font-bold bg-violet-100/50 dark:bg-violet-900/30 px-1.5 py-0.5 rounded">{trx.transactionId}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                                                                    trx.status === 'Approved' ? 'bg-green-100 text-green-700' :
+                                                                    trx.status === 'Pending'  ? 'bg-orange-100 text-orange-700' :
+                                                                    'bg-red-100 text-red-700'
+                                                                }`}>
+                                                                    {trx.status}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-xs text-neutral-500 line-clamp-1">{trx.dateRequested}</p>
+                                                            <button
+                                                                onClick={(e) => handleOpenServicesQuickView(e, trx.id)}
+                                                                className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-violet-600 text-white text-[10px] font-bold uppercase rounded-lg shadow-sm hover:bg-violet-700 transition-all active:scale-95"
+                                                            >
+                                                                <FileText className="size-3" /> Quick View
                                                             </button>
                                                         </div>
                                                     ))}

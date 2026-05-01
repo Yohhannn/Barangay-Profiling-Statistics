@@ -10,10 +10,12 @@ import { useState, useMemo, useEffect } from 'react';
 import ServicesCreation from './popup/services-creation';
 import ServicesEdit from './popup/services-edit';
 import ServicesQuickView from './popup/services-quick-view';
+import CitizenQuickView from '../CitizenRecords/popup/citizen-quick-view';
 import Swal from 'sweetalert2';
 
 interface Transaction {
     id: number;
+    tlUuid: string;
     transactionId: string;
     firstName: string;
     lastName: string;
@@ -54,6 +56,7 @@ export default function ServicesProfile({ transactions = [] }: ServicesProfilePr
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [quickViewId, setQuickViewId] = useState<number | null>(null);
+    const [citizenQuickViewId, setCitizenQuickViewId] = useState<number | null>(null);
 
     // Update selected transaction when prop updates
     useEffect(() => {
@@ -125,6 +128,73 @@ export default function ServicesProfile({ transactions = [] }: ServicesProfilePr
         }
     };
 
+    const handleExportPdf = () => {
+        if (!selectedTransaction) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'No Transaction Selected',
+                text: 'Please select a transaction to export.',
+            });
+            return;
+        }
+
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>Export - ${selectedTransaction.transactionId}</title>
+                        <style>
+                            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #111; }
+                            .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #111; padding-bottom: 20px; }
+                            .header h1 { margin: 0; font-size: 28px; text-transform: uppercase; letter-spacing: 2px; }
+                            .header p { margin: 8px 0 0; color: #555; font-size: 14px; }
+                            .content { line-height: 1.8; font-size: 16px; margin-top: 30px; }
+                            .row { display: flex; justify-content: space-between; margin-bottom: 18px; border-bottom: 1px solid #ddd; padding-bottom: 8px; }
+                            .label { font-weight: bold; color: #444; text-transform: uppercase; font-size: 14px; letter-spacing: 1px; }
+                            .value { font-weight: bold; font-size: 16px; }
+                            .purpose-block { margin-top: 30px; }
+                            .purpose-content { padding: 20px; background: #fafafa; border: 1px solid #ccc; min-height: 80px; margin-top: 10px; font-style: italic; }
+                            .footer { margin-top: 60px; font-size: 12px; color: #777; text-align: center; border-top: 1px solid #eee; padding-top: 20px; }
+                            
+                            @media print {
+                                body { padding: 0; margin: 20px; }
+                                .purpose-content { border: 1px solid #000; background: transparent; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="header">
+                            <h1>Barangay Service Request</h1>
+                            <p>Official Transaction Record - ${selectedTransaction.transactionId}</p>
+                        </div>
+                        <div class="content">
+                            <div class="row"><span class="label">Requestor Name:</span> <span class="value">${selectedTransaction.fullName}</span></div>
+                            <div class="row"><span class="label">Date Requested:</span> <span class="value">${selectedTransaction.dateRequested}</span></div>
+                            <div class="row"><span class="label">Transaction Type:</span> <span class="value">${selectedTransaction.type}</span></div>
+                            <div class="row"><span class="label">Status:</span> <span class="value" style="color: ${selectedTransaction.status === 'Approved' ? 'green' : selectedTransaction.status === 'Declined' ? 'red' : 'orange'}">${selectedTransaction.status}</span></div>
+                            <div class="purpose-block">
+                                <span class="label">Purpose / Description:</span> 
+                                <div class="purpose-content">
+                                    ${selectedTransaction.purpose || 'No description provided.'}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="footer">
+                            <p>This is a system generated document. Generated on ${new Date().toLocaleString()}</p>
+                            <p>Encoded by: ${selectedTransaction.encodedBy}</p>
+                        </div>
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+            }, 500);
+        }
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Service Transactions" />
@@ -132,6 +202,7 @@ export default function ServicesProfile({ transactions = [] }: ServicesProfilePr
             <ServicesCreation isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
             <ServicesEdit isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} transaction={selectedTransaction} />
             <ServicesQuickView isOpen={quickViewId !== null} onClose={() => setQuickViewId(null)} transactionId={quickViewId} />
+            <CitizenQuickView isOpen={citizenQuickViewId !== null} onClose={() => setCitizenQuickViewId(null)} citizenId={citizenQuickViewId} />
 
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
 
@@ -148,7 +219,7 @@ export default function ServicesProfile({ transactions = [] }: ServicesProfilePr
                         </div>
                     </div>
                     {/* Export Button */}
-                    <button className="flex items-center gap-2 px-4 py-2 bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm">
+                    <button onClick={handleExportPdf} className="flex items-center gap-2 px-4 py-2 bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm">
                         <Download className="size-4" /> Export
                     </button>
                 </div>
@@ -236,7 +307,7 @@ export default function ServicesProfile({ transactions = [] }: ServicesProfilePr
                                                 ${selectedTransaction?.id === trx.id ? 'bg-violet-50 dark:bg-violet-900/20 border-l-4 border-l-violet-500' : 'border-l-4 border-l-transparent'}
                                             `}
                                     >
-                                        <td className="px-4 py-3 font-mono text-xs text-neutral-500">{trx.transactionId.split('-').pop()}</td>
+                                        <td className="px-4 py-3 font-mono text-xs text-neutral-500">{trx.tlUuid}</td>
                                         <td className="px-4 py-3">
                                             <div className="font-bold text-neutral-900 dark:text-neutral-100">{trx.fullName}</div>
                                             <div className="text-[10px] text-neutral-500">{trx.dateRequested}</div>
@@ -316,9 +387,12 @@ export default function ServicesProfile({ transactions = [] }: ServicesProfilePr
                                                 <h3 className="text-sm font-bold text-neutral-700 dark:text-neutral-200 uppercase tracking-wider">Requestor Profile</h3>
                                             </div>
                                             {selectedTransaction.ctzUuid ? (
-                                                <span className="text-[10px] font-mono font-medium text-violet-600 bg-violet-50 dark:bg-violet-900/20 px-2 py-1 rounded">
-                                                    Linked: {selectedTransaction.ctzUuid}
-                                                </span>
+                                                <button
+                                                    onClick={() => setCitizenQuickViewId(selectedTransaction.ctzId!)}
+                                                    className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-violet-600 bg-violet-50 dark:bg-violet-900/20 px-2 py-1 rounded hover:bg-violet-100 dark:hover:bg-violet-900/40 transition-all border border-violet-200 dark:border-violet-800"
+                                                >
+                                                    <User className="size-3" /> {selectedTransaction.ctzUuid} — View Citizen
+                                                </button>
                                             ) : (
                                                 <span className="text-[10px] font-mono font-medium text-neutral-500 bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded">
                                                     Unlinked Requestor
