@@ -17,7 +17,7 @@ class InfrastructureController extends Controller
      */
     public function index()
     {
-        $infrastructures = Infrastructure::with(['sitio', 'encodedByAccount', 'updatedByAccount'])
+        $infrastructures = Infrastructure::with(['sitio', 'encodedByAccount', 'updatedByAccount', 'citizen'])
             ->where('is_deleted', false)
             ->orderBy('inf_id', 'desc')
             ->get()
@@ -35,6 +35,8 @@ class InfrastructureController extends Controller
                     return $fullname ?: 'System';
                 };
 
+                $isUpdated = $inf->date_updated && $inf->date_encoded != $inf->date_updated;
+
                 return [
                     'id'             => $inf->inf_id,
                     'infraId'        => 'INF-' . Carbon::parse($inf->date_encoded)->format('Y') . '-' . str_pad($inf->inf_id, 3, '0', STR_PAD_LEFT),
@@ -50,11 +52,12 @@ class InfrastructureController extends Controller
                     'sitioId'        => $inf->sitio_id,
                     'description'    => $inf->description ?? '',
                     'ctzId'          => $inf->ctz_id,
+                    'ownerCtzUuid'   => $inf->citizen ? $inf->citizen->ctz_uuid : null,
                     'dateRegistered' => $inf->date_encoded ? Carbon::parse($inf->date_encoded)->format('F d, Y') : 'N/A',
-                    'dateEncoded'    => $inf->date_encoded ? Carbon::parse($inf->date_encoded)->format('M d, Y') : 'N/A',
+                    'dateEncoded'    => $inf->date_encoded ? Carbon::parse($inf->date_encoded)->format('M d, Y | h:i A') : 'N/A',
                     'encodedBy'      => $getSystemName($inf->encodedByAccount),
-                    'dateUpdated'    => $inf->date_updated ? Carbon::parse($inf->date_updated)->format('M d, Y') : 'N/A',
-                    'updatedBy'      => $inf->date_updated ? $getSystemName($inf->updatedByAccount) : 'N/A',
+                    'dateUpdated'    => $isUpdated ? Carbon::parse($inf->date_updated)->format('M d, Y | h:i A') : 'N/A',
+                    'updatedBy'      => $isUpdated ? $getSystemName($inf->updatedByAccount) : 'N/A',
                 ];
             });
 
@@ -171,6 +174,52 @@ class InfrastructureController extends Controller
             return redirect()->back()->with('success', 'Infrastructure archived successfully!');
         } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => 'Error archiving infrastructure: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Get quick view data for an infrastructure.
+     */
+    public function getQuickViewData($id)
+    {
+        try {
+            $infrastructure = Infrastructure::with(['sitio', 'encodedByAccount', 'updatedByAccount', 'citizen'])
+                ->where('inf_id', $id)
+                ->where('is_deleted', false)
+                ->firstOrFail();
+
+            $ownerName = trim(
+                ($infrastructure->owner_fname ?? '') . ' ' .
+                ($infrastructure->owner_mname ? $infrastructure->owner_mname . ' ' : '') .
+                ($infrastructure->owner_lname ?? '') .
+                ($infrastructure->owner_suffix ? ', ' . $infrastructure->owner_suffix : '')
+            );
+
+            $getSystemName = function ($account) {
+                if (!$account) return 'System';
+                $fullname = trim(($account->sys_fname ?? '') . ' ' . ($account->sys_lname ?? ''));
+                return $fullname ?: 'System';
+            };
+
+            $isUpdated = $infrastructure->date_updated && $infrastructure->date_encoded != $infrastructure->date_updated;
+
+            return response()->json([
+                'id' => $infrastructure->inf_id,
+                'infraId' => 'INF-' . Carbon::parse($infrastructure->date_encoded)->format('Y') . '-' . str_pad($infrastructure->inf_id, 3, '0', STR_PAD_LEFT),
+                'name' => $infrastructure->name,
+                'type' => $infrastructure->type,
+                'address' => $infrastructure->address_description ?? '',
+                'sitio' => $infrastructure->sitio?->sitio_name ?? 'N/A',
+                'description' => $infrastructure->description ?? '',
+                'ownerFullName' => $ownerName,
+                'ctzId' => $infrastructure->ctz_id,
+                'dateEncoded' => $infrastructure->date_encoded ? Carbon::parse($infrastructure->date_encoded)->format('M d, Y | h:i A') : 'N/A',
+                'encodedBy' => $getSystemName($infrastructure->encodedByAccount),
+                'dateUpdated' => $isUpdated ? Carbon::parse($infrastructure->date_updated)->format('M d, Y | h:i A') : 'N/A',
+                'updatedBy' => $isUpdated ? $getSystemName($infrastructure->updatedByAccount) : 'N/A',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Infrastructure not found.'], 404);
         }
     }
 }

@@ -3,12 +3,13 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, usePage, router } from '@inertiajs/react';
 import {
     ArrowLeft, Search, Plus, Trash2,
-    Building, User, MapPin, FileText,
+    Building, User, MapPin, FileText, Users, Info, BadgeCheck,
     Edit3, X, SlidersHorizontal, Construction
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import InfrastructureCreation from './popup/infrastructures-creation';
 import InfrastructureEdit from './popup/infrastructures-edit';
+import CitizenQuickView from '../CitizenRecords/popup/citizen-quick-view';
 
 interface Infrastructure {
     id: number;
@@ -25,6 +26,7 @@ interface Infrastructure {
     sitioId: number;
     description: string;
     ctzId: number | null;
+    ownerCtzUuid: string | null;
     dateRegistered: string;
     dateEncoded: string;
     encodedBy: string;
@@ -51,6 +53,15 @@ export default function InfrastructureProfile() {
     const [filterType, setFilterType] = useState('All');
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
+    
+    const [citizenQuickViewOpen, setCitizenQuickViewOpen] = useState(false);
+    const [selectedCitizenId, setSelectedCitizenId] = useState<number | null>(null);
+
+    const handleOpenCitizenQuickView = (e: React.MouseEvent, id: number) => {
+        e.stopPropagation();
+        setSelectedCitizenId(id);
+        setCitizenQuickViewOpen(true);
+    };
 
     const infraTypes = useMemo(() => {
         const types = Array.from(new Set(infrastructures.map(i => i.type)));
@@ -82,6 +93,12 @@ export default function InfrastructureProfile() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Infrastructure Profile" />
+
+            <CitizenQuickView 
+                isOpen={citizenQuickViewOpen} 
+                onClose={() => setCitizenQuickViewOpen(false)} 
+                citizenId={selectedCitizenId} 
+            />
 
             <InfrastructureCreation
                 isOpen={isCreateOpen}
@@ -225,8 +242,8 @@ export default function InfrastructureProfile() {
                                                     {selectedInfra.name}
                                                 </h2>
                                                 <div className="flex items-center gap-2 mt-1 text-sm text-neutral-500">
-                                                    <User className="size-3.5" />
-                                                    <span className="font-medium">Owner: {selectedInfra.owner}</span>
+                                                    <Users className="size-3.5" />
+                                                    <span className="font-medium">1 Owner</span>
                                                     <span className="text-[10px] px-2 py-0.5 rounded-full font-bold ml-2 bg-sky-100 text-sky-700">
                                                         {selectedInfra.type}
                                                     </span>
@@ -252,6 +269,45 @@ export default function InfrastructureProfile() {
                                                     <span className="text-xs font-bold text-neutral-500 uppercase">Full Address</span>
                                                     <span className="text-sm text-neutral-800 dark:text-neutral-200">{selectedInfra.address || 'N/A'}</span>
                                                 </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Owners Section */}
+                                    <div className="space-y-3">
+                                        <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2">
+                                            <Users className="size-3.5" /> Infrastructure Owner (1)
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <div className="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-neutral-900/30 border border-sidebar-border rounded-xl">
+                                                <div className="w-8 h-8 rounded-full bg-sky-100 dark:bg-sky-900/30 flex items-center justify-center text-sky-600 dark:text-sky-400 font-bold text-xs shrink-0">
+                                                    1
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center justify-between">
+                                                        <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-100 truncate">
+                                                            {selectedInfra.owner}
+                                                        </p>
+                                                        {selectedInfra.ctzId && (
+                                                            <button 
+                                                                onClick={(e) => handleOpenCitizenQuickView(e, selectedInfra.ctzId as number)}
+                                                                className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-sky-100 dark:bg-sky-900/40 text-sky-600 dark:text-sky-300 hover:bg-sky-200 transition-all shadow-sm border border-sky-200 dark:border-sky-800 shrink-0"
+                                                                title="Quick View Owner Profile"
+                                                            >
+                                                                <Info className="size-3" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    {selectedInfra.ownerCtzUuid ? (
+                                                        <p className="text-[10px] text-sky-500 font-mono flex items-center gap-1 mt-0.5">
+                                                            <BadgeCheck className="size-3" />
+                                                            {selectedInfra.ownerCtzUuid}
+                                                        </p>
+                                                    ) : (
+                                                        <p className="text-[10px] text-neutral-400 italic mt-0.5">No citizen record linked</p>
+                                                    )}
+                                                </div>
+                                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-600 uppercase shrink-0">Primary</span>
                                             </div>
                                         </div>
                                     </div>
