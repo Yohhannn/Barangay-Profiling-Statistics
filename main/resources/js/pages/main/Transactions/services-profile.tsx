@@ -1,25 +1,32 @@
-import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft, Search, Plus, Trash2,
     FileText, User, Calendar, CheckCircle,
     Download, Edit3, X, SlidersHorizontal, ClipboardList
 } from 'lucide-react';
-import { useState, useMemo } from 'react';
-import ServicesCreation from './popup/services-creation'; // Import the popup
+import { useState, useMemo, useEffect } from 'react';
+import ServicesCreation from './popup/services-creation';
+import ServicesEdit from './popup/services-edit';
+import ServicesQuickView from './popup/services-quick-view';
+import Swal from 'sweetalert2';
 
-// --- Types ---
 interface Transaction {
     id: number;
     transactionId: string;
     firstName: string;
     lastName: string;
+    middleName: string;
+    suffix: string;
+    fullName: string;
     dateRequested: string;
+    dateRequestedRaw: string;
     type: string;
-    status: 'Pending' | 'Processing' | 'Completed' | 'Rejected';
+    status: 'Pending' | 'Approved' | 'Declined';
     purpose: string;
+    ctzId: number | null;
+    ctzUuid: string | null;
 
     // Audit
     dateEncoded: string;
@@ -28,41 +35,40 @@ interface Transaction {
     updatedBy: string;
 }
 
-// --- Mock Data ---
-const mockTransactions: Transaction[] = [
-    {
-        id: 1, transactionId: 'TRX-2025-001', firstName: 'Roberto', lastName: 'Gonzales',
-        dateRequested: 'July 10, 2025', type: 'Barangay Clearance', status: 'Completed',
-        purpose: 'For employment application requirements.',
-        dateEncoded: 'July 10, 2025 | 09:30 AM', encodedBy: 'ADMIN', dateUpdated: 'July 10, 2025', updatedBy: 'ADMIN'
-    },
-    {
-        id: 2, transactionId: 'TRX-2025-002', firstName: 'Alfredo', lastName: 'Garcia',
-        dateRequested: 'July 10, 2025', type: 'Barangay Clearance', status: 'Processing',
-        purpose: 'For business permit renewal.',
-        dateEncoded: 'July 10, 2025 | 10:15 AM', encodedBy: 'STAFF_01', dateUpdated: 'N/A', updatedBy: 'N/A'
-    },
-    // ...
-];
+interface ServicesProfileProps {
+    transactions: Transaction[];
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Transactions', href: '/transactions' },
     { title: 'Services', href: '/transactions/services-profile' },
 ];
 
-export default function ServicesProfile() {
-    const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(mockTransactions[0]);
+export default function ServicesProfile({ transactions = [] }: ServicesProfileProps) {
+    const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilters, setShowFilters] = useState(false);
     const [filterStatus, setFilterStatus] = useState('All');
 
-    // --- Modal State ---
+    // Modals
     const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [quickViewId, setQuickViewId] = useState<number | null>(null);
 
-    // Filter Logic
+    // Update selected transaction when prop updates
+    useEffect(() => {
+        if (selectedTransaction) {
+            const updated = transactions.find(t => t.id === selectedTransaction.id);
+            if (updated) setSelectedTransaction(updated);
+            else setSelectedTransaction(null);
+        } else if (transactions.length > 0) {
+            setSelectedTransaction(transactions[0]);
+        }
+    }, [transactions]);
+
     const filteredTransactions = useMemo(() => {
-        return mockTransactions.filter(trx => {
-            const fullName = `${trx.firstName} ${trx.lastName}`.toLowerCase();
+        return transactions.filter(trx => {
+            const fullName = trx.fullName.toLowerCase();
             const matchesSearch =
                 fullName.includes(searchQuery.toLowerCase()) ||
                 trx.transactionId.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -72,12 +78,50 @@ export default function ServicesProfile() {
 
             return matchesSearch && matchesStatus;
         });
-    }, [searchQuery, filterStatus]);
+    }, [searchQuery, filterStatus, transactions]);
 
-    const handleDelete = (e: React.MouseEvent, id: number) => {
+    const handleDelete = async (e: React.MouseEvent, id: number) => {
         e.stopPropagation();
-        if (confirm('Are you sure you want to remove this transaction record?')) {
-            console.log('Deleted transaction:', id);
+        
+        const result = await Swal.fire({
+            title: 'Archive Transaction',
+            text: 'Are you sure you want to move this transaction to archives? Please provide a reason.',
+            icon: 'warning',
+            input: 'textarea',
+            inputPlaceholder: 'Reason for archiving...',
+            inputAttributes: {
+                'aria-label': 'Reason for archiving'
+            },
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Yes, Archive',
+            preConfirm: (reason) => {
+                if (!reason || reason.trim() === '') {
+                    Swal.showValidationMessage('A reason is required to archive a record');
+                    return false;
+                }
+                return reason;
+            }
+        });
+
+        if (result.isConfirmed && result.value) {
+            router.delete(`/transactions/services/${id}`, {
+                data: { deleted_reason: result.value },
+                preserveScroll: true,
+                onSuccess: () => {
+                    Swal.fire({
+                        title: 'Archived!',
+                        text: 'Transaction has been moved to archives.',
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                    if (selectedTransaction?.id === id) {
+                        setSelectedTransaction(null);
+                    }
+                }
+            });
         }
     };
 
@@ -85,12 +129,13 @@ export default function ServicesProfile() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Service Transactions" />
 
-            {/* --- MOUNT MODAL HERE --- */}
             <ServicesCreation isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
+            <ServicesEdit isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} transaction={selectedTransaction} />
+            <ServicesQuickView isOpen={quickViewId !== null} onClose={() => setQuickViewId(null)} transactionId={quickViewId} />
 
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
 
-                {/* --- Header Bar --- */}
+                {/* Header Bar */}
                 <div className="flex items-center justify-between pb-2 border-b border-sidebar-border/60">
                     <div className="flex items-center gap-4">
                         <Link href="/transactions" className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
@@ -108,7 +153,7 @@ export default function ServicesProfile() {
                     </button>
                 </div>
 
-                {/* --- Main Content Split --- */}
+                {/* Main Content Split */}
                 <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
 
                     {/* === LEFT COLUMN: List (Spans 4) === */}
@@ -121,7 +166,6 @@ export default function ServicesProfile() {
                                     <h2 className="text-xs font-bold text-white bg-neutral-900 dark:bg-violet-600 py-1 px-3 rounded-md uppercase tracking-wider">
                                         Transact. List
                                     </h2>
-                                    {/* CREATE BUTTON (Connected) */}
                                     <button
                                         onClick={() => setIsCreateOpen(true)}
                                         className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white p-1 rounded-md transition-colors shadow-sm active:scale-95"
@@ -165,9 +209,8 @@ export default function ServicesProfile() {
                                     >
                                         <option value="All">All Status</option>
                                         <option value="Pending">Pending</option>
-                                        <option value="Processing">Processing</option>
-                                        <option value="Completed">Completed</option>
-                                        <option value="Rejected">Rejected</option>
+                                        <option value="Approved">Approved</option>
+                                        <option value="Declined">Declined</option>
                                     </select>
                                 </div>
                             )}
@@ -193,9 +236,9 @@ export default function ServicesProfile() {
                                                 ${selectedTransaction?.id === trx.id ? 'bg-violet-50 dark:bg-violet-900/20 border-l-4 border-l-violet-500' : 'border-l-4 border-l-transparent'}
                                             `}
                                     >
-                                        <td className="px-4 py-3 font-mono text-xs text-neutral-500">{trx.id}</td>
+                                        <td className="px-4 py-3 font-mono text-xs text-neutral-500">{trx.transactionId.split('-').pop()}</td>
                                         <td className="px-4 py-3">
-                                            <div className="font-bold text-neutral-900 dark:text-neutral-100">{trx.firstName} {trx.lastName}</div>
+                                            <div className="font-bold text-neutral-900 dark:text-neutral-100">{trx.fullName}</div>
                                             <div className="text-[10px] text-neutral-500">{trx.dateRequested}</div>
                                         </td>
                                         <td className="px-4 py-3 text-right">
@@ -212,6 +255,13 @@ export default function ServicesProfile() {
                                         </td>
                                     </tr>
                                 ))}
+                                {filteredTransactions.length === 0 && (
+                                    <tr>
+                                        <td colSpan={3} className="text-center py-10 text-neutral-400 text-xs">
+                                            No transactions found.
+                                        </td>
+                                    </tr>
+                                )}
                                 </tbody>
                             </table>
                         </div>
@@ -227,12 +277,12 @@ export default function ServicesProfile() {
                                 {/* 1. Details Header */}
                                 <div className="bg-neutral-50 dark:bg-neutral-900/20 border-b border-sidebar-border p-6">
                                     <div className="flex justify-between items-start">
-                                        <div className="flex items-start gap-4">
+                                        <div className="flex items-start gap-4 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setQuickViewId(selectedTransaction.id)}>
                                             <div className="p-3 rounded-xl bg-violet-100 dark:bg-violet-900/20">
                                                 <ClipboardList className="size-8 text-violet-600 dark:text-violet-400" />
                                             </div>
                                             <div>
-                                                <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+                                                <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
                                                     {selectedTransaction.type}
                                                 </h2>
                                                 <div className="flex items-center gap-2 mt-1 text-sm text-neutral-500">
@@ -245,8 +295,9 @@ export default function ServicesProfile() {
                                                 </div>
                                             </div>
                                         </div>
-                                        {/* EDIT BUTTON (Blue) */}
-                                        <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all hover:shadow-md">
+                                        <button 
+                                            onClick={() => setIsEditOpen(true)}
+                                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all hover:shadow-md">
                                             <Edit3 className="size-3.5" /> Update Transaction
                                         </button>
                                     </div>
@@ -255,10 +306,30 @@ export default function ServicesProfile() {
                                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
 
                                     {/* Info Grid */}
-                                    <div className="grid grid-cols-2 gap-x-8 gap-y-4 bg-white dark:bg-sidebar border border-sidebar-border rounded-xl p-5 shadow-sm">
-                                        <InfoRow label="Requestor First Name" value={selectedTransaction.firstName} />
-                                        <InfoRow label="Requestor Last Name" value={selectedTransaction.lastName} />
-                                        <InfoRow label="Date Requested" value={selectedTransaction.dateRequested} />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 bg-white dark:bg-sidebar border border-sidebar-border rounded-xl p-5 shadow-sm relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                                            <User className="w-32 h-32" />
+                                        </div>
+                                        <div className="col-span-1 md:col-span-2 pb-2 border-b border-sidebar-border flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <User className="size-4 text-violet-600" />
+                                                <h3 className="text-sm font-bold text-neutral-700 dark:text-neutral-200 uppercase tracking-wider">Requestor Profile</h3>
+                                            </div>
+                                            {selectedTransaction.ctzUuid ? (
+                                                <span className="text-[10px] font-mono font-medium text-violet-600 bg-violet-50 dark:bg-violet-900/20 px-2 py-1 rounded">
+                                                    Linked: {selectedTransaction.ctzUuid}
+                                                </span>
+                                            ) : (
+                                                <span className="text-[10px] font-mono font-medium text-neutral-500 bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded">
+                                                    Unlinked Requestor
+                                                </span>
+                                            )}
+                                        </div>
+                                        <InfoRow label="First Name" value={selectedTransaction.firstName} />
+                                        <InfoRow label="Last Name" value={selectedTransaction.lastName} />
+                                        <InfoRow label="Middle Name" value={selectedTransaction.middleName || 'N/A'} />
+                                        <InfoRow label="Suffix" value={selectedTransaction.suffix || 'N/A'} />
+                                        <InfoRow label="Date Requested" value={selectedTransaction.dateRequested} highlight />
                                         <InfoRow label="Transaction Type" value={selectedTransaction.type} highlight />
                                     </div>
 
@@ -268,7 +339,7 @@ export default function ServicesProfile() {
                                             <FileText className="size-3.5" /> Purpose / Description
                                         </h3>
                                         <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 min-h-[120px]">
-                                            {selectedTransaction.purpose}
+                                            {selectedTransaction.purpose || <span className="italic text-neutral-400">No purpose or description provided.</span>}
                                         </div>
                                     </div>
 
@@ -328,10 +399,9 @@ function InfoRow({ label, value, highlight = false }: { label: string, value: st
 
 function getStatusColor(status: string) {
     switch (status) {
-        case 'Completed': return 'bg-green-100 text-green-700';
+        case 'Approved': return 'bg-green-100 text-green-700';
         case 'Pending': return 'bg-orange-100 text-orange-700';
-        case 'Processing': return 'bg-blue-100 text-blue-700';
-        case 'Rejected': return 'bg-red-100 text-red-700';
+        case 'Declined': return 'bg-red-100 text-red-700';
         default: return 'bg-neutral-100 text-neutral-600';
     }
 }
