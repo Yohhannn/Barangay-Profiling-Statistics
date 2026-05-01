@@ -159,21 +159,21 @@ class InfrastructureController extends Controller
     public function destroy(Request $request, $id)
     {
         $validated = $request->validate([
-            'delete_reason' => 'nullable|string|max:1000',
+            'deleted_reason' => 'required|string|max:1000'
         ]);
 
         try {
             $infrastructure = Infrastructure::findOrFail($id);
             $infrastructure->update([
-                'is_deleted'    => true,
-                'delete_reason' => $validated['delete_reason'] ?? null,
-                'date_updated'  => now(),
-                'updated_by'    => Auth::id() ?? 1,
+                'is_deleted' => true,
+                'delete_reason' => $validated['deleted_reason'],
+                'date_updated' => now(),
+                'updated_by' => \Illuminate\Support\Facades\Auth::id() ?? 1,
             ]);
 
-            return redirect()->back()->with('success', 'Infrastructure archived successfully!');
+            return redirect()->back()->with('success', 'Infrastructure moved to archives.');
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['error' => 'Error archiving infrastructure: ' . $e->getMessage()]);
+            return redirect()->back()->with('error', 'Failed to archive infrastructure.');
         }
     }
 

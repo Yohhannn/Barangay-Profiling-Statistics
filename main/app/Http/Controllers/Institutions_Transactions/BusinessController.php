@@ -235,14 +235,14 @@ class BusinessController extends Controller
     public function destroy(Request $request, $id)
     {
         $validated = $request->validate([
-            'delete_reason' => 'nullable|string|max:1000',
+            'deleted_reason' => 'required|string|max:1000'
         ]);
 
         try {
             $business = businessInfo::findOrFail($id);
             $business->update([
                 'is_deleted'    => true,
-                'delete_reason' => $validated['delete_reason'] ?? null,
+                'delete_reason' => $validated['deleted_reason'],
                 'date_updated'  => now(),
                 'updated_by'    => Auth::id() ?? 1,
             ]);
