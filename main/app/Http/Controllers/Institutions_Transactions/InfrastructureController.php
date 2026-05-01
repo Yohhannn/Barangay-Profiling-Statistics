@@ -40,7 +40,7 @@ class InfrastructureController extends Controller
                 return [
                     'id'             => $inf->inf_id,
                     'infUuid'        => $inf->inf_uuid,
-                    'infraId'        => 'INF-' . Carbon::parse($inf->date_encoded)->format('Y') . '-' . str_pad($inf->inf_id, 3, '0', STR_PAD_LEFT),
+                    'infraId'        => $inf->inf_uuid,
                     'name'           => $inf->name,
                     'owner'          => $ownerName,
                     'ownerFname'     => $inf->owner_fname,
@@ -206,7 +206,7 @@ class InfrastructureController extends Controller
 
             return response()->json([
                 'id' => $infrastructure->inf_id,
-                'infraId' => 'INF-' . Carbon::parse($infrastructure->date_encoded)->format('Y') . '-' . str_pad($infrastructure->inf_id, 3, '0', STR_PAD_LEFT),
+                'infraId' => $infrastructure->inf_uuid,
                 'name' => $infrastructure->name,
                 'type' => $infrastructure->type,
                 'address' => $infrastructure->address_description ?? '',

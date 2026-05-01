@@ -272,7 +272,7 @@ class CitizenController extends Controller
                 'ownedInfrastructures' => $citizen->infrastructures->where('is_deleted', false)->map(function ($infra) {
                     return [
                         'id' => $infra->inf_id,
-                        'infraId' => 'INF-' . Carbon::parse($infra->date_encoded)->format('Y') . '-' . str_pad($infra->inf_id, 3, '0', STR_PAD_LEFT),
+                        'infraId' => $infra->inf_uuid,
                         'name' => $infra->name,
                         'type' => $infra->type,
                     ];
@@ -281,7 +281,7 @@ class CitizenController extends Controller
                     $year = Carbon::parse($trx->date_encoded)->format('Y');
                     return [
                         'id'             => $trx->tl_id,
-                        'transactionId'  => "TRX-{$year}-" . str_pad($trx->tl_id, 3, '0', STR_PAD_LEFT),
+                        'transactionId'  => $trx->tl_uuid,
                         'type'           => $trx->type,
                         'status'         => $trx->status,
                         'dateRequested'  => $trx->date_requested ? Carbon::parse($trx->date_requested)->format('M d, Y') : 'N/A',
@@ -840,7 +840,7 @@ class CitizenController extends Controller
                 'ownedInfrastructures' => $citizen->infrastructures->where('is_deleted', false)->map(function ($infra) {
                     return [
                         'id' => $infra->inf_id,
-                        'infraId' => 'INF-' . Carbon::parse($infra->date_encoded)->format('Y') . '-' . str_pad($infra->inf_id, 3, '0', STR_PAD_LEFT),
+                        'infraId' => $infra->inf_uuid,
                         'name' => $infra->name,
                         'type' => $infra->type,
                     ];
