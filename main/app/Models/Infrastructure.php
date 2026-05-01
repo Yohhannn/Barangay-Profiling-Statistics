@@ -34,8 +34,8 @@ class Infrastructure extends Model
     ];
 
     protected $casts = [
-        'date_encoded' => 'date',
-        'date_updated' => 'date',
+        'date_encoded' => 'datetime',
+        'date_updated' => 'datetime',
         'is_deleted' => 'boolean',
     ];
 

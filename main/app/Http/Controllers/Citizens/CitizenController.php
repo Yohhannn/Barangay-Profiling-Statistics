@@ -44,6 +44,8 @@ class CitizenController extends Controller
             'info.demographic.philhealth',
             'medicalHistories',
             'histories.settlementLog',
+            'businessOwnerships.business',
+            'infrastructures',
             'encodedBy',
             'updatedBy'
         ])
@@ -264,6 +266,14 @@ class CitizenController extends Controller
                         'name' => $bo->business->name,
                         'type' => $bo->business->type,
                         'status' => $bo->business->status,
+                    ];
+                })->values()->all(),
+                'ownedInfrastructures' => $citizen->infrastructures->where('is_deleted', false)->map(function ($infra) {
+                    return [
+                        'id' => $infra->inf_id,
+                        'infraId' => 'INF-' . Carbon::parse($infra->date_encoded)->format('Y') . '-' . str_pad($infra->inf_id, 3, '0', STR_PAD_LEFT),
+                        'name' => $infra->name,
+                        'type' => $infra->type,
                     ];
                 })->values()->all(),
 
@@ -755,6 +765,7 @@ class CitizenController extends Controller
                 'encodedBy',
                 'updatedBy',
                 'businessOwnerships.business',
+                'infrastructures',
                 'histories' => function($q) {
                     $q->where('is_deleted', false)->orderBy('date_created', 'desc')->limit(5);
                 }
@@ -813,6 +824,14 @@ class CitizenController extends Controller
                         'name' => $bo->business->name,
                         'type' => $bo->business->type,
                         'status' => $bo->business->status,
+                    ];
+                })->values()->all(),
+                'ownedInfrastructures' => $citizen->infrastructures->where('is_deleted', false)->map(function ($infra) {
+                    return [
+                        'id' => $infra->inf_id,
+                        'infraId' => 'INF-' . Carbon::parse($infra->date_encoded)->format('Y') . '-' . str_pad($infra->inf_id, 3, '0', STR_PAD_LEFT),
+                        'name' => $infra->name,
+                        'type' => $infra->type,
                     ];
                 })->values()->all(),
                 // Audit

@@ -7,7 +7,7 @@ import {
     User, MapPin, Briefcase, UserX, GraduationCap,
     HeartPulse, Baby, Phone, Hash, Home,
     Filter, X, SlidersHorizontal, Edit3, ScanFace, Check, RotateCcw,
-    Activity, FileText, Info, Store
+    Activity, FileText, Info, Store, Building
 } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import Swal from 'sweetalert2';
@@ -20,6 +20,7 @@ import HistoryQuickView from '../CitizenRecords/popup/history-quick-view';
 import CitizenQuickView from '../CitizenRecords/popup/citizen-quick-view';
 import HouseholdQuickView from '../CitizenRecords/popup/household-quick-view';
 import BusinessQuickView from '../Institutions/popup/business-quick-view';
+import InfrastructureQuickView from '../Institutions/popup/infrastructures-quick-view';
 
 // --- 1. Comprehensive Type Definition ---
 interface HouseholdMember {
@@ -53,6 +54,13 @@ interface OwnedBusiness {
     name: string;
     type: string;
     status: string;
+}
+
+interface OwnedInfrastructure {
+    id: number;
+    infraId: string;
+    name: string;
+    type: string;
 }
 
 interface Citizen {
@@ -123,6 +131,7 @@ interface Citizen {
     medicalHistories: MedicalHistory[];
     settlementHistories: SettlementHistory[];
     ownedBusinesses: OwnedBusiness[];
+    ownedInfrastructures: OwnedInfrastructure[];
 
     // Audit
     dateEncoded: string;
@@ -166,6 +175,9 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
     const [businessQuickViewOpen, setBusinessQuickViewOpen] = useState(false);
     const [selectedBusinessUuid, setSelectedBusinessUuid] = useState<string | null>(null);
 
+    const [infrastructureQuickViewOpen, setInfrastructureQuickViewOpen] = useState(false);
+    const [selectedInfrastructureId, setSelectedInfrastructureId] = useState<number | null>(null);
+
     const handleOpenMedicalQuickView = (e: React.MouseEvent, uuid: string) => {
         e.stopPropagation();
         setSelectedMedicalUuid(uuid);
@@ -200,6 +212,12 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
         e.stopPropagation();
         setSelectedBusinessUuid(uuid);
         setBusinessQuickViewOpen(true);
+    };
+
+    const handleOpenInfrastructureQuickView = (e: React.MouseEvent, id: number) => {
+        e.stopPropagation();
+        setSelectedInfrastructureId(id);
+        setInfrastructureQuickViewOpen(true);
     };
     
     // Multi-select dropdown state
@@ -370,6 +388,7 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
             <CitizenQuickView isOpen={citizenQuickViewOpen} onClose={() => setCitizenQuickViewOpen(false)} citizenId={selectedCitizenId} />
             <HouseholdQuickView isOpen={householdQuickViewOpen} onClose={() => setHouseholdQuickViewOpen(false)} householdUuid={selectedHouseholdUuid} />
             <BusinessQuickView isOpen={businessQuickViewOpen} onClose={() => setBusinessQuickViewOpen(false)} businessUuid={selectedBusinessUuid} />
+            <InfrastructureQuickView isOpen={infrastructureQuickViewOpen} onClose={() => setInfrastructureQuickViewOpen(false)} infrastructureId={selectedInfrastructureId} />
 
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
 
@@ -1036,6 +1055,36 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                                             </div>
                                         )}
 
+                                        {/* Infrastructure Ownership Section */}
+                                        {selectedCitizen.ownedInfrastructures && selectedCitizen.ownedInfrastructures.length > 0 && (
+                                            <div className="col-span-1 md:col-span-2 lg:col-span-3 space-y-4">
+                                                <SectionHeader icon={<Building className="size-4 text-sky-500" />} title="Owned Infrastructures" />
+                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                    {selectedCitizen.ownedInfrastructures.map((infra) => (
+                                                        <div key={infra.id} className="bg-sky-50/30 dark:bg-sky-900/10 border border-sky-100 rounded-xl p-4 space-y-3 flex flex-col">
+                                                            <div className="flex justify-between items-start">
+                                                                <div>
+                                                                    <h4 className="font-bold text-sm text-neutral-900 dark:text-neutral-100 leading-tight">{infra.name}</h4>
+                                                                    <div className="flex items-center gap-2 mt-1 text-[10px]">
+                                                                        <span className="font-mono text-sky-600 font-bold bg-sky-100/50 dark:bg-sky-900/30 px-1.5 py-0.5 rounded">{infra.infraId}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <span className="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-neutral-100 text-neutral-600">
+                                                                    {infra.type}
+                                                                </span>
+                                                            </div>
+                                                            <button 
+                                                                onClick={(e) => handleOpenInfrastructureQuickView(e, infra.id)}
+                                                                className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-sky-600 text-white text-[10px] font-bold uppercase rounded-lg shadow-sm hover:bg-sky-700 transition-all active:scale-95"
+                                                            >
+                                                                <Building className="size-3" /> Quick View Infrastructure
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
                                     </div>
                                 </div>
 
@@ -1099,6 +1148,16 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                 isOpen={householdQuickViewOpen}
                 onClose={() => setHouseholdQuickViewOpen(false)}
                 householdUuid={selectedHouseholdUuid}
+            />
+            <BusinessQuickView 
+                isOpen={businessQuickViewOpen} 
+                onClose={() => setBusinessQuickViewOpen(false)} 
+                businessUuid={selectedBusinessUuid} 
+            />
+            <InfrastructureQuickView 
+                isOpen={infrastructureQuickViewOpen} 
+                onClose={() => setInfrastructureQuickViewOpen(false)} 
+                infrastructureId={selectedInfrastructureId} 
             />
         </AppLayout>
     );
