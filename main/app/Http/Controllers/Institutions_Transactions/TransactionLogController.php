@@ -24,9 +24,7 @@ class TransactionLogController extends Controller
                     return trim(($account->sys_fname ?? '') . ' ' . ($account->sys_lname ?? '')) ?: 'System';
                 };
 
-                // Generate ID string like TRX-2026-001
-                $year = Carbon::parse($trx->date_encoded)->format('Y');
-                $trxIdStr = "TRX-{$year}-" . str_pad($trx->tl_id, 3, '0', STR_PAD_LEFT);
+                $trxIdStr = $trx->tl_uuid;
 
                 $isUpdated = $trx->date_updated && $trx->date_encoded != $trx->date_updated;
 
@@ -170,8 +168,7 @@ class TransactionLogController extends Controller
 
             $isUpdated = $trx->date_updated && $trx->date_encoded != $trx->date_updated;
             
-            $year = Carbon::parse($trx->date_encoded)->format('Y');
-            $trxIdStr = "TRX-{$year}-" . str_pad($trx->tl_id, 3, '0', STR_PAD_LEFT);
+            $trxIdStr = $trx->tl_uuid;
 
             return response()->json([
                 'id' => $trx->tl_id,

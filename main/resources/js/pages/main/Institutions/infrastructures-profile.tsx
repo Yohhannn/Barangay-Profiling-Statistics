@@ -234,7 +234,7 @@ export default function InfrastructureProfile() {
                                             <td className="px-4 py-3 font-mono text-xs text-neutral-500">{item.infUuid}</td>
                                             <td className="px-4 py-3">
                                                 <div className="font-bold text-neutral-900 dark:text-neutral-100">{item.name}</div>
-                                                <div className="text-[10px] text-neutral-500">{item.infraId}</div>
+
                                             </td>
                                             <td className="px-4 py-3 text-right">
                                                 <div className="flex flex-col items-end gap-1">
