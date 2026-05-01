@@ -17,7 +17,7 @@ class TransactionLog extends Model
                 $year = substr(date('Y'), 2); // e.g. "26" for 2026
                 do {
                     $random = str_pad(rand(100, 999), 3, '0', STR_PAD_LEFT);
-                    $uuid = "trx-{$year}{$random}";
+                    $uuid = "TRX-{$year}{$random}";
                 } while (self::where('tl_uuid', $uuid)->exists());
 
                 $trx->tl_uuid = $uuid;
