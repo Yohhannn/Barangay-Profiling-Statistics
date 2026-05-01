@@ -6,6 +6,7 @@ use App\Http\Controllers\Citizens\CitizenController;
 use App\Http\Controllers\Citizens\HouseholdController;
 use App\Http\Controllers\Institutions_Transactions\BusinessController;
 use App\Http\Controllers\Institutions_Transactions\InfrastructureController;
+use App\Http\Controllers\Institutions_Transactions\TransactionLogController;
 use Inertia\Inertia;
 
 // Root route
@@ -100,9 +101,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('transactions');
 
     // Sub-modules
-    Route::get('transactions/services-profile', function () {
-        return Inertia::render('main/Transactions/services-profile');
-    })->name('services-profile');
+    Route::get('transactions/services-profile', [TransactionLogController::class, 'index'])->name('services-profile');
+    Route::post('/transactions/services', [TransactionLogController::class, 'store']);
+    Route::put('/transactions/services/{id}', [TransactionLogController::class, 'update']);
+    Route::delete('/transactions/services/{id}', [TransactionLogController::class, 'destroy']);
 
     // --- ADMIN PANEL ---
     Route::get('admin-panel', function () {
@@ -153,6 +155,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/api/household-detail/{uuid}', [HouseholdController::class, 'getHouseholdDetail']);
     Route::get('/api/business-detail/{uuid}', [\App\Http\Controllers\Institutions_Transactions\BusinessController::class, 'getQuickViewData']);
     Route::get('/api/infrastructure-detail/{id}', [\App\Http\Controllers\Institutions_Transactions\InfrastructureController::class, 'getQuickViewData']);
+    Route::get('/api/transaction-detail/{id}', [TransactionLogController::class, 'getQuickViewData']);
     Route::get('/api/citizen/{id}', [CitizenController::class, 'getQuickViewData']);
 });
 

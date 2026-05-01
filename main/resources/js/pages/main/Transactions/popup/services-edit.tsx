@@ -2,14 +2,14 @@ import {
     X, CheckCircle, ClipboardList, User,
     Search, UserCheck, UserX, Loader2
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { router } from '@inertiajs/react';
 
 interface CitizenResult { id: number; uuid: string; first_name: string; middle_name: string; last_name: string; suffix: string; }
 
-interface ServicesCreationProps { isOpen: boolean; onClose: () => void; }
+interface ServicesEditProps { isOpen: boolean; onClose: () => void; transaction: any; }
 
-export default function ServicesCreation({ isOpen, onClose }: ServicesCreationProps) {
+export default function ServicesEdit({ isOpen, onClose, transaction }: ServicesEditProps) {
     // Requestor Fields
     const [fname, setFname] = useState('');
     const [lname, setLname] = useState('');
@@ -34,15 +34,29 @@ export default function ServicesCreation({ isOpen, onClose }: ServicesCreationPr
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
-    if (!isOpen) return null;
+    useEffect(() => {
+        if (isOpen && transaction) {
+            setFname(transaction.firstName || '');
+            setLname(transaction.lastName || '');
+            setMname(transaction.middleName || '');
+            setSuffix(transaction.suffix || '');
+            setCtzId(transaction.ctzId || null);
+            setCtzUuid(transaction.ctzUuid || '');
+            setIsLocked(!!transaction.ctzId);
+            
+            setType(transaction.type || '');
+            setStatus(transaction.status || 'Pending');
+            setDateRequested(transaction.dateRequestedRaw || '');
+            setPurpose(transaction.purpose || '');
+            
+            setErrors({});
+            setSearchQuery('');
+            setSearchResults([]);
+            setShowResults(false);
+        }
+    }, [isOpen, transaction]);
 
-    const resetForm = () => {
-        setFname(''); setLname(''); setMname(''); setSuffix('');
-        setCtzId(null); setCtzUuid(''); setIsLocked(false);
-        setSearchQuery(''); setSearchResults([]); setIsSearching(false); setShowResults(false);
-        setType(''); setStatus('Pending'); setDateRequested(''); setPurpose('');
-        setErrors({});
-    };
+    if (!isOpen || !transaction) return null;
 
     const searchCitizens = async (query: string) => {
         if (!query || query.length < 2) { setSearchResults([]); setIsSearching(false); return; }
@@ -94,8 +108,8 @@ export default function ServicesCreation({ isOpen, onClose }: ServicesCreationPr
             ctz_id: ctzId,
         };
 
-        router.post('/transactions/services', data, {
-            onSuccess: () => { resetForm(); onClose(); },
+        router.put(`/transactions/services/${transaction.id}`, data, {
+            onSuccess: () => onClose(),
             onError: (e) => setErrors(e),
             onFinish: () => setIsSubmitting(false),
         });
@@ -110,9 +124,9 @@ export default function ServicesCreation({ isOpen, onClose }: ServicesCreationPr
                     <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none"><ClipboardList className="w-32 h-32" /></div>
                     <div className="z-10">
                         <h2 className="text-lg font-bold tracking-wide flex items-center gap-2">
-                            <ClipboardList className="size-5 text-violet-200" /> New Transaction
+                            <ClipboardList className="size-5 text-violet-200" /> Update Transaction
                         </h2>
-                        <p className="text-[10px] text-violet-200 uppercase tracking-widest font-semibold mt-1">Registering a Service Record</p>
+                        <p className="text-[10px] text-violet-200 uppercase tracking-widest font-semibold mt-1">{transaction.transactionId}</p>
                     </div>
                     <button onClick={onClose} className="z-10 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-all"><X className="size-5" /></button>
                 </div>
@@ -206,9 +220,9 @@ export default function ServicesCreation({ isOpen, onClose }: ServicesCreationPr
                 {/* Footer */}
                 <div className="p-5 bg-white dark:bg-[#0f172a] border-t border-neutral-200 dark:border-neutral-800 flex justify-end shrink-0">
                     <button onClick={handleSubmit} disabled={isSubmitting}
-                        className="flex items-center gap-2 px-8 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-green-600/20 active:scale-95">
+                        className="flex items-center gap-2 px-8 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-blue-600/20 active:scale-95">
                         {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle className="size-4" />}
-                        {isSubmitting ? 'Saving...' : 'Confirm and Save'}
+                        {isSubmitting ? 'Saving...' : 'Update Records'}
                     </button>
                 </div>
             </div>
