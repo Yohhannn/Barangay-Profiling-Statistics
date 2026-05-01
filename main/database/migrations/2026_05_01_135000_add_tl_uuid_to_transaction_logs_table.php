@@ -21,7 +21,7 @@ return new class extends Migration
         TransactionLog::whereNull('tl_uuid')->get()->each(function ($trx) use ($year) {
             do {
                 $random = str_pad(rand(100, 999), 3, '0', STR_PAD_LEFT);
-                $uuid = "trx-{$year}{$random}";
+                $uuid = "TRX-{$year}{$random}";
             } while (TransactionLog::where('tl_uuid', $uuid)->exists());
 
             $trx->tl_uuid = $uuid;

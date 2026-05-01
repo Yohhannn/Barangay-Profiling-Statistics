@@ -22,7 +22,7 @@ return new class extends Migration
         Infrastructure::whereNull('inf_uuid')->get()->each(function ($inf) use ($year) {
             do {
                 $random = str_pad(rand(100, 999), 3, '0', STR_PAD_LEFT);
-                $uuid = "inf-{$year}{$random}";
+                $uuid = "INF-{$year}{$random}";
             } while (Infrastructure::where('inf_uuid', $uuid)->exists());
 
             $inf->inf_uuid = $uuid;

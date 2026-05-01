@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
     X, ClipboardList, Loader2, 
-    AlertCircle, FileText, Clock, User, Calendar
+    AlertCircle, FileText, Clock, User, ExternalLink
 } from 'lucide-react';
+import { Link } from '@inertiajs/react';
 import axios from 'axios';
 
 interface ServicesQuickViewProps {
@@ -145,22 +146,34 @@ export default function ServicesQuickView({ isOpen, onClose, transactionId }: Se
 
                 {/* Audit Footer */}
                 {data && !loading && !error && (
-                    <div className="bg-neutral-50 dark:bg-neutral-900/50 border-t border-neutral-200 dark:border-neutral-800 p-4 shrink-0 flex flex-col sm:flex-row justify-between gap-4 text-[10px] text-neutral-500 font-mono">
-                        <div className="flex items-start gap-2">
-                            <Clock className="size-3.5 text-neutral-400 mt-0.5" />
-                            <div>
-                                <p className="font-bold text-neutral-600 dark:text-neutral-400">ENCODED</p>
-                                <p>{data.dateEncoded}</p>
-                                <p className="text-neutral-400">by {data.encodedBy}</p>
+                    <div className="bg-neutral-50 dark:bg-neutral-900/50 border-t border-neutral-200 dark:border-neutral-800 p-4 shrink-0">
+                        <div className="flex flex-col sm:flex-row justify-between gap-4 text-[10px] text-neutral-500 font-mono">
+                            <div className="flex items-start gap-2">
+                                <Clock className="size-3.5 text-neutral-400 mt-0.5" />
+                                <div>
+                                    <p className="font-bold text-neutral-600 dark:text-neutral-400">ENCODED</p>
+                                    <p>{data.dateEncoded}</p>
+                                    <p className="text-neutral-400">by {data.encodedBy}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-2">
+                                <Clock className="size-3.5 text-neutral-400 mt-0.5" />
+                                <div>
+                                    <p className="font-bold text-neutral-600 dark:text-neutral-400">UPDATED</p>
+                                    <p>{data.dateUpdated}</p>
+                                    <p className="text-neutral-400">by {data.updatedBy}</p>
+                                </div>
                             </div>
                         </div>
-                        <div className="flex items-start gap-2">
-                            <Clock className="size-3.5 text-neutral-400 mt-0.5" />
-                            <div>
-                                <p className="font-bold text-neutral-600 dark:text-neutral-400">UPDATED</p>
-                                <p>{data.dateUpdated}</p>
-                                <p className="text-neutral-400">by {data.updatedBy}</p>
-                            </div>
+                        <div className="mt-4 pt-3 border-t border-neutral-200 dark:border-neutral-700">
+                            <Link
+                                href="/transactions/services-profile"
+                                onClick={onClose}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg transition-all shadow-sm hover:shadow-md active:scale-95"
+                            >
+                                <ExternalLink className="size-3.5" />
+                                View Full Details
+                            </Link>
                         </div>
                     </div>
                 )}
