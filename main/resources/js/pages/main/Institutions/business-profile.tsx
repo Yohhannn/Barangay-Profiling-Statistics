@@ -7,6 +7,7 @@ import {
     Edit3, X, SlidersHorizontal, BadgeCheck
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import Swal from 'sweetalert2';
 import BusinessCreation from './popup/business-creation';
 import BusinessEdit from './popup/business-edit';
 import CitizenQuickView from '../CitizenRecords/popup/citizen-quick-view';
@@ -95,11 +96,40 @@ export default function BusinessProfile() {
 
     const handleDelete = (e: React.MouseEvent, id: number) => {
         e.stopPropagation();
-        if (confirm('Are you sure you want to archive this business record?')) {
-            router.delete(`/institutions/business/${id}`, {
-                onSuccess: () => { if (selectedBusiness?.id === id) setSelectedBusiness(null); },
-            });
-        }
+        Swal.fire({
+            title: 'Archive Business',
+            text: 'Are you sure you want to move this business record to archives? Please provide a reason.',
+            icon: 'warning',
+            input: 'textarea',
+            inputPlaceholder: 'Reason for archiving...',
+            inputAttributes: {
+                'aria-label': 'Reason for archiving'
+            },
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, archive it!',
+            preConfirm: (reason) => {
+                if (!reason) {
+                    Swal.showValidationMessage('A reason is required to archive a business');
+                }
+                return reason;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.delete(`/institutions/business/${id}`, {
+                    data: { deleted_reason: result.value },
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        if (selectedBusiness?.id === id) setSelectedBusiness(null);
+                        Swal.fire('Archived!', 'The business has been moved to archives.', 'success');
+                    },
+                    onError: (errors: any) => {
+                        Swal.fire('Error', errors?.error || 'Failed to archive business.', 'error');
+                    }
+                });
+            }
+        });
     };
 
     return (

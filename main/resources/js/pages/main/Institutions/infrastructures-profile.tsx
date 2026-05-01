@@ -7,6 +7,7 @@ import {
     Edit3, X, SlidersHorizontal, Construction
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
+import Swal from 'sweetalert2';
 import InfrastructureCreation from './popup/infrastructures-creation';
 import InfrastructureEdit from './popup/infrastructures-edit';
 import CitizenQuickView from '../CitizenRecords/popup/citizen-quick-view';
@@ -81,13 +82,40 @@ export default function InfrastructureProfile() {
 
     const handleDelete = (e: React.MouseEvent, id: number) => {
         e.stopPropagation();
-        if (confirm('Are you sure you want to archive this infrastructure record?')) {
-            router.delete(`/institutions/infrastructure/${id}`, {
-                onSuccess: () => {
-                    if (selectedInfra?.id === id) setSelectedInfra(null);
-                },
-            });
-        }
+        Swal.fire({
+            title: 'Archive Infrastructure',
+            text: 'Are you sure you want to move this infrastructure record to archives? Please provide a reason.',
+            icon: 'warning',
+            input: 'textarea',
+            inputPlaceholder: 'Reason for archiving...',
+            inputAttributes: {
+                'aria-label': 'Reason for archiving'
+            },
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, archive it!',
+            preConfirm: (reason) => {
+                if (!reason) {
+                    Swal.showValidationMessage('A reason is required to archive an infrastructure');
+                }
+                return reason;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.delete(`/institutions/infrastructure/${id}`, {
+                    data: { deleted_reason: result.value },
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        if (selectedInfra?.id === id) setSelectedInfra(null);
+                        Swal.fire('Archived!', 'The infrastructure has been moved to archives.', 'success');
+                    },
+                    onError: (errors: any) => {
+                        Swal.fire('Error', errors?.error || 'Failed to archive infrastructure.', 'error');
+                    }
+                });
+            }
+        });
     };
 
     return (
