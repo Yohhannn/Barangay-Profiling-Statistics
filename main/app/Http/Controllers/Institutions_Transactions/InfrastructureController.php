@@ -39,6 +39,7 @@ class InfrastructureController extends Controller
 
                 return [
                     'id'             => $inf->inf_id,
+                    'infUuid'        => $inf->inf_uuid,
                     'infraId'        => 'INF-' . Carbon::parse($inf->date_encoded)->format('Y') . '-' . str_pad($inf->inf_id, 3, '0', STR_PAD_LEFT),
                     'name'           => $inf->name,
                     'owner'          => $ownerName,

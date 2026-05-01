@@ -10,11 +10,27 @@ class Infrastructure extends Model
     /** @use HasFactory<\Database\Factories\InfrastructureFactory> */
     use HasFactory;
 
+    protected static function booted()
+    {
+        static::creating(function ($infra) {
+            if (empty($infra->inf_uuid)) {
+                $year = substr(date('Y'), 2); // e.g. "26" for 2026
+                do {
+                    $random = str_pad(rand(100, 999), 3, '0', STR_PAD_LEFT);
+                    $uuid = "inf-{$year}{$random}";
+                } while (self::where('inf_uuid', $uuid)->exists());
+
+                $infra->inf_uuid = $uuid;
+            }
+        });
+    }
+
     protected $table = 'infrastructures';
     protected $primaryKey = 'inf_id';
     public $incrementing = true;
 
     protected $fillable = [
+        'inf_uuid',
         'name',
         'type',
         'owner_fname',

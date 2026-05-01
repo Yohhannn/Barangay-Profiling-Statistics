@@ -10,11 +10,27 @@ class TransactionLog extends Model
     /** @use HasFactory<\Database\Factories\TransactionLogFactory> */
     use HasFactory;
 
+    protected static function booted()
+    {
+        static::creating(function ($trx) {
+            if (empty($trx->tl_uuid)) {
+                $year = substr(date('Y'), 2); // e.g. "26" for 2026
+                do {
+                    $random = str_pad(rand(100, 999), 3, '0', STR_PAD_LEFT);
+                    $uuid = "trx-{$year}{$random}";
+                } while (self::where('tl_uuid', $uuid)->exists());
+
+                $trx->tl_uuid = $uuid;
+            }
+        });
+    }
+
     protected $table = 'transaction_logs';
     protected $primaryKey = 'tl_id';
     public $incrementing = true;
 
     protected $fillable = [
+        'tl_uuid',
         'date_requested',
         'type',
         'purpose',

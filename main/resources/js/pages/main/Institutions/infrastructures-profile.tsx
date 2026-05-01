@@ -14,6 +14,7 @@ import CitizenQuickView from '../CitizenRecords/popup/citizen-quick-view';
 
 interface Infrastructure {
     id: number;
+    infUuid: string;
     infraId: string;
     name: string;
     owner: string;
@@ -230,7 +231,7 @@ export default function InfrastructureProfile() {
                                             onClick={() => setSelectedInfra(item)}
                                             className={`cursor-pointer transition-all hover:bg-sky-50 dark:hover:bg-sky-900/10 ${selectedInfra?.id === item.id ? 'bg-sky-50 dark:bg-sky-900/20 border-l-4 border-l-sky-500' : 'border-l-4 border-l-transparent'}`}
                                         >
-                                            <td className="px-4 py-3 font-mono text-xs text-neutral-500">{item.id}</td>
+                                            <td className="px-4 py-3 font-mono text-xs text-neutral-500">{item.infUuid}</td>
                                             <td className="px-4 py-3">
                                                 <div className="font-bold text-neutral-900 dark:text-neutral-100">{item.name}</div>
                                                 <div className="text-[10px] text-neutral-500">{item.infraId}</div>
