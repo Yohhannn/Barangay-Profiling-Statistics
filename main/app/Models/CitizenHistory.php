@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Auditable;
 
 class CitizenHistory extends Model
 {
     /** @use HasFactory<\Database\Factories\CitizenHistoryFactory> */
-    use HasFactory;
+    use HasFactory, Auditable;
 
     protected $table = 'citizen_histories';
     protected $primaryKey = 'cihi_id';

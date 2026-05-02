@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Auditable;
 
 class TransactionLog extends Model
 {
     /** @use HasFactory<\Database\Factories\TransactionLogFactory> */
-    use HasFactory;
+    use HasFactory, Auditable;
 
     protected static function booted()
     {

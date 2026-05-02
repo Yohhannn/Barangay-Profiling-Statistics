@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Auditable;
 
 class SettlementLog extends Model
 {
     /** @use HasFactory<\Database\Factories\SettlementLogFactory> */
-    use HasFactory;
+    use HasFactory, Auditable;
 
     protected $table = 'settlement_logs';
     protected $primaryKey = 'sett_id';
