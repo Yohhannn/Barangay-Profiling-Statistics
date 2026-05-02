@@ -105,6 +105,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/transactions/services', [TransactionLogController::class, 'store']);
     Route::put('/transactions/services/{id}', [TransactionLogController::class, 'update']);
     Route::delete('/transactions/services/{id}', [TransactionLogController::class, 'destroy']);
+    Route::post('/transactions/services/{id}/export-log', [TransactionLogController::class, 'recordExport']);
 
     // --- ADMIN PANEL ---
     Route::get('admin-panel', function () {
@@ -122,9 +123,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('admin-control');
 
     // --- ACTIVITY LOGS ---
-    Route::get('activity-logs', function () {
-        return Inertia::render('admin/ActivityLogs/activity-logs');
-    })->name('activity-logs');
+    Route::get('activity-logs', [\App\Http\Controllers\Admin\AuditLogController::class, 'index'])->name('activity-logs');
 
     // --- ARCHIVES ---
     Route::get('archives', function () {

@@ -72,4 +72,9 @@ class TransactionLog extends Model
     {
         return $this->belongsTo(SystemAccount::class, 'updated_by', 'sys_id');
     }
+
+    public function exportLogs()
+    {
+        return $this->hasMany(ExportLog::class, 'tl_id', 'tl_id');
+    }
 }
