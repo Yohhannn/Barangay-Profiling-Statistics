@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Institutions_Transactions;
 use App\Http\Controllers\Controller;
 use App\Models\TransactionLog;
 use App\Models\Citizen;
+use App\Models\ExportLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -14,7 +15,7 @@ class TransactionLogController extends Controller
 {
     public function index()
     {
-        $transactions = TransactionLog::with(['citizen', 'encodedByAccount', 'updatedByAccount'])
+        $transactions = TransactionLog::with(['citizen', 'encodedByAccount', 'updatedByAccount', 'exportLogs.exportedByAccount'])
             ->where('is_deleted', false)
             ->orderBy('tl_id', 'desc')
             ->get()
@@ -44,6 +45,14 @@ class TransactionLogController extends Controller
                     'purpose'        => $trx->purpose ?? '',
                     'ctzId'          => $trx->ctz_id,
                     'ctzUuid'        => $trx->citizen?->ctz_uuid,
+                    
+                    'exportLogs'     => $trx->exportLogs->map(function($log) use ($getSystemName) {
+                        return [
+                            'id' => $log->EL_ID,
+                            'dateExported' => Carbon::parse($log->date_time_exported)->format('M d, Y | h:i A'),
+                            'exportedBy' => $getSystemName($log->exportedByAccount)
+                        ];
+                    }),
                     
                     // Audit Trail
                     'dateEncoded'    => $trx->date_encoded ? Carbon::parse($trx->date_encoded)->format('M d, Y | h:i A') : 'N/A',
@@ -156,7 +165,7 @@ class TransactionLogController extends Controller
     public function getQuickViewData($id)
     {
         try {
-            $trx = TransactionLog::with(['citizen', 'encodedByAccount', 'updatedByAccount'])
+            $trx = TransactionLog::with(['citizen', 'encodedByAccount', 'updatedByAccount', 'exportLogs.exportedByAccount'])
                 ->where('tl_id', $id)
                 ->where('is_deleted', false)
                 ->firstOrFail();
@@ -180,6 +189,13 @@ class TransactionLogController extends Controller
                 'dateRequested' => $trx->date_requested ? Carbon::parse($trx->date_requested)->format('F d, Y') : 'N/A',
                 'ctzId' => $trx->ctz_id,
                 'ctzUuid' => $trx->citizen?->ctz_uuid,
+                'exportLogs' => $trx->exportLogs->map(function($log) use ($getSystemName) {
+                    return [
+                        'id' => $log->EL_ID,
+                        'dateExported' => Carbon::parse($log->date_time_exported)->format('M d, Y | h:i A'),
+                        'exportedBy' => $getSystemName($log->exportedByAccount)
+                    ];
+                }),
                 'dateEncoded' => $trx->date_encoded ? Carbon::parse($trx->date_encoded)->format('M d, Y | h:i A') : 'N/A',
                 'encodedBy' => $getSystemName($trx->encodedByAccount),
                 'dateUpdated' => $isUpdated ? Carbon::parse($trx->date_updated)->format('M d, Y | h:i A') : 'N/A',
@@ -187,6 +203,21 @@ class TransactionLogController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Transaction not found.'], 404);
+        }
+    }
+
+    public function recordExport(Request $request, $id)
+    {
+        try {
+            $trx = TransactionLog::findOrFail($id);
+            ExportLog::create([
+                'tl_id' => $trx->tl_id,
+                'exported_by' => Auth::id() ?? 1,
+                'date_time_exported' => now(),
+            ]);
+            return response()->json(['success' => true, 'message' => 'Export logged successfully.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => 'Failed to log export: ' . $e->getMessage()], 500);
         }
     }
 }

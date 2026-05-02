@@ -2,8 +2,9 @@ import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { RefreshCw, Clock, History, Search } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { RefreshCw, Clock, History, Search, Filter } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import debounce from 'lodash/debounce';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -20,27 +21,40 @@ interface LogEntry {
     timestamp: string;
 }
 
-// Mock Data to match your screenshot example
-const mockLogs: LogEntry[] = [
-    { id: 1, user_id: '1001', staff_name: 'Ian N. Majica', action_made: 'Action UPDATE on transaction_log ID = 3', timestamp: '2025-10-28 04:54:24.798584' },
-    { id: 2, user_id: '1001', staff_name: 'Ian N. Majica', action_made: 'Action UPDATE on medical_history ID = 1', timestamp: '2025-10-19 16:33:08.466469' },
-    { id: 3, user_id: '1001', staff_name: 'Ian N. Majica', action_made: 'Action UPDATE on medical_history ID = 1', timestamp: '2025-10-19 16:32:49.341955' },
-    { id: 4, user_id: '1001', staff_name: 'Ian N. Majica', action_made: 'Action UPDATE on citizen ID = 2', timestamp: '2025-09-13 04:12:37.549146' },
-    { id: 5, user_id: '1001', staff_name: 'Ian N. Majica', action_made: 'Action INSERT on citizen ID = 3', timestamp: '2025-08-15 03:04:08.181501' },
-    { id: 6, user_id: '1001', staff_name: 'Ian N. Majica', action_made: 'Action INSERT on system_account ID = 1004', timestamp: '2025-08-15 03:01:14.580167' },
-    { id: 7, user_id: '1001', staff_name: 'Ian N. Majica', action_made: 'Action UPDATE on business_info ID = 1', timestamp: '2025-08-15 03:00:01.002219' },
-    { id: 8, user_id: '1001', staff_name: 'Ian N. Majica', action_made: 'Action UPDATE on household_info ID = 1', timestamp: '2025-08-15 02:58:14.785594' },
-    { id: 9, user_id: '1001', staff_name: 'Ian N. Majica', action_made: 'Action INSERT on citizen_history ID = 2', timestamp: '2025-08-15 02:55:44.372603' },
-    { id: 10, user_id: '1001', staff_name: 'Ian N. Majica', action_made: 'Action INSERT on transaction_log ID = 3', timestamp: '2025-08-07 23:09:13.974272' },
-];
-
-interface ActivityLogsProps {
-    logs?: LogEntry[];
+interface PaginatedLogs {
+    data: LogEntry[];
+    current_page: number;
+    last_page: number;
+    prev_page_url: string | null;
+    next_page_url: string | null;
+    from: number;
+    to: number;
+    total: number;
+    links: { url: string | null, label: string, active: boolean }[];
 }
 
-export default function ActivityLogs({ logs = mockLogs }: ActivityLogsProps) {
+interface ActivityLogsProps {
+    logs: PaginatedLogs;
+    filters: {
+        search?: string;
+        staff?: string;
+        action?: string;
+        start_date?: string;
+        end_date?: string;
+    };
+    staffOptions: { id: number; name: string }[];
+    actionOptions: string[];
+}
+
+export default function ActivityLogs({ logs, filters, staffOptions, actionOptions }: ActivityLogsProps) {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [isRefreshing, setIsRefreshing] = useState(false);
+
+    const [search, setSearch] = useState(filters?.search || '');
+    const [staff, setStaff] = useState(filters?.staff || '');
+    const [action, setAction] = useState(filters?.action || '');
+    const [startDate, setStartDate] = useState(filters?.start_date || '');
+    const [endDate, setEndDate] = useState(filters?.end_date || '');
 
     // Live Clock Logic
     useEffect(() => {
@@ -48,9 +62,38 @@ export default function ActivityLogs({ logs = mockLogs }: ActivityLogsProps) {
         return () => clearInterval(timer);
     }, []);
 
+    const fetchFilteredLogs = useCallback(
+        debounce((query: string, staffFilter: string, actionFilter: string, start: string, end: string) => {
+            router.get('/activity-logs', { 
+                search: query, 
+                staff: staffFilter, 
+                action: actionFilter, 
+                start_date: start, 
+                end_date: end 
+            }, { preserveState: true, preserveScroll: true });
+        }, 500),
+        []
+    );
+
+    useEffect(() => {
+        // Skip initial render if all filters match props
+        if (search !== (filters?.search || '') || 
+            staff !== (filters?.staff || '') || 
+            action !== (filters?.action || '') || 
+            startDate !== (filters?.start_date || '') || 
+            endDate !== (filters?.end_date || '')) {
+            fetchFilteredLogs(search, staff, action, startDate, endDate);
+        }
+    }, [search, staff, action, startDate, endDate, fetchFilteredLogs, filters]);
+
     const handleRefresh = () => {
         setIsRefreshing(true);
-        router.reload({
+        setSearch('');
+        setStaff('');
+        setAction('');
+        setStartDate('');
+        setEndDate('');
+        router.get('/activity-logs', {}, {
             onFinish: () => setIsRefreshing(false),
         });
     };
@@ -96,22 +139,69 @@ export default function ActivityLogs({ logs = mockLogs }: ActivityLogsProps) {
                 {/* --- Main Content Area --- */}
                 <div className="flex-1 flex flex-col rounded-2xl border border-sidebar-border/60 bg-white dark:bg-sidebar shadow-sm overflow-hidden">
 
-                    {/* Toolbar / Header */}
-                    <div className="p-4 border-b border-sidebar-border/60 bg-neutral-50/50 dark:bg-neutral-900/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    {/* Toolbar / Header & Filters */}
+                    <div className="p-4 border-b border-sidebar-border/60 bg-neutral-50/50 dark:bg-neutral-900/20 flex flex-col gap-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <button
+                                onClick={handleRefresh}
+                                disabled={isRefreshing}
+                                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:text-black dark:hover:bg-neutral-200 text-xs font-bold uppercase tracking-wider rounded-lg transition-all disabled:opacity-70"
+                            >
+                                <RefreshCw className={`size-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                                {isRefreshing ? 'Refreshing...' : 'Reset & Refresh'}
+                            </button>
+                            <h2 className="text-sm font-bold text-neutral-500 uppercase tracking-widest text-center sm:text-right flex-1">
+                                Filtered Activities
+                            </h2>
+                        </div>
 
-                        {/* Refresh Button */}
-                        <button
-                            onClick={handleRefresh}
-                            disabled={isRefreshing}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:text-black dark:hover:bg-neutral-200 text-xs font-bold uppercase tracking-wider rounded-lg transition-all disabled:opacity-70"
-                        >
-                            <RefreshCw className={`size-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-                            {isRefreshing ? 'Refreshing...' : 'Refresh Logs'}
-                        </button>
-
-                        <h2 className="text-sm font-bold text-neutral-500 uppercase tracking-widest text-center sm:text-right flex-1">
-                            Recent Activities
-                        </h2>
+                        {/* Filters Row */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-2">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Search details..."
+                                    value={search}
+                                    onChange={e => setSearch(e.target.value)}
+                                    className="w-full pl-10 pr-3 py-2 text-xs border border-sidebar-border rounded-lg bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+                                />
+                            </div>
+                            <select
+                                value={staff}
+                                onChange={e => setStaff(e.target.value)}
+                                className="w-full px-3 py-2 text-xs border border-sidebar-border rounded-lg bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+                            >
+                                <option value="">All Staff</option>
+                                {staffOptions?.map(option => (
+                                    <option key={option.id} value={option.id}>{option.name}</option>
+                                ))}
+                            </select>
+                            <select
+                                value={action}
+                                onChange={e => setAction(e.target.value)}
+                                className="w-full px-3 py-2 text-xs border border-sidebar-border rounded-lg bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+                            >
+                                <option value="">All Actions</option>
+                                {actionOptions?.map(opt => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                ))}
+                            </select>
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={e => setStartDate(e.target.value)}
+                                className="w-full px-3 py-2 text-xs border border-sidebar-border rounded-lg bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+                                placeholder="Start Date"
+                            />
+                            <input
+                                type="date"
+                                value={endDate}
+                                onChange={e => setEndDate(e.target.value)}
+                                className="w-full px-3 py-2 text-xs border border-sidebar-border rounded-lg bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+                                placeholder="End Date"
+                            />
+                        </div>
                     </div>
 
                     {/* Table Container */}
@@ -126,7 +216,7 @@ export default function ActivityLogs({ logs = mockLogs }: ActivityLogsProps) {
                             </tr>
                             </thead>
                             <tbody className="divide-y divide-sidebar-border/50">
-                            {logs.length > 0 ? logs.map((log) => (
+                            {logs.data && logs.data.length > 0 ? logs.data.map((log) => (
                                 <tr key={log.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/30 transition-colors group">
                                     <td className="px-6 py-3.5 font-mono text-xs text-neutral-500 group-hover:text-neutral-900 dark:group-hover:text-neutral-100">
                                         {log.user_id}
@@ -144,6 +234,11 @@ export default function ActivityLogs({ logs = mockLogs }: ActivityLogsProps) {
                                         ) : log.action_made.includes('INSERT') ? (
                                             <span className="inline-flex items-center gap-1.5">
                                                     <span className="size-1.5 rounded-full bg-green-500"></span>
+                                                {log.action_made}
+                                                </span>
+                                        ) : log.action_made.includes('DELETE') ? (
+                                            <span className="inline-flex items-center gap-1.5">
+                                                    <span className="size-1.5 rounded-full bg-red-500"></span>
                                                 {log.action_made}
                                                 </span>
                                         ) : (
@@ -168,12 +263,26 @@ export default function ActivityLogs({ logs = mockLogs }: ActivityLogsProps) {
                         </table>
                     </div>
 
-                    {/* Simple Pagination Footer (Static) */}
+                    {/* Dynamic Pagination Footer */}
                     <div className="p-4 border-t border-sidebar-border/60 bg-neutral-50/30 dark:bg-neutral-900/10 flex justify-between items-center text-xs text-neutral-500">
-                        <span>Showing recent 100 entries</span>
+                        <span>
+                            Showing {logs.from || 0} to {logs.to || 0} of {logs.total || 0} entries
+                        </span>
                         <div className="flex gap-2">
-                            <button className="px-3 py-1 rounded-md border border-sidebar-border hover:bg-white dark:hover:bg-sidebar disabled:opacity-50" disabled>Previous</button>
-                            <button className="px-3 py-1 rounded-md border border-sidebar-border hover:bg-white dark:hover:bg-sidebar">Next</button>
+                            <button 
+                                onClick={() => logs.prev_page_url && router.get(logs.prev_page_url, { search, staff, action, start_date: startDate, end_date: endDate }, { preserveState: true, preserveScroll: true })}
+                                disabled={!logs.prev_page_url}
+                                className="px-3 py-1 rounded-md border border-sidebar-border hover:bg-white dark:hover:bg-sidebar disabled:opacity-50 transition-colors"
+                            >
+                                Previous
+                            </button>
+                            <button 
+                                onClick={() => logs.next_page_url && router.get(logs.next_page_url, { search, staff, action, start_date: startDate, end_date: endDate }, { preserveState: true, preserveScroll: true })}
+                                disabled={!logs.next_page_url}
+                                className="px-3 py-1 rounded-md border border-sidebar-border hover:bg-white dark:hover:bg-sidebar disabled:opacity-50 transition-colors"
+                            >
+                                Next
+                            </button>
                         </div>
                     </div>
                 </div>

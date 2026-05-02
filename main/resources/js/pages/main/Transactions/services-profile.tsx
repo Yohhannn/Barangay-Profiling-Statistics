@@ -35,6 +35,12 @@ interface Transaction {
     encodedBy: string;
     dateUpdated: string;
     updatedBy: string;
+
+    exportLogs?: {
+        id: number;
+        dateExported: string;
+        exportedBy: string;
+    }[];
 }
 
 interface ServicesProfileProps {
@@ -139,6 +145,21 @@ export default function ServicesProfile({ transactions = [] }: ServicesProfilePr
         }
 
         const printWindow = window.open('', '_blank');
+        
+        // Log the export
+        fetch(`/transactions/services/${selectedTransaction.id}/export-log`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        }).then(res => res.json()).then(data => {
+            if(data.success) {
+                router.reload({ only: ['transactions'] });
+            }
+        }).catch(err => console.error("Failed to log export", err));
+
         if (printWindow) {
             printWindow.document.write(`
                 <html>
@@ -414,6 +435,39 @@ export default function ServicesProfile({ transactions = [] }: ServicesProfilePr
                                         </h3>
                                         <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 min-h-[120px]">
                                             {selectedTransaction.purpose || <span className="italic text-neutral-400">No purpose or description provided.</span>}
+                                        </div>
+                                    </div>
+
+                                    {/* Export Logs Block */}
+                                    <div className="space-y-2">
+                                        <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2">
+                                            <Download className="size-3.5" /> Export Logs
+                                        </h3>
+                                        <div className="bg-white dark:bg-sidebar border border-sidebar-border rounded-xl shadow-sm overflow-hidden">
+                                            <table className="w-full text-sm text-left">
+                                                <thead className="text-[10px] text-neutral-500 uppercase bg-neutral-50 dark:bg-neutral-900/50">
+                                                    <tr>
+                                                        <th className="px-4 py-2 font-semibold border-b border-sidebar-border">Date & Time Exported</th>
+                                                        <th className="px-4 py-2 font-semibold border-b border-sidebar-border">Exported By</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-sidebar-border/50">
+                                                    {selectedTransaction.exportLogs && selectedTransaction.exportLogs.length > 0 ? (
+                                                        selectedTransaction.exportLogs.map((log) => (
+                                                            <tr key={log.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-900/20 transition-colors">
+                                                                <td className="px-4 py-2 font-mono text-xs text-neutral-600 dark:text-neutral-400">{log.dateExported}</td>
+                                                                <td className="px-4 py-2 text-xs font-medium text-neutral-900 dark:text-neutral-100">{log.exportedBy}</td>
+                                                            </tr>
+                                                        ))
+                                                    ) : (
+                                                        <tr>
+                                                            <td colSpan={2} className="px-4 py-6 text-center text-xs text-neutral-400 italic">
+                                                                No export logs available for this transaction.
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                            </table>
                                         </div>
                                     </div>
 

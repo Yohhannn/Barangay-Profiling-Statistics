@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Auditable;
 
 class Citizen extends Model
 {
@@ -26,7 +27,7 @@ class Citizen extends Model
         });
     }
     /** @use HasFactory<\Database\Factories\CitizenFactory> */
-    use HasFactory;
+    use HasFactory, Auditable;
 
     protected $table = 'citizens';
     protected $primaryKey = 'ctz_id';
