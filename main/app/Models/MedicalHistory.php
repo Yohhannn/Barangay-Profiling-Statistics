@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Auditable;
 
 class MedicalHistory extends Model
 {
     /** @use HasFactory<\Database\Factories\MedicalHistoryFactory> */
-    use HasFactory;
+    use HasFactory, Auditable;
 
     protected $table = 'medical_histories';
     protected $primaryKey = 'mh_id';

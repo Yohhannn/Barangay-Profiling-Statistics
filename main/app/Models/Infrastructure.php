@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Auditable;
 
 class Infrastructure extends Model
 {
     /** @use HasFactory<\Database\Factories\InfrastructureFactory> */
-    use HasFactory;
+    use HasFactory, Auditable;
 
     protected static function booted()
     {

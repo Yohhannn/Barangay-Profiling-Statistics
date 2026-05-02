@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Auditable;
 
 class HouseholdInfo extends Model
 {
     /** @use HasFactory<\Database\Factories\HouseholdInfoFactory> */
-    use HasFactory;
+    use HasFactory, Auditable;
 
     protected $table = 'household_infos';
     protected $primaryKey = 'hh_id';
