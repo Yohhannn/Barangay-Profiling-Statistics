@@ -241,6 +241,16 @@ export default function ActivityLogs({ logs, filters, staffOptions, actionOption
                                                     <span className="size-1.5 rounded-full bg-red-500"></span>
                                                 {log.action_made}
                                                 </span>
+                                        ) : log.action_made.includes('VIEW') ? (
+                                            <span className="inline-flex items-center gap-1.5">
+                                                    <span className="size-1.5 rounded-full bg-blue-500"></span>
+                                                {log.action_made}
+                                                </span>
+                                        ) : log.action_made.includes('EXPORT') ? (
+                                            <span className="inline-flex items-center gap-1.5">
+                                                    <span className="size-1.5 rounded-full bg-violet-500"></span>
+                                                {log.action_made}
+                                                </span>
                                         ) : (
                                             log.action_made
                                         )}

@@ -331,6 +331,8 @@ class CitizenHistoryController extends Controller
             ->where('cihi_uuid', $uuid)
             ->firstOrFail();
 
+        $history->logView();
+
         $encodedByName = $history->encodedByAccount ? trim($history->encodedByAccount->sys_fname . ' ' . $history->encodedByAccount->sys_lname) : 'Unknown User';
         $updatedByName = $history->updatedByAccount ? trim($history->updatedByAccount->sys_fname . ' ' . $history->updatedByAccount->sys_lname) : $encodedByName;
 

@@ -39,9 +39,18 @@ trait Auditable
     }
 
     /**
+     * Explicitly log a VIEW action.
+     * Can be called from controllers when a record is viewed.
+     */
+    public function logView()
+    {
+        self::logAction($this, 'VIEW');
+    }
+
+    /**
      * Format and save the action to AuditLog.
      */
-    protected static function logAction($model, $actionType)
+    public static function logAction($model, $actionType)
     {
         // Get currently authenticated system account, default to 1 (System) if none
         $sysId = Auth::id() ?? 1;

@@ -390,6 +390,8 @@ class HouseholdController extends Controller
             return response()->json(['error' => 'Household not found'], 404);
         }
 
+        $household->logView();
+
         $encodedByName = $household->encodedByAccount ? trim($household->encodedByAccount->sys_fname . ' ' . $household->encodedByAccount->sys_lname) : 'Unknown User';
         $updatedByName = $household->updatedByAccount ? trim($household->updatedByAccount->sys_fname . ' ' . $household->updatedByAccount->sys_lname) : $encodedByName;
 

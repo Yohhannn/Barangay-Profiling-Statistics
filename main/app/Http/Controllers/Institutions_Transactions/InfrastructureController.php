@@ -189,6 +189,8 @@ class InfrastructureController extends Controller
                 ->where('is_deleted', false)
                 ->firstOrFail();
 
+            $infrastructure->logView();
+
             $ownerName = trim(
                 ($infrastructure->owner_fname ?? '') . ' ' .
                 ($infrastructure->owner_mname ? $infrastructure->owner_mname . ' ' : '') .
