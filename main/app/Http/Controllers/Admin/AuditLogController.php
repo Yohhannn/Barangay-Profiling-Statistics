@@ -69,7 +69,7 @@ class AuditLogController extends Controller
                 ];
             });
 
-        $actionOptions = ['INSERT', 'UPDATE', 'DELETE', 'EXPORT', 'LOGIN', 'LOGOUT'];
+        $actionOptions = ['INSERT', 'UPDATE', 'DELETE', 'VIEW', 'EXPORT', 'LOGIN', 'LOGOUT'];
 
         return Inertia::render('admin/ActivityLogs/activity-logs', [
             'logs' => $logs,

@@ -785,6 +785,8 @@ class CitizenController extends Controller
             ->where('is_deleted', false)
             ->firstOrFail();
 
+            $citizen->logView();
+
             $info = $citizen->info;
             $demo = $info->demographic;
 

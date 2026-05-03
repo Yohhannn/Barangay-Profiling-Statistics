@@ -260,6 +260,8 @@ class BusinessController extends Controller
             ->where('is_deleted', false)
             ->firstOrFail();
 
+        $business->logView();
+
         return response()->json([
             'id' => $business->bs_id,
             'uuid' => $business->bs_uuid,

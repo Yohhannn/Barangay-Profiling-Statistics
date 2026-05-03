@@ -312,6 +312,8 @@ class SettlementController extends Controller
             ->where('sett_uuid', $uuid)
             ->firstOrFail();
 
+        $settlement->logView();
+
         $encodedByName = $settlement->encodedByAccount ? trim($settlement->encodedByAccount->sys_fname . ' ' . $settlement->encodedByAccount->sys_lname) : 'Unknown User';
         $updatedByName = $settlement->updatedByAccount ? trim($settlement->updatedByAccount->sys_fname . ' ' . $settlement->updatedByAccount->sys_lname) : $encodedByName;
 

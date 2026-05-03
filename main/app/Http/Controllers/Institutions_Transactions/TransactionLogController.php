@@ -170,6 +170,8 @@ class TransactionLogController extends Controller
                 ->where('is_deleted', false)
                 ->firstOrFail();
 
+            $trx->logView();
+
             $getSystemName = function ($account) {
                 if (!$account) return 'System';
                 return trim(($account->sys_fname ?? '') . ' ' . ($account->sys_lname ?? '')) ?: 'System';
