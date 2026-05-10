@@ -12,28 +12,28 @@ trait Auditable
      */
     public static function bootAuditable()
     {
-        static::created(function ($model) {
+        static::registerModelEvent('created', function ($model) {
             self::logAction($model, 'INSERT');
         });
 
-        static::updated(function ($model) {
-            $isArchived = false;
+        static::registerModelEvent('updated', function ($model) {
+            $actionType = 'UPDATE';
 
-            // Check if this was an archive action (is_deleted column changed to true)
+            // Check for Archive or Restore actions
             if (array_key_exists('is_deleted', $model->getAttributes())) {
-                if ($model->wasChanged('is_deleted') && $model->is_deleted) {
-                    $isArchived = true;
+                if ($model->wasChanged('is_deleted')) {
+                    if ($model->is_deleted) {
+                        $actionType = 'DELETE'; // Archived
+                    } else {
+                        $actionType = 'RESTORE'; // Restored
+                    }
                 }
             }
 
-            if ($isArchived) {
-                self::logAction($model, 'DELETE');
-            } else {
-                self::logAction($model, 'UPDATE');
-            }
+            self::logAction($model, $actionType);
         });
 
-        static::deleted(function ($model) {
+        static::registerModelEvent('deleted', function ($model) {
             self::logAction($model, 'DELETE');
         });
     }

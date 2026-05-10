@@ -17,26 +17,35 @@ class AuditLogController extends Controller
     {
         $query = AuditLog::with('account');
 
+        // Search (User ID, Staff Name, Action, Description)
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
-                $q->whereHas('account', function ($q) use ($search) {
-                    $q->where('sys_account_id', 'like', "%{$search}%")
-                      ->orWhere('sys_fname', 'like', "%{$search}%")
-                      ->orWhere('sys_lname', 'like', "%{$search}%");
+                $q->whereHas('account', function ($sub) use ($search) {
+                    $sub->where('sys_account_id', 'like', "%{$search}%")
+                        ->orWhere('sys_fname', 'like', "%{$search}%")
+                        ->orWhere('sys_lname', 'like', "%{$search}%");
                 })->orWhere('action_name', 'like', "%{$search}%")
                   ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
-        if ($request->filled('staff')) {
+        // Staff Filter
+        if ($request->filled('staff') && $request->input('staff') !== '') {
             $query->where('sys_id', $request->input('staff'));
         }
 
-        if ($request->filled('action')) {
-            $query->where('action_name', 'like', '%' . $request->input('action') . '%');
+        // Action Filter
+        if ($request->filled('action') && $request->input('action') !== '') {
+            $query->where('action_name', $request->input('action'));
         }
 
+        // Entity Filter (Parsed from description)
+        if ($request->filled('entity') && $request->input('entity') !== '') {
+            $query->where('description', 'like', $request->input('entity') . ' %');
+        }
+
+        // Date Filters
         if ($request->filled('start_date')) {
             $query->whereDate('created_at', '>=', $request->input('start_date'));
         }
@@ -53,8 +62,8 @@ class AuditLogController extends Controller
                 'id' => $log->id,
                 'user_id' => $log->account ? $log->account->sys_account_id : 'System',
                 'staff_name' => $log->account ? trim($log->account->sys_fname . ' ' . $log->account->sys_lname) : 'System',
-                'action_made' => 'Action ' . $log->action_name . ' on ' . $log->description,
-                'timestamp' => $log->created_at ? Carbon::parse($log->created_at)->format('Y-m-d H:i:s.u') : null,
+                'action_made' => "{$log->action_name} on {$log->description}",
+                'timestamp' => $log->created_at ? Carbon::parse($log->created_at)->format('M d, Y | h:i:s A') : null,
             ];
         });
 
@@ -69,13 +78,22 @@ class AuditLogController extends Controller
                 ];
             });
 
-        $actionOptions = ['INSERT', 'UPDATE', 'DELETE', 'VIEW', 'EXPORT', 'LOGIN', 'LOGOUT'];
+        $actionOptions = ['INSERT', 'UPDATE', 'DELETE', 'RESTORE', 'VIEW', 'EXPORT', 'LOGIN', 'LOGOUT'];
+
+        // Extract entities (table names) from descriptions
+        $entityOptions = AuditLog::selectRaw("SUBSTRING(description FROM 1 FOR POSITION(' ' IN description) - 1) as entity")
+            ->where('description', 'like', '% %')
+            ->distinct()
+            ->pluck('entity')
+            ->filter()
+            ->values();
 
         return Inertia::render('admin/ActivityLogs/activity-logs', [
             'logs' => $logs,
-            'filters' => $request->only(['search', 'staff', 'action', 'start_date', 'end_date']),
+            'filters' => $request->only(['search', 'staff', 'action', 'entity', 'start_date', 'end_date']),
             'staffOptions' => $staffOptions,
             'actionOptions' => $actionOptions,
+            'entityOptions' => $entityOptions,
         ]);
     }
 
