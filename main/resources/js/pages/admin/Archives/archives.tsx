@@ -34,7 +34,8 @@ const archiveCategories = [
         border: 'group-hover:border-blue-200 dark:group-hover:border-blue-800',
         hoverBg: 'group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20',
         gradient: 'from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/10',
-        href: '/archives/citizens'
+        href: '/archives/citizens',
+        countKey: 'citizens'
     },
     {
         title: 'Household',
@@ -45,7 +46,8 @@ const archiveCategories = [
         border: 'group-hover:border-orange-200 dark:group-hover:border-orange-800',
         hoverBg: 'group-hover:bg-orange-50 dark:group-hover:bg-orange-900/20',
         gradient: 'from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-900/10',
-        href: '/archives/household'
+        href: '/archives/household',
+        countKey: 'household'
     },
     {
         title: 'Business',
@@ -56,7 +58,8 @@ const archiveCategories = [
         border: 'group-hover:border-emerald-200 dark:group-hover:border-emerald-800',
         hoverBg: 'group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/20',
         gradient: 'from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-900/10',
-        href: '/archives/business'
+        href: '/archives/business',
+        countKey: 'business'
     },
     {
         title: 'Infrastructures',
@@ -67,7 +70,8 @@ const archiveCategories = [
         border: 'group-hover:border-cyan-200 dark:group-hover:border-cyan-800',
         hoverBg: 'group-hover:bg-cyan-50 dark:group-hover:bg-cyan-900/20',
         gradient: 'from-cyan-50 to-cyan-100 dark:from-cyan-900/20 dark:to-cyan-900/10',
-        href: '/archives/infrastructures'
+        href: '/archives/infrastructures',
+        countKey: 'infrastructures'
     },
     {
         title: 'Services',
@@ -78,7 +82,8 @@ const archiveCategories = [
         border: 'group-hover:border-yellow-200 dark:group-hover:border-yellow-800',
         hoverBg: 'group-hover:bg-yellow-50 dark:group-hover:bg-yellow-900/20',
         gradient: 'from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-900/10',
-        href: '/archives/services'
+        href: '/archives/services',
+        countKey: 'services'
     },
     {
         title: 'Citizen Hist.',
@@ -89,7 +94,8 @@ const archiveCategories = [
         border: 'group-hover:border-indigo-200 dark:group-hover:border-indigo-800',
         hoverBg: 'group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/20',
         gradient: 'from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-900/10',
-        href: '/archives/citizen-history'
+        href: '/archives/citizen-history',
+        countKey: 'citizen_history'
     },
     {
         title: 'Medical Hist.',
@@ -100,7 +106,8 @@ const archiveCategories = [
         border: 'group-hover:border-rose-200 dark:group-hover:border-rose-800',
         hoverBg: 'group-hover:bg-rose-50 dark:group-hover:bg-rose-900/20',
         gradient: 'from-rose-50 to-rose-100 dark:from-rose-900/20 dark:to-rose-900/10',
-        href: '/archives/medical-history'
+        href: '/archives/medical-history',
+        countKey: 'medical_history'
     },
     {
         title: 'Settlement Hist.',
@@ -111,11 +118,12 @@ const archiveCategories = [
         border: 'group-hover:border-stone-200 dark:group-hover:border-stone-800',
         hoverBg: 'group-hover:bg-stone-50 dark:group-hover:bg-stone-900/20',
         gradient: 'from-stone-50 to-stone-100 dark:from-stone-900/20 dark:to-stone-900/10',
-        href: '/archives/settlement-history'
+        href: '/archives/settlement-history',
+        countKey: 'settlement_history'
     },
 ];
 
-export default function Archives() {
+export default function Archives({ counts = {} }: { counts?: Record<string, number> }) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Archives" />
@@ -159,10 +167,10 @@ export default function Archives() {
                             {/* Hover Gradient Background */}
                             <div className={`absolute inset-0 bg-gradient-to-b opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-3xl ${item.gradient}`} />
 
-                            {/* Floating "Deleted" Counter (Mock) */}
+                            {/* Floating "Deleted" Counter */}
                             <div className="absolute top-4 right-4 z-10 opacity-50 group-hover:opacity-100 transition-opacity">
                                 <span className="text-[10px] font-mono font-bold text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded-md">
-                                    DEL: 00
+                                    DEL: {String(counts[item.countKey] || 0).padStart(2, '0')}
                                 </span>
                             </div>
 

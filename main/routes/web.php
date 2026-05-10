@@ -126,9 +126,32 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('activity-logs', [\App\Http\Controllers\Admin\AuditLogController::class, 'index'])->name('activity-logs');
 
     // --- ARCHIVES ---
-    Route::get('archives', function () {
-        return Inertia::render('admin/Archives/archives');
-    })->name('archives');
+    Route::get('/archives', [\App\Http\Controllers\Admin\ArchiveController::class, 'index'])->name('archives');
+
+    // Archive sub-pages
+    Route::get('archives/citizens', [\App\Http\Controllers\Admin\ArchiveController::class, 'citizens'])->name('archives.citizens');
+    Route::post('archives/citizens/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreCitizen'])->name('archives.citizens.restore');
+
+    Route::get('archives/household', [\App\Http\Controllers\Admin\ArchiveController::class, 'household'])->name('archives.household');
+    Route::post('archives/household/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreHousehold'])->name('archives.household.restore');
+
+    Route::get('archives/business', [\App\Http\Controllers\Admin\ArchiveController::class, 'business'])->name('archives.business');
+    Route::post('archives/business/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreBusiness'])->name('archives.business.restore');
+
+    Route::get('archives/infrastructures', [\App\Http\Controllers\Admin\ArchiveController::class, 'infrastructures'])->name('archives.infrastructures');
+    Route::post('archives/infrastructures/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreInfrastructure'])->name('archives.infrastructures.restore');
+
+    Route::get('archives/services', [\App\Http\Controllers\Admin\ArchiveController::class, 'services'])->name('archives.services');
+    Route::post('archives/services/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreService'])->name('archives.services.restore');
+
+    Route::get('archives/medical-history', [\App\Http\Controllers\Admin\ArchiveController::class, 'medicalHistory'])->name('archives.medical-history');
+    Route::post('archives/medical-history/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreMedicalHistory'])->name('archives.medical-history.restore');
+
+    Route::get('archives/settlement-history', [\App\Http\Controllers\Admin\ArchiveController::class, 'settlementHistory'])->name('archives.settlement-history');
+    Route::post('archives/settlement-history/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreSettlementHistory'])->name('archives.settlement-history.restore');
+
+    Route::get('archives/citizen-history', [\App\Http\Controllers\Admin\ArchiveController::class, 'citizenHistory'])->name('archives.citizen-history');
+    Route::post('archives/citizen-history/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreCitizenHistory'])->name('archives.citizen-history.restore');
 
 
     Route::post('/citizens/store', [CitizenController::class, 'store']);

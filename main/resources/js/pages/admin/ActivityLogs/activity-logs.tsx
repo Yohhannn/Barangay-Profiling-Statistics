@@ -39,20 +39,23 @@ interface ActivityLogsProps {
         search?: string;
         staff?: string;
         action?: string;
+        entity?: string;
         start_date?: string;
         end_date?: string;
     };
     staffOptions: { id: number; name: string }[];
     actionOptions: string[];
+    entityOptions: string[];
 }
 
-export default function ActivityLogs({ logs, filters, staffOptions, actionOptions }: ActivityLogsProps) {
+export default function ActivityLogs({ logs, filters, staffOptions, actionOptions, entityOptions }: ActivityLogsProps) {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [isRefreshing, setIsRefreshing] = useState(false);
 
     const [search, setSearch] = useState(filters?.search || '');
     const [staff, setStaff] = useState(filters?.staff || '');
     const [action, setAction] = useState(filters?.action || '');
+    const [entity, setEntity] = useState(filters?.entity || '');
     const [startDate, setStartDate] = useState(filters?.start_date || '');
     const [endDate, setEndDate] = useState(filters?.end_date || '');
 
@@ -63,11 +66,12 @@ export default function ActivityLogs({ logs, filters, staffOptions, actionOption
     }, []);
 
     const fetchFilteredLogs = useCallback(
-        debounce((query: string, staffFilter: string, actionFilter: string, start: string, end: string) => {
+        debounce((query: string, staffFilter: string, actionFilter: string, entityFilter: string, start: string, end: string) => {
             router.get('/activity-logs', { 
                 search: query, 
                 staff: staffFilter, 
                 action: actionFilter, 
+                entity: entityFilter,
                 start_date: start, 
                 end_date: end 
             }, { preserveState: true, preserveScroll: true });
@@ -80,17 +84,19 @@ export default function ActivityLogs({ logs, filters, staffOptions, actionOption
         if (search !== (filters?.search || '') || 
             staff !== (filters?.staff || '') || 
             action !== (filters?.action || '') || 
+            entity !== (filters?.entity || '') ||
             startDate !== (filters?.start_date || '') || 
             endDate !== (filters?.end_date || '')) {
-            fetchFilteredLogs(search, staff, action, startDate, endDate);
+            fetchFilteredLogs(search, staff, action, entity, startDate, endDate);
         }
-    }, [search, staff, action, startDate, endDate, fetchFilteredLogs, filters]);
+    }, [search, staff, action, entity, startDate, endDate, fetchFilteredLogs, filters]);
 
     const handleRefresh = () => {
         setIsRefreshing(true);
         setSearch('');
         setStaff('');
         setAction('');
+        setEntity('');
         setStartDate('');
         setEndDate('');
         router.get('/activity-logs', {}, {
@@ -156,8 +162,8 @@ export default function ActivityLogs({ logs, filters, staffOptions, actionOption
                         </div>
 
                         {/* Filters Row */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-2">
-                            <div className="relative">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 mt-2">
+                            <div className="relative lg:col-span-1">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-400" />
                                 <input
                                     type="text"
@@ -185,6 +191,16 @@ export default function ActivityLogs({ logs, filters, staffOptions, actionOption
                                 <option value="">All Actions</option>
                                 {actionOptions?.map(opt => (
                                     <option key={opt} value={opt}>{opt}</option>
+                                ))}
+                            </select>
+                            <select
+                                value={entity}
+                                onChange={e => setEntity(e.target.value)}
+                                className="w-full px-3 py-2 text-xs border border-sidebar-border rounded-lg bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+                            >
+                                <option value="">All Entities</option>
+                                {entityOptions?.map(ent => (
+                                    <option key={ent} value={ent}>{ent}</option>
                                 ))}
                             </select>
                             <input
@@ -249,6 +265,11 @@ export default function ActivityLogs({ logs, filters, staffOptions, actionOption
                                         ) : log.action_made.includes('EXPORT') ? (
                                             <span className="inline-flex items-center gap-1.5">
                                                     <span className="size-1.5 rounded-full bg-violet-500"></span>
+                                                {log.action_made}
+                                                </span>
+                                        ) : log.action_made.includes('RESTORE') ? (
+                                            <span className="inline-flex items-center gap-1.5">
+                                                    <span className="size-1.5 rounded-full bg-cyan-500"></span>
                                                 {log.action_made}
                                                 </span>
                                         ) : (
