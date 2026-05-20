@@ -60,7 +60,7 @@ export default function AdminPanel({ staffCount = 0, lastModified = "00:00 N/A |
 
                     {/* Card 1: Manage Accounts (Indigo Theme) */}
                     <Link
-                        href="/admin/accounts"
+                        href="/admin-panel/manage-accounts"
                         className="group relative flex flex-col items-center justify-center rounded-3xl border border-sidebar-border/60 bg-white dark:bg-sidebar p-12 text-center shadow-sm transition-all duration-300 hover:border-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-1"
                     >
                         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-indigo-50/30 dark:to-indigo-900/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-3xl" />
@@ -104,7 +104,7 @@ export default function AdminPanel({ staffCount = 0, lastModified = "00:00 N/A |
 
                     {/* Card 2: Admin Controls (Cyan/Sky Theme) */}
                     <Link
-                        href="/admin/controls"
+                        href="/admin-panel/admin-control"
                         className="group relative flex flex-col items-center justify-center rounded-3xl border border-sidebar-border/60 bg-white dark:bg-sidebar p-12 text-center shadow-sm transition-all duration-300 hover:border-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/5 hover:-translate-y-1"
                     >
                         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-cyan-50/30 dark:to-cyan-900/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-3xl" />
