@@ -71,16 +71,6 @@ const adminNavItems: NavItem[] = [
         href: adminPanel(), // Update with actual route helper when created
         icon: Shield,
     },
-    {
-        title: 'Activity Logs',
-        href: activityLogs(), // Update with actual route helper when created
-        icon: Logs,
-    },
-    {
-        title: 'Archives',
-        href: archives(), // Update with actual route helper when created
-        icon: ArchiveX
-    },
 ];
 
 const footerNavItems: NavItem[] = [];
