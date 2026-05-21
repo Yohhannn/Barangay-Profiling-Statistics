@@ -282,7 +282,7 @@ export default function ManageAccounts({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Manage Accounts" />
 
-            <div className="flex flex-col h-full min-h-[90vh] p-4 lg:p-6 gap-4 max-w-[1920px] mx-auto w-full">
+            <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
 
                 {/* ── Header ── */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-sidebar-border/60">
@@ -326,9 +326,9 @@ export default function ManageAccounts({
 
                 {/* ══════════════════════════════════════ TAB: ACTIVE ══════ */}
                 {activeTab === 'active' && (
-                    <div className="flex gap-4 flex-1 min-h-0">
+                    <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
                         {/* Left: List */}
-                        <div className="flex flex-col w-96 shrink-0 bg-white dark:bg-sidebar border border-sidebar-border rounded-2xl overflow-hidden shadow-sm">
+                        <div className="lg:col-span-4 flex flex-col bg-white dark:bg-sidebar rounded-2xl border border-sidebar-border/60 shadow-sm overflow-hidden">
                             {/* Search + filter */}
                             <div className="p-3 border-b border-sidebar-border space-y-2">
                                 <div className="relative">
@@ -400,14 +400,14 @@ export default function ManageAccounts({
                         </div>
 
                         {/* Right: Detail */}
-                        <div className="flex-1 min-w-0">
+                        <div className="lg:col-span-8 flex flex-col min-h-0">
                             {!selectedUser ? (
-                                <div className="h-full bg-white dark:bg-sidebar border border-sidebar-border rounded-2xl flex flex-col items-center justify-center text-neutral-300">
+                                <div className="flex-1 bg-white dark:bg-sidebar border border-sidebar-border/60 shadow-sm rounded-2xl flex flex-col items-center justify-center text-neutral-300">
                                     <UserCog className="size-16 mb-4 opacity-30" />
                                     <p className="text-sm font-medium">Select an account to view details</p>
                                 </div>
                             ) : (
-                                <div className="h-full bg-white dark:bg-sidebar border border-sidebar-border rounded-2xl overflow-y-auto flex flex-col">
+                                <div className="flex-1 bg-white dark:bg-sidebar border border-sidebar-border/60 shadow-sm rounded-2xl overflow-hidden flex flex-col">
                                     {/* Detail header */}
                                     <div className="relative bg-gradient-to-r from-indigo-900 to-indigo-700 p-6 text-white shrink-0">
                                         <div className="flex items-center gap-4">
@@ -424,7 +424,7 @@ export default function ManageAccounts({
                                         </div>
                                     </div>
 
-                                    <div className="p-6 space-y-5 flex-1">
+                                    <div className="p-6 space-y-5 flex-1 overflow-y-auto">
                                         {/* Info */}
                                         <div className="grid grid-cols-2 gap-3">
                                             <InfoCard icon={<Mail className="size-4 text-indigo-400" />} label="Email" value={selectedUser.email ?? 'Not set'} italic={!selectedUser.email} />
@@ -481,7 +481,7 @@ export default function ManageAccounts({
 
                 {/* ══════════════════════════════════ TAB: DEACTIVATED ══════ */}
                 {activeTab === 'deactivated' && (
-                    <div className="flex-1 bg-white dark:bg-sidebar border border-sidebar-border rounded-2xl overflow-hidden shadow-sm">
+                    <div className="flex-1 bg-white dark:bg-sidebar border border-sidebar-border/60 shadow-sm rounded-2xl overflow-hidden">
                         <div className="p-4 border-b border-sidebar-border bg-red-50/50 dark:bg-red-900/10 flex items-center gap-3">
                             <AlertTriangle className="size-4 text-red-500" />
                             <div>
@@ -541,7 +541,7 @@ export default function ManageAccounts({
 
                 {/* ══════════════════════════════════════ TAB: ROLES ══════ */}
                 {activeTab === 'roles' && (
-                    <div className="flex-1 bg-white dark:bg-sidebar border border-sidebar-border rounded-2xl overflow-hidden shadow-sm">
+                    <div className="flex-1 bg-white dark:bg-sidebar border border-sidebar-border/60 shadow-sm rounded-2xl overflow-hidden">
                         <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-bold text-neutral-800 dark:text-neutral-200">Role Management</p>

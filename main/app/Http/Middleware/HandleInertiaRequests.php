@@ -46,6 +46,24 @@ class HandleInertiaRequests extends Middleware
             }
         }
 
+        // Compute role name for sidebar/dashboard display
+        $roleName = null;
+        if ($user) {
+            $roleKey = 'user_role_' . $user->sys_id;
+            $roleName = Cache::remember($roleKey, 600, function () use ($user) {
+                $userPermIds = \App\Models\SystemPermission::where('sys_id', $user->sys_id)
+                    ->pluck('perm_id')->sort()->values()->toArray();
+                $roles = \App\Models\Role::with('rolePermissions')->get();
+                foreach ($roles as $role) {
+                    $rolePermIds = $role->rolePermissions->pluck('perm_id')->sort()->values()->toArray();
+                    if ($rolePermIds === $userPermIds) {
+                        return $role->name;
+                    }
+                }
+                return 'Custom';
+            });
+        }
+
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
 
         return [
@@ -59,6 +77,7 @@ class HandleInertiaRequests extends Middleware
                     'sys_fname'      => $request->user()->sys_fname,
                     'sys_lname'      => $request->user()->sys_lname,
                     'email'          => $request->user()->email,
+                    'role'           => $roleName,
                     'permissions'    => $request->user()->permissionNames(),
                 ] : null,
             ],

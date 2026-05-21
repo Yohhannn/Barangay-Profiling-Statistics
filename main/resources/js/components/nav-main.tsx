@@ -14,25 +14,28 @@ export function NavMain({ items = [], label }: { items: NavItem[]; label: string
     const page = usePage();
     return (
         <SidebarGroup className="px-2 py-0">
-            {/* Now using the dynamic label prop here */}
-            <SidebarGroupLabel className="px-2 py-2 mt-4">{label}</SidebarGroupLabel>
+            <SidebarGroupLabel className="px-2 py-2 mt-4 text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/40">
+                {label}
+            </SidebarGroupLabel>
             <SidebarMenu>
-                {items.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                            asChild
-                            isActive={page.url.startsWith(
-                                resolveUrl(item.href),
-                            )}
-                            tooltip={{ children: item.title }}
-                        >
-                            <Link href={item.href} prefetch>
-                                {item.icon && <item.icon />}
-                                <span>{item.title}</span>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                ))}
+                {items.map((item) => {
+                    const isActive = page.url.startsWith(resolveUrl(item.href));
+                    return (
+                        <SidebarMenuItem key={item.title}>
+                            <SidebarMenuButton
+                                asChild
+                                isActive={isActive}
+                                tooltip={{ children: item.title }}
+                                className={isActive ? 'font-semibold' : ''}
+                            >
+                                <Link href={item.href} prefetch>
+                                    {item.icon && <item.icon className={isActive ? 'text-primary' : ''} />}
+                                    <span>{item.title}</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    );
+                })}
             </SidebarMenu>
         </SidebarGroup>
     );

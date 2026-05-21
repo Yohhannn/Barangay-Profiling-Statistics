@@ -33,9 +33,13 @@ interface Citizen {
 }
 
 interface User {
-    id: number;
-    name: string;
-    email: string;
+    sys_id: number;
+    sys_account_id: number;
+    sys_fname: string;
+    sys_lname: string;
+    email: string | null;
+    role?: string;
+    permissions: string[];
     [key: string]: any;
 }
 
@@ -95,14 +99,15 @@ export default function Dashboard({ stats, recentCitizens }: DashboardProps) {
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-0.5">Welcome Back</span>
-                                <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">{user?.name || 'User'}</h2>
+                                <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
+                                    {user ? `${user.sys_fname} ${user.sys_lname}` : 'User'}
+                                </h2>
                                 <div className="flex items-center gap-3 mt-1.5 text-xs text-neutral-500">
                                     <span className="flex items-center gap-1 bg-green-100 text-green-700 px-2 py-0.5 rounded-md dark:bg-green-900/30 dark:text-green-400 font-medium">
-                                        <ShieldCheck className="size-3" /> Administrator
+                                        <ShieldCheck className="size-3" /> {user?.role || 'Staff'}
                                     </span>
-                                    {/* FIX: Added String() and fallback to prevent crash if user.id is undefined */}
                                     <span className="font-mono opacity-70">
-                                        SysID: {String(user?.id || '0').padStart(6, '0')}
+                                        SysID: {String(user?.sys_account_id || '0').padStart(6, '0')}
                                     </span>
                                 </div>
                             </div>
