@@ -40,6 +40,30 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::createUsersUsing(CreateNewUser::class);
+
+        // Custom authentication: use sys_account_id as login identifier,
+        // check sys_password, and block deactivated accounts.
+        Fortify::authenticateUsing(function (\Illuminate\Http\Request $request) {
+            $user = \App\Models\SystemAccount::where(
+                'sys_account_id', $request->input(Fortify::username())
+            )->first();
+
+            if (!$user) {
+                return null;
+            }
+
+            // Block deactivated accounts
+            if ($user->is_deleted) {
+                return null;
+            }
+
+            // Validate password against sys_password column
+            if (\Illuminate\Support\Facades\Hash::check($request->password, $user->sys_password)) {
+                return $user;
+            }
+
+            return null;
+        });
     }
 
     /**

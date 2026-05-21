@@ -2,163 +2,166 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Permission ID reference (auto-incremented from PermissionSeeder insertion order):
+ *
+ *  1  = View Dashboard
+ *  --- Citizen Panel ---
+ *  2  = View Citizen Profile       3  = Create Citizen Profile
+ *  4  = Update Citizen Profile     5  = Delete Citizen Profile
+ *  6  = View Household Profile     7  = Create Household Profile
+ *  8  = Update Household Profile   9  = Delete Household Profile
+ *  --- Statistics Panel ---
+ *  10 = View Demographic           11 = View Neighborhood
+ *  12 = View Household             13 = View Education
+ *  14 = View Employment            15 = View Health
+ *  16 = View Business (stat)       17 = View Infrastructures
+ *  --- Institutions Panel ---
+ *  18 = View Business              19 = Create Business
+ *  20 = Update Business            21 = Delete Business
+ *  22 = View Infrastructure        23 = Create Infrastructure
+ *  24 = Update Infrastructure      25 = Delete Infrastructure
+ *  --- Transaction Panel ---
+ *  26 = View Services              27 = Create Services
+ *  28 = Update Services            29 = Delete Services
+ *  30 = Export Services
+ *  --- History Records Panel ---
+ *  31 = View Citizen History       32 = Create Citizen History
+ *  33 = Update Citizen History     34 = Delete Citizen History
+ *  35 = View Medical History       36 = Create Medical History
+ *  37 = Update Medical History     38 = Delete Medical History
+ *  39 = View Settlement History    40 = Create Settlement History
+ *  41 = Update Settlement History  42 = Delete Settlement History
+ *  --- Admin Panel ---
+ *  43 = View Archive               44 = Restore Archive
+ *  45 = View Account               46 = Create Account
+ *  47 = Update Account             48 = Delete Account
+ *  49 = View Control               50 = Create Control
+ *  51 = Update Control             52 = Delete Control
+ *  53 = View Audit Logs
+ */
 class RolePermissionSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        DB::table('role_permissions')->insert([
-            // Role 1: SR_OFFICE ACCOUNT (VIEW DASHBOARD AND DELETE ABILITY)
-            ['role_id' => 1, 'perm_id' => 1],  // View Dashboard
-            ['role_id' => 1, 'perm_id' => 5],  // Delete Citizen Profile
-            ['role_id' => 1, 'perm_id' => 9],  // Delete Household Profile
-            ['role_id' => 1, 'perm_id' => 21], // Delete Business
-            ['role_id' => 1, 'perm_id' => 25], // Delete Infrastructure
-            ['role_id' => 1, 'perm_id' => 29], // Delete Services
-            ['role_id' => 1, 'perm_id' => 34], // Delete Citizen History
-            ['role_id' => 1, 'perm_id' => 38], // Delete Medical History
-            ['role_id' => 1, 'perm_id' => 42], // Delete Settlement History
-            ['role_id' => 1, 'perm_id' => 48], // Delete Account
-            ['role_id' => 1, 'perm_id' => 52], // Delete Control
+        // ─────────────────────────────────────────────────────────────────────
+        // Role 7: BHW  (base — no delete)
+        // Citizen: View/Create/Update Citizen Profile & Household
+        // History: View Citizen History, View/Create/Update Medical History
+        // Stats:   Demographic, Neighborhood, Household, Education, Employment, Health
+        // ─────────────────────────────────────────────────────────────────────
+        $bhw = [
+            1,              // View Dashboard
+            2, 3, 4,        // View/Create/Update Citizen Profile
+            6, 7, 8,        // View/Create/Update Household Profile
+            10, 11, 12, 13, 14, 15, // Stats: Demo, Neighborhood, Household, Edu, Employ, Health
+            31,             // View Citizen History
+            35, 36, 37,     // View/Create/Update Medical History
+        ];
 
-            // Role 2: OFFICE ACCOUNT (All permissions except deletes)
-            ['role_id' => 2, 'perm_id' => 1],  // View Dashboard
-            ['role_id' => 2, 'perm_id' => 2],  // View Citizen Profile
-            ['role_id' => 2, 'perm_id' => 3],  // Create Citizen Profile
-            ['role_id' => 2, 'perm_id' => 4],  // Update Citizen Profile
-            ['role_id' => 2, 'perm_id' => 6],  // View Household Profile
-            ['role_id' => 2, 'perm_id' => 7],  // Create Household Profile
-            ['role_id' => 2, 'perm_id' => 8],  // Update Household Profile
-            ['role_id' => 2, 'perm_id' => 10], // View Demographic
-            ['role_id' => 2, 'perm_id' => 11], // View Neighborhood
-            ['role_id' => 2, 'perm_id' => 12], // View Household
-            ['role_id' => 2, 'perm_id' => 13], // View Education
-            ['role_id' => 2, 'perm_id' => 14], // View Employment
-            ['role_id' => 2, 'perm_id' => 15], // View Health
-            ['role_id' => 2, 'perm_id' => 16], // View Business (Statistics)
-            ['role_id' => 2, 'perm_id' => 17], // View Infrastructures
-            ['role_id' => 2, 'perm_id' => 18], // View Business (Institutions)
-            ['role_id' => 2, 'perm_id' => 19], // Create Business
-            ['role_id' => 2, 'perm_id' => 20], // Update Business
-            ['role_id' => 2, 'perm_id' => 22], // View Infrastructure
-            ['role_id' => 2, 'perm_id' => 23], // Create Infrastructure
-            ['role_id' => 2, 'perm_id' => 24], // Update Infrastructure
-            ['role_id' => 2, 'perm_id' => 26], // View Services
-            ['role_id' => 2, 'perm_id' => 27], // Create Services
-            ['role_id' => 2, 'perm_id' => 28], // Update Services
-            ['role_id' => 2, 'perm_id' => 30], // Export Services
-            ['role_id' => 2, 'perm_id' => 31], // View Citizen History
-            ['role_id' => 2, 'perm_id' => 32], // Create Citizen History
-            ['role_id' => 2, 'perm_id' => 33], // Update Citizen History
-            ['role_id' => 2, 'perm_id' => 35], // View Medical History
-            ['role_id' => 2, 'perm_id' => 36], // Create Medical History
-            ['role_id' => 2, 'perm_id' => 37], // Update Medical History
-            ['role_id' => 2, 'perm_id' => 39], // View Settlement History
-            ['role_id' => 2, 'perm_id' => 40], // Create Settlement History
-            ['role_id' => 2, 'perm_id' => 41], // Update Settlement History
-            ['role_id' => 2, 'perm_id' => 43], // View Archive
-            ['role_id' => 2, 'perm_id' => 44], // Restore Archive
-            ['role_id' => 2, 'perm_id' => 45], // View Account
-            ['role_id' => 2, 'perm_id' => 46], // Create Account
-            ['role_id' => 2, 'perm_id' => 47], // Update Account
-            ['role_id' => 2, 'perm_id' => 49], // View Control
-            ['role_id' => 2, 'perm_id' => 50], // Create Control
-            ['role_id' => 2, 'perm_id' => 51], // Update Control
-            ['role_id' => 2, 'perm_id' => 53], // View Audit Logs
+        // ─────────────────────────────────────────────────────────────────────
+        // Role 6: SR_BHW  (inherits BHW + adds deletes for citizen, household, medical)
+        // ─────────────────────────────────────────────────────────────────────
+        $srBhw = array_unique(array_merge($bhw, [
+            5,              // Delete Citizen Profile
+            9,              // Delete Household Profile
+            38,             // Delete Medical History
+        ]));
 
-            // Role 3: OFFICE_ENCODER ACCOUNT (View Dashboard, No Delete, Limited Permissions)
-            ['role_id' => 3, 'perm_id' => 1],  // View Dashboard
-            ['role_id' => 3, 'perm_id' => 2],  // View Citizen Profile
-            ['role_id' => 3, 'perm_id' => 3],  // Create Citizen Profile
-            ['role_id' => 3, 'perm_id' => 4],  // Update Citizen Profile
-            ['role_id' => 3, 'perm_id' => 6],  // View Household Profile
-            ['role_id' => 3, 'perm_id' => 7],  // Create Household Profile
-            ['role_id' => 3, 'perm_id' => 8],  // Update Household Profile
-            ['role_id' => 3, 'perm_id' => 26], // View Services
-            ['role_id' => 3, 'perm_id' => 27], // Create Services
-            ['role_id' => 3, 'perm_id' => 28], // Update Services
-            ['role_id' => 3, 'perm_id' => 30], // Export Services
+        // ─────────────────────────────────────────────────────────────────────
+        // Role 5: BPSO  (base — no delete)
+        // Citizen: View Citizen Profile, View Household Profile
+        // History: View/Create/Update Citizen History, View/Create/Update Settlement History
+        // Stats:   Demographic, Neighborhood, Household, Education, Employment
+        // ─────────────────────────────────────────────────────────────────────
+        $bpso = [
+            1,              // View Dashboard
+            2,              // View Citizen Profile
+            6,              // View Household Profile
+            10, 11, 12, 13, 14, // Stats: Demo, Neighborhood, Household, Edu, Employ
+            31, 32, 33,     // View/Create/Update Citizen History
+            39, 40, 41,     // View/Create/Update Settlement History
+        ];
 
-            // Role 4: SR_BPSO ACCOUNT (View Dashboard, Delete Ability, Limited Permissions)
-            ['role_id' => 4, 'perm_id' => 1],  // View Dashboard
-            ['role_id' => 4, 'perm_id' => 2],  // View Citizen Profile
-            ['role_id' => 4, 'perm_id' => 5],  // Delete Citizen Profile
-            ['role_id' => 4, 'perm_id' => 6],  // View Household Profile
-            ['role_id' => 4, 'perm_id' => 9],  // Delete Household Profile
-            ['role_id' => 4, 'perm_id' => 10], // View Demographic
-            ['role_id' => 4, 'perm_id' => 11], // View Neighborhood
-            ['role_id' => 4, 'perm_id' => 12], // View Household
-            ['role_id' => 4, 'perm_id' => 13], // View Education
-            ['role_id' => 4, 'perm_id' => 14], // View Employment
-            ['role_id' => 4, 'perm_id' => 31], // View Citizen History
-            ['role_id' => 4, 'perm_id' => 32], // Create Citizen History
-            ['role_id' => 4, 'perm_id' => 33], // Update Citizen History
-            ['role_id' => 4, 'perm_id' => 34], // Delete Citizen History
-            ['role_id' => 4, 'perm_id' => 39], // View Settlement History
-            ['role_id' => 4, 'perm_id' => 40], // Create Settlement History
-            ['role_id' => 4, 'perm_id' => 41], // Update Settlement History
-            ['role_id' => 4, 'perm_id' => 42], // Delete Settlement History
+        // ─────────────────────────────────────────────────────────────────────
+        // Role 4: SR_BPSO  (inherits BPSO + adds deletes for citizen & settlement history)
+        // ─────────────────────────────────────────────────────────────────────
+        $srBpso = array_unique(array_merge($bpso, [
+            34,             // Delete Citizen History
+            42,             // Delete Settlement History
+        ]));
 
-            // Role 5: BPSO ACCOUNT (View Dashboard, No Delete)
-            ['role_id' => 5, 'perm_id' => 1],  // View Dashboard
-            ['role_id' => 5, 'perm_id' => 2],  // View Citizen Profile
-            ['role_id' => 5, 'perm_id' => 6],  // View Household Profile
-            ['role_id' => 5, 'perm_id' => 10], // View Demographic
-            ['role_id' => 5, 'perm_id' => 11], // View Neighborhood
-            ['role_id' => 5, 'perm_id' => 12], // View Household
-            ['role_id' => 5, 'perm_id' => 13], // View Education
-            ['role_id' => 5, 'perm_id' => 14], // View Employment
-            ['role_id' => 5, 'perm_id' => 31], // View Citizen History
-            ['role_id' => 5, 'perm_id' => 32], // Create Citizen History
-            ['role_id' => 5, 'perm_id' => 33], // Update Citizen History
-            ['role_id' => 5, 'perm_id' => 39], // View Settlement History
-            ['role_id' => 5, 'perm_id' => 40], // Create Settlement History
-            ['role_id' => 5, 'perm_id' => 41], // Update Settlement History
+        // ─────────────────────────────────────────────────────────────────────
+        // Role 3: OFFICE_ENCODER  (narrow scope — no delete)
+        // Citizen: View/Create/Update Citizen Profile & Household
+        // Transactions: View/Create/Update Services
+        // ─────────────────────────────────────────────────────────────────────
+        $officeEncoder = [
+            1,              // View Dashboard
+            2, 3, 4,        // View/Create/Update Citizen Profile
+            6, 7, 8,        // View/Create/Update Household Profile
+            26, 27, 28,     // View/Create/Update Services
+        ];
 
-            // Role 6: SR_BHW ACCOUNT (View Dashboard, Delete Ability)
-            ['role_id' => 6, 'perm_id' => 1],  // View Dashboard
-            ['role_id' => 6, 'perm_id' => 2],  // View Citizen Profile
-            ['role_id' => 6, 'perm_id' => 3],  // Create Citizen Profile
-            ['role_id' => 6, 'perm_id' => 4],  // Update Citizen Profile
-            ['role_id' => 6, 'perm_id' => 5],  // Delete Citizen Profile
-            ['role_id' => 6, 'perm_id' => 6],  // View Household Profile
-            ['role_id' => 6, 'perm_id' => 7],  // Create Household Profile
-            ['role_id' => 6, 'perm_id' => 8],  // Update Household Profile
-            ['role_id' => 6, 'perm_id' => 9],  // Delete Household Profile
-            ['role_id' => 6, 'perm_id' => 10], // View Demographic
-            ['role_id' => 6, 'perm_id' => 11], // View Neighborhood
-            ['role_id' => 6, 'perm_id' => 12], // View Household
-            ['role_id' => 6, 'perm_id' => 13], // View Education
-            ['role_id' => 6, 'perm_id' => 14], // View Employment
-            ['role_id' => 6, 'perm_id' => 15], // View Health
-            ['role_id' => 6, 'perm_id' => 35], // View Medical History
-            ['role_id' => 6, 'perm_id' => 36], // Create Medical History
-            ['role_id' => 6, 'perm_id' => 37], // Update Medical History
-            ['role_id' => 6, 'perm_id' => 38], // Delete Medical History
+        // ─────────────────────────────────────────────────────────────────────
+        // Role 2: OFFICE  (everything except delete — NO admin panel access)
+        // ─────────────────────────────────────────────────────────────────────
+        $office = [
+            1,              // View Dashboard
+            2, 3, 4,        // View/Create/Update Citizen Profile      (no 5 Delete)
+            6, 7, 8,        // View/Create/Update Household Profile    (no 9 Delete)
+            10, 11, 12, 13, 14, 15, 16, 17, // All Statistics views
+            18, 19, 20,     // View/Create/Update Business             (no 21 Delete)
+            22, 23, 24,     // View/Create/Update Infrastructure       (no 25 Delete)
+            26, 27, 28, 30, // View/Create/Update/Export Services      (no 29 Delete)
+            31, 32, 33,     // View/Create/Update Citizen History      (no 34 Delete)
+            35, 36, 37,     // View/Create/Update Medical History      (no 38 Delete)
+            39, 40, 41,     // View/Create/Update Settlement History   (no 42 Delete)
+            // NO admin panel permissions (43-53)
+        ];
 
-            // Role 7: BHW ACCOUNT (View Dashboard, No Delete)
-            ['role_id' => 7, 'perm_id' => 1],  // View Dashboard
-            ['role_id' => 7, 'perm_id' => 2],  // View Citizen Profile
-            ['role_id' => 7, 'perm_id' => 3],  // Create Citizen Profile
-            ['role_id' => 7, 'perm_id' => 4],  // Update Citizen Profile
-            ['role_id' => 7, 'perm_id' => 6],  // View Household Profile
-            ['role_id' => 7, 'perm_id' => 7],  // Create Household Profile
-            ['role_id' => 7, 'perm_id' => 8],  // Update Household Profile
-            ['role_id' => 7, 'perm_id' => 10], // View Demographic
-            ['role_id' => 7, 'perm_id' => 11], // View Neighborhood
-            ['role_id' => 7, 'perm_id' => 12], // View Household
-            ['role_id' => 7, 'perm_id' => 13], // View Education
-            ['role_id' => 7, 'perm_id' => 14], // View Employment
-            ['role_id' => 7, 'perm_id' => 15], // View Health
-            ['role_id' => 7, 'perm_id' => 35], // View Medical History
-            ['role_id' => 7, 'perm_id' => 36], // Create Medical History
-            ['role_id' => 7, 'perm_id' => 37], // Update Medical History
-        ]);
+        // ─────────────────────────────────────────────────────────────────────
+        // Role 1: SR_OFFICE  (inherits OFFICE + all deletes, except admin panel)
+        // Can do everything outside of admin panel — can delete.
+        // ─────────────────────────────────────────────────────────────────────
+        $srOffice = array_unique(array_merge($office, [
+            5,              // Delete Citizen Profile
+            9,              // Delete Household Profile
+            21,             // Delete Business
+            25,             // Delete Infrastructure
+            29,             // Delete Services
+            34,             // Delete Citizen History
+            38,             // Delete Medical History
+            42,             // Delete Settlement History
+        ]));
+        // Remove ALL admin permissions from SR_OFFICE (43–53)
+        $srOffice = array_values(array_filter($srOffice, fn($p) => $p <= 42));
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Build insert rows
+        // ─────────────────────────────────────────────────────────────────────
+        $rows = [];
+
+        $roleMap = [
+            1 => ['name' => 'SR_OFFICE',      'perms' => $srOffice],
+            2 => ['name' => 'OFFICE',          'perms' => $office],
+            3 => ['name' => 'OFFICE_ENCODER',  'perms' => $officeEncoder],
+            4 => ['name' => 'SR_BPSO',         'perms' => $srBpso],
+            5 => ['name' => 'BPSO',            'perms' => $bpso],
+            6 => ['name' => 'SR_BHW',          'perms' => $srBhw],
+            7 => ['name' => 'BHW',             'perms' => $bhw],
+        ];
+
+        foreach ($roleMap as $roleId => $data) {
+            sort($data['perms']);
+            foreach ($data['perms'] as $permId) {
+                $rows[] = ['role_id' => $roleId, 'perm_id' => $permId];
+            }
+        }
+
+        DB::table('role_permissions')->insert($rows);
     }
 }

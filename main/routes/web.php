@@ -23,126 +23,147 @@ Route::get('/scan', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
 
     // --- DASHBOARD ---
-    Route::get('dashboard', [App\Http\Controllers\Dashboard\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('dashboard', [App\Http\Controllers\Dashboard\DashboardController::class, 'index'])
+        ->middleware('permission:View Dashboard')
+        ->name('dashboard');
 
     // --- CITIZEN PANEL ---
     Route::get('citizen-panel', function () {
         return Inertia::render('main/CitizenPanel/citizen-panel');
-    })->name('citizen-panel');
+    })->middleware('permission:View Citizen Profile,View Household Profile')->name('citizen-panel');
 
     // Sub-modules
-    Route::get('citizen-panel/citizen-profile', [CitizenController::class, 'index'])->name('citizen-profile');
+    Route::get('citizen-panel/citizen-profile', [CitizenController::class, 'index'])
+        ->middleware('permission:View Citizen Profile')->name('citizen-profile');
 
-    Route::get('citizen-panel/household-profile', [HouseholdController::class, 'index'])->name('household-profile');
-    Route::delete('/households/{id}', [HouseholdController::class, 'destroy']);
+    Route::get('citizen-panel/household-profile', [HouseholdController::class, 'index'])
+        ->middleware('permission:View Household Profile')->name('household-profile');
+    Route::delete('/households/{id}', [HouseholdController::class, 'destroy'])
+        ->middleware('permission:Delete Household Profile');
 
     // --- CITIZEN RECORDS ---
     Route::get('citizen-records', function () {
         return Inertia::render('main/CitizenRecords/citizen-records');
-    })->name('citizen-records');
+    })->middleware('permission:View Citizen History,View Medical History,View Settlement History')->name('citizen-records');
 
     // Sub-modules
-    Route::get('citizen-records/citizen-history', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'index'])->name('citizen-history');
-    Route::post('citizen-records/citizen-history', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'store']);
-    Route::put('citizen-records/citizen-history/{id}', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'update']);
-    Route::delete('citizen-records/citizen-history/{id}', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'destroy']);
+    Route::middleware('permission:View Citizen History')->group(function () {
+        Route::get('citizen-records/citizen-history', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'index'])->name('citizen-history');
+        Route::post('citizen-records/citizen-history', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'store'])->middleware('permission:Create Citizen History');
+        Route::put('citizen-records/citizen-history/{id}', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'update'])->middleware('permission:Update Citizen History');
+        Route::delete('citizen-records/citizen-history/{id}', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'destroy'])->middleware('permission:Delete Citizen History');
+    });
 
-    Route::get('citizen-records/medical-history', [\App\Http\Controllers\Records\MedicalHistoryController::class, 'index'])->name('medical-history');
-    Route::post('citizen-records/medical-history', [\App\Http\Controllers\Records\MedicalHistoryController::class, 'store']);
-    Route::put('citizen-records/medical-history/{id}', [\App\Http\Controllers\Records\MedicalHistoryController::class, 'update']);
-    Route::delete('citizen-records/medical-history/{id}', [\App\Http\Controllers\Records\MedicalHistoryController::class, 'destroy']);
+    Route::middleware('permission:View Medical History')->group(function () {
+        Route::get('citizen-records/medical-history', [\App\Http\Controllers\Records\MedicalHistoryController::class, 'index'])->name('medical-history');
+        Route::post('citizen-records/medical-history', [\App\Http\Controllers\Records\MedicalHistoryController::class, 'store'])->middleware('permission:Create Medical History');
+        Route::put('citizen-records/medical-history/{id}', [\App\Http\Controllers\Records\MedicalHistoryController::class, 'update'])->middleware('permission:Update Medical History');
+        Route::delete('citizen-records/medical-history/{id}', [\App\Http\Controllers\Records\MedicalHistoryController::class, 'destroy'])->middleware('permission:Delete Medical History');
+    });
 
-    Route::get('citizen-records/settlement-history', [\App\Http\Controllers\Records\SettlementController::class, 'index'])->name('settlement-history');
-    Route::post('citizen-records/settlement-history', [\App\Http\Controllers\Records\SettlementController::class, 'store']);
-    Route::put('citizen-records/settlement-history/{id}', [\App\Http\Controllers\Records\SettlementController::class, 'update']);
-    Route::delete('citizen-records/settlement-history/{id}', [\App\Http\Controllers\Records\SettlementController::class, 'destroy']);
+    Route::middleware('permission:View Settlement History')->group(function () {
+        Route::get('citizen-records/settlement-history', [\App\Http\Controllers\Records\SettlementController::class, 'index'])->name('settlement-history');
+        Route::post('citizen-records/settlement-history', [\App\Http\Controllers\Records\SettlementController::class, 'store'])->middleware('permission:Create Settlement History');
+        Route::put('citizen-records/settlement-history/{id}', [\App\Http\Controllers\Records\SettlementController::class, 'update'])->middleware('permission:Update Settlement History');
+        Route::delete('citizen-records/settlement-history/{id}', [\App\Http\Controllers\Records\SettlementController::class, 'destroy'])->middleware('permission:Delete Settlement History');
+    });
 
     // --- STATISTICS ---
     Route::get('statistics', function () {
         return Inertia::render('main/Statistics/statistics');
-    })->name('statistics');
+    })->middleware('permission:View Demographic,View Neighborhood,View Household,View Education,View Employment,View Health,View Business,View Infrastructures')->name('statistics');
 
     // Sub-modules
-    Route::get('statistics/demographic', [\App\Http\Controllers\Statistics\DemographicStatController::class, 'index'])->name('demographic-stats');
-
-    Route::get('statistics/neighborhood', [\App\Http\Controllers\Statistics\NeighborhoodController::class, 'index'])->name('neighborhood-stats');
-
-    Route::get('statistics/household', [\App\Http\Controllers\Statistics\HouseholdStatController::class, 'index'])->name('household-stats');
-
-    Route::get('statistics/education', [\App\Http\Controllers\Statistics\EducationStatController::class, 'index'])->name('education-stats');
-
-    Route::get('statistics/employment', [\App\Http\Controllers\Statistics\EmploymentStatController::class, 'index'])->name('employment-stats');
-
-    Route::get('statistics/health', [\App\Http\Controllers\Statistics\HealthStatController::class, 'index'])->name('health-stats');
-
-    Route::get('statistics/business', [\App\Http\Controllers\Statistics\BusinessStatController::class, 'index'])->name('business-stats');
-
-    Route::get('statistics/infrastructure', [\App\Http\Controllers\Statistics\InfrastructureStatController::class, 'index'])->name('infrastructure-stats');
+    Route::get('statistics/demographic', [\App\Http\Controllers\Statistics\DemographicStatController::class, 'index'])->middleware('permission:View Demographic')->name('demographic-stats');
+    Route::get('statistics/neighborhood', [\App\Http\Controllers\Statistics\NeighborhoodController::class, 'index'])->middleware('permission:View Neighborhood')->name('neighborhood-stats');
+    Route::get('statistics/household', [\App\Http\Controllers\Statistics\HouseholdStatController::class, 'index'])->middleware('permission:View Household')->name('household-stats');
+    Route::get('statistics/education', [\App\Http\Controllers\Statistics\EducationStatController::class, 'index'])->middleware('permission:View Education')->name('education-stats');
+    Route::get('statistics/employment', [\App\Http\Controllers\Statistics\EmploymentStatController::class, 'index'])->middleware('permission:View Employment')->name('employment-stats');
+    Route::get('statistics/health', [\App\Http\Controllers\Statistics\HealthStatController::class, 'index'])->middleware('permission:View Health')->name('health-stats');
+    Route::get('statistics/business', [\App\Http\Controllers\Statistics\BusinessStatController::class, 'index'])->middleware('permission:View Business')->name('business-stats');
+    Route::get('statistics/infrastructure', [\App\Http\Controllers\Statistics\InfrastructureStatController::class, 'index'])->middleware('permission:View Infrastructures')->name('infrastructure-stats');
 
     // --- INSTITUTIONS ---
     Route::get('institutions', function () {
         return Inertia::render('main/Institutions/institutions');
-    })->name('institutions');
+    })->middleware('permission:View Business,View Infrastructure')->name('institutions');
 
     // Sub-modules
-    Route::get('institutions/business-profile', [BusinessController::class, 'index'])->name('business-profile');
-    Route::post('/institutions/business', [BusinessController::class, 'store']);
-    Route::put('/institutions/business/{id}', [BusinessController::class, 'update']);
-    Route::delete('/institutions/business/{id}', [BusinessController::class, 'destroy']);
+    Route::get('institutions/business-profile', [BusinessController::class, 'index'])->middleware('permission:View Business')->name('business-profile');
+    Route::post('/institutions/business', [BusinessController::class, 'store'])->middleware('permission:Create Business');
+    Route::put('/institutions/business/{id}', [BusinessController::class, 'update'])->middleware('permission:Update Business');
+    Route::delete('/institutions/business/{id}', [BusinessController::class, 'destroy'])->middleware('permission:Delete Business');
 
-    Route::get('institutions/infrastructures-profile', [InfrastructureController::class, 'index'])->name('infrastructures-profile');
-    Route::post('/institutions/infrastructure', [InfrastructureController::class, 'store']);
-    Route::put('/institutions/infrastructure/{id}', [InfrastructureController::class, 'update']);
-    Route::delete('/institutions/infrastructure/{id}', [InfrastructureController::class, 'destroy']);
+    Route::get('institutions/infrastructures-profile', [InfrastructureController::class, 'index'])->middleware('permission:View Infrastructure')->name('infrastructures-profile');
+    Route::post('/institutions/infrastructure', [InfrastructureController::class, 'store'])->middleware('permission:Create Infrastructure');
+    Route::put('/institutions/infrastructure/{id}', [InfrastructureController::class, 'update'])->middleware('permission:Update Infrastructure');
+    Route::delete('/institutions/infrastructure/{id}', [InfrastructureController::class, 'destroy'])->middleware('permission:Delete Infrastructure');
 
     // --- TRANSACTIONS ---
     Route::get('transactions', function () {
         return Inertia::render('main/Transactions/transactions');
-    })->name('transactions');
+    })->middleware('permission:View Services')->name('transactions');
 
     // Sub-modules
-    Route::get('transactions/services-profile', [TransactionLogController::class, 'index'])->name('services-profile');
-    Route::post('/transactions/services', [TransactionLogController::class, 'store']);
-    Route::put('/transactions/services/{id}', [TransactionLogController::class, 'update']);
-    Route::delete('/transactions/services/{id}', [TransactionLogController::class, 'destroy']);
-    Route::post('/transactions/services/{id}/export-log', [TransactionLogController::class, 'recordExport']);
+    Route::get('transactions/services-profile', [TransactionLogController::class, 'index'])->middleware('permission:View Services')->name('services-profile');
+    Route::post('/transactions/services', [TransactionLogController::class, 'store'])->middleware('permission:Create Services');
+    Route::put('/transactions/services/{id}', [TransactionLogController::class, 'update'])->middleware('permission:Update Services');
+    Route::delete('/transactions/services/{id}', [TransactionLogController::class, 'destroy'])->middleware('permission:Delete Services');
+    Route::post('/transactions/services/{id}/export-log', [TransactionLogController::class, 'recordExport'])->middleware('permission:Export Services');
 
-    // --- ADMIN PANEL ---
-    Route::get('admin-panel', function () {
-        $staffCount = \App\Models\SystemAccount::where('is_deleted', false)->count();
-        $logsCount = \App\Models\AuditLog::count();
-        $archivesCount = 
-            \App\Models\Citizen::where('is_deleted', true)->count() +
-            \App\Models\HouseholdInfo::where('is_deleted', true)->count() +
-            \App\Models\businessInfo::where('is_deleted', true)->count() +
-            \App\Models\Infrastructure::where('is_deleted', true)->count() +
-            \App\Models\TransactionLog::where('is_deleted', true)->count() +
-            \App\Models\MedicalHistory::where('is_deleted', true)->count() +
-            \App\Models\SettlementLog::where('is_deleted', true)->count() +
-            \App\Models\CitizenHistory::where('is_deleted', true)->count();
+    // --- ADMIN PANEL (requires any Admin Panel permission) ---
+    Route::middleware('permission:View Account,View Archive,View Audit Logs,View Control')->group(function () {
+        Route::get('admin-panel', function () {
+            $staffCount = \App\Models\SystemAccount::where('is_deleted', false)->count();
+            $logsCount = \App\Models\AuditLog::count();
+            $archivesCount =
+                \App\Models\Citizen::where('is_deleted', true)->count() +
+                \App\Models\HouseholdInfo::where('is_deleted', true)->count() +
+                \App\Models\businessInfo::where('is_deleted', true)->count() +
+                \App\Models\Infrastructure::where('is_deleted', true)->count() +
+                \App\Models\TransactionLog::where('is_deleted', true)->count() +
+                \App\Models\MedicalHistory::where('is_deleted', true)->count() +
+                \App\Models\SettlementLog::where('is_deleted', true)->count() +
+                \App\Models\CitizenHistory::where('is_deleted', true)->count();
 
-        return Inertia::render('admin/AdminPanel/admin-panel', [
-            'staffCount' => $staffCount,
-            'logsCount' => $logsCount,
-            'archivesCount' => $archivesCount,
-        ]);
-    })->name('admin-panel');
+            return Inertia::render('admin/AdminPanel/admin-panel', [
+                'staffCount'   => $staffCount,
+                'logsCount'    => $logsCount,
+                'archivesCount'=> $archivesCount,
+            ]);
+        })->name('admin-panel');
 
-    // Sub-modules
-    Route::get('admin-panel/manage-accounts', function () {
-        return Inertia::render('admin/AdminPanel/manage-accounts');
-    })->name('manage-accounts');
+        // Manage Accounts CRUD Routes
+        Route::middleware('permission:View Account')->group(function () {
+            Route::get('admin-panel/manage-accounts', [\App\Http\Controllers\Admin\SystemAccountController::class, 'index'])->name('manage-accounts');
+            Route::post('admin-panel/manage-accounts', [\App\Http\Controllers\Admin\SystemAccountController::class, 'store'])->middleware('permission:Create Account');
+            Route::put('admin-panel/manage-accounts/{id}', [\App\Http\Controllers\Admin\SystemAccountController::class, 'update'])->middleware('permission:Update Account');
+            Route::delete('admin-panel/manage-accounts/{id}', [\App\Http\Controllers\Admin\SystemAccountController::class, 'destroy'])->middleware('permission:Delete Account');
+            Route::post('admin-panel/manage-accounts/{id}/restore', [\App\Http\Controllers\Admin\SystemAccountController::class, 'restore'])->middleware('permission:Update Account');
+            Route::post('admin-panel/manage-accounts/{id}/log-view', [\App\Http\Controllers\Admin\SystemAccountController::class, 'logView'])->name('manage-accounts.log-view');
+        });
 
-    // NEW: Admin Control Route
-    Route::get('admin-panel/admin-control', function () {
-        return Inertia::render('admin/AdminPanel/admin-control');
-    })->name('admin-control');
+        // Role Management Routes
+        Route::middleware('permission:View Control')->group(function () {
+            Route::post('admin-panel/roles', [\App\Http\Controllers\Admin\RoleController::class, 'store'])->middleware('permission:Create Control');
+            Route::put('admin-panel/roles/{id}', [\App\Http\Controllers\Admin\RoleController::class, 'update'])->middleware('permission:Update Control');
+            Route::delete('admin-panel/roles/{id}', [\App\Http\Controllers\Admin\RoleController::class, 'destroy'])->middleware('permission:Delete Control');
+        });
 
-    // --- ACTIVITY LOGS ---
-    Route::get('activity-logs', [\App\Http\Controllers\Admin\AuditLogController::class, 'index'])->name('activity-logs');
+        // Admin Control Route
+        Route::get('admin-panel/admin-control', function () {
+            return Inertia::render('admin/AdminPanel/admin-control');
+        })->name('admin-control');
 
-    // --- ARCHIVES ---
-    Route::get('/archives', [\App\Http\Controllers\Admin\ArchiveController::class, 'index'])->name('archives');
+        // Activity Logs
+        Route::get('activity-logs', [\App\Http\Controllers\Admin\AuditLogController::class, 'index'])
+            ->middleware('permission:View Audit Logs')->name('activity-logs');
+
+        // Archives
+        Route::middleware('permission:View Archive')->group(function () {
+            Route::get('/archives', [\App\Http\Controllers\Admin\ArchiveController::class, 'index'])->name('archives');
+        });
+    });
 
     // Archive sub-pages
     Route::get('archives/citizens', [\App\Http\Controllers\Admin\ArchiveController::class, 'citizens'])->name('archives.citizens');
