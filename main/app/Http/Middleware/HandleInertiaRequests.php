@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -36,6 +37,15 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+        if ($user) {
+            $cacheKey = 'last_activity_' . $user->sys_id;
+            if (!Cache::has($cacheKey)) {
+                $user->update(['last_activity' => now()]);
+                Cache::put($cacheKey, true, 300);
+            }
+        }
+
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
 
         return [

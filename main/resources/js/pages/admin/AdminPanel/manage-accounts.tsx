@@ -26,6 +26,7 @@ interface UserAccount {
     isActive: boolean;
     deleteReason?: string | null;
     lastLogin: string;
+    lastActivity: string;
     dateEncoded: string;
     encodedBy: string;
     dateUpdated: string;
@@ -430,6 +431,7 @@ export default function ManageAccounts({
                                             <InfoCard icon={<BadgeCheck className="size-4 text-emerald-400" />} label="Role" value={selectedUser.role} />
                                             <InfoCard icon={<History className="size-4 text-neutral-400" />} label="Date Registered" value={selectedUser.dateEncoded} />
                                             <InfoCard icon={<Lock className="size-4 text-neutral-400" />} label="Last Login" value={selectedUser.lastLogin} />
+                                            <InfoCard icon={<History className="size-4 text-violet-400" />} label="Last Activity" value={selectedUser.lastActivity} />
                                         </div>
 
                                         {/* Permissions */}

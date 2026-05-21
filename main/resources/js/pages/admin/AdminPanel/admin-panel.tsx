@@ -1,4 +1,3 @@
-import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
@@ -8,14 +7,12 @@ import {
     ArrowRight,
     UsersRound,
     History,
-    Archive
+    Archive,
+    SlidersHorizontal,
 } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Admin Panel',
-        href: '/admin-panel',
-    },
+    { title: 'Admin Panel', href: '/admin-panel' },
 ];
 
 interface AdminPanelProps {
@@ -27,184 +24,140 @@ interface AdminPanelProps {
 export default function AdminPanel({
     staffCount = 0,
     logsCount = 0,
-    archivesCount = 0
+    archivesCount = 0,
 }: AdminPanelProps) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Admin Panel" />
 
-            <div className="flex flex-col gap-8 p-6 lg:p-8 h-full min-h-[85vh] max-w-7xl mx-auto w-full">
+            <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
 
-                {/* --- Header Section --- */}
-                <div className="relative overflow-hidden rounded-2xl border border-sidebar-border/60 bg-gradient-to-br from-sidebar via-sidebar to-neutral-50/50 dark:to-neutral-900/20 p-8 shadow-sm">
-                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div className="space-y-2">
-                            <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-                                Admin Panel
-                            </h1>
-                            <div className="flex items-center gap-3 text-sm font-medium text-neutral-500">
-                                <span className="flex h-6 items-center rounded-full bg-neutral-100 px-3 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700">
-                                    Admin Actions
-                                </span>
-                                <span className="text-neutral-400">System Configuration & Access Control</span>
-                            </div>
-                            <p className="max-w-xl text-sm leading-relaxed text-neutral-500 dark:text-neutral-400 pt-2">
-                                Interact with the cards below to explore detailed insights. Manage staff accounts, view activity logs, and access soft-deleted system archives.
-                            </p>
-                        </div>
-                        {/* Decorative Icon */}
-                        <div className="hidden md:block opacity-10 rotate-12 transform">
-                            <ShieldCheck className="size-32" />
-                        </div>
+                {/* Header Bar */}
+                <div className="flex items-center gap-4 pb-2 border-b border-sidebar-border/60">
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                        <ShieldCheck className="size-6 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/5 dark:stroke-neutral-100/5 -z-0" />
+                    <div>
+                        <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-tight">
+                            Admin Panel: <span className="text-blue-600 dark:text-blue-400">System Administration</span>
+                        </h1>
+                        <p className="text-xs text-neutral-500 mt-0.5">
+                            Manage staff accounts, monitor activity logs, and access system archives
+                        </p>
+                    </div>
                 </div>
 
-                {/* --- Main Cards Grid --- */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 flex-1 items-stretch">
+                {/* Cards Grid */}
+                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 content-start">
 
-                    {/* Card 1: Manage Accounts (Indigo Theme) */}
+                    {/* Card 1: Manage Accounts */}
                     <Link
                         href="/admin-panel/manage-accounts"
-                        className="group relative flex flex-col items-center justify-between rounded-3xl border border-sidebar-border/60 bg-white dark:bg-sidebar p-10 text-center shadow-sm transition-all duration-300 hover:border-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-1"
+                        className="group bg-white dark:bg-sidebar rounded-2xl border border-sidebar-border/60 shadow-sm p-6 flex flex-col gap-4 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
                     >
-                        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-indigo-50/30 dark:to-indigo-900/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-3xl" />
-
-                        {/* Top Right Counter (Staff Count) */}
-                        <div className="absolute top-6 right-6 z-10">
-                            <div className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full bg-white/80 dark:bg-black/20 backdrop-blur-sm border border-neutral-200/50 dark:border-neutral-700/50 shadow-sm transition-transform group-hover:scale-105">
-                                <span className="relative flex h-2 w-2">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-                                </span>
-                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Active</span>
-                                <span className="text-sm font-mono font-bold text-neutral-700 dark:text-neutral-200">
-                                    {String(staffCount).padStart(2, '0')}
-                                </span>
+                        <div className="flex justify-between items-start">
+                            <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-900/30 group-hover:scale-105 transition-transform duration-200">
+                                <UsersRound className="size-7 text-indigo-600 dark:text-indigo-400" />
                             </div>
+                            <span className="text-xs font-mono font-bold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-2.5 py-1 rounded-full border border-indigo-100 dark:border-indigo-900/30">
+                                {String(staffCount).padStart(2, '0')} active
+                            </span>
                         </div>
-
-                        <div className="flex flex-col items-center w-full mt-6">
-                            {/* Icon */}
-                            <div className="relative z-10 mb-8 rounded-2xl bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 shadow-inner dark:from-indigo-900/20 dark:to-indigo-900/10 group-hover:scale-110 transition-transform duration-300 ease-out">
-                                <UsersRound className="size-14 text-indigo-600 dark:text-indigo-400" strokeWidth={1.5} />
-                            </div>
-
-                            {/* Text Content */}
-                            <div className="relative z-10 space-y-2">
-                                <h2 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                                    Manage Accounts
-                                </h2>
-                                <p className="text-sm text-neutral-400 font-medium opacity-80 group-hover:opacity-100 transition-opacity">
-                                    Register, Update & Remove Staff Access
-                                </p>
-                            </div>
+                        <div>
+                            <h2 className="font-bold text-neutral-900 dark:text-neutral-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                Manage Accounts
+                            </h2>
+                            <p className="text-xs text-neutral-500 mt-0.5">Register, update & remove staff access</p>
                         </div>
-
-                        {/* Action Button */}
-                        <div className="relative z-10 mt-10 w-full flex items-center justify-center gap-2 rounded-full border border-neutral-200 bg-white px-6 py-3 text-xs font-bold uppercase tracking-wider text-neutral-600 shadow-sm transition-all dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 group-hover:border-indigo-200 group-hover:bg-indigo-50 group-hover:text-indigo-600 dark:group-hover:border-indigo-800 dark:group-hover:bg-indigo-900/20 dark:group-hover:text-indigo-300">
+                        <div className="mt-auto flex items-center gap-1.5 text-xs font-bold text-neutral-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors uppercase tracking-wider pt-2 border-t border-sidebar-border/40">
                             <UserCog className="size-3.5" />
-                            <span>MANAGE STAFF</span>
-                            <ArrowRight className="size-3.5 ml-1 transition-transform duration-300 group-hover:translate-x-1" />
+                            <span>Manage Staff</span>
+                            <ArrowRight className="size-3.5 ml-auto transition-transform duration-200 group-hover:translate-x-1" />
                         </div>
                     </Link>
 
-                    {/* Card 2: Activity Logs (Violet Theme) */}
+                    {/* Card 2: Activity Logs */}
                     <Link
                         href="/activity-logs"
-                        className="group relative flex flex-col items-center justify-between rounded-3xl border border-sidebar-border/60 bg-white dark:bg-sidebar p-10 text-center shadow-sm transition-all duration-300 hover:border-violet-500/30 hover:shadow-xl hover:shadow-violet-500/5 hover:-translate-y-1"
+                        className="group bg-white dark:bg-sidebar rounded-2xl border border-sidebar-border/60 shadow-sm p-6 flex flex-col gap-4 hover:border-violet-300 dark:hover:border-violet-700 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
                     >
-                        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-violet-50/30 dark:to-violet-900/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-3xl" />
-
-                        {/* Top Right Counter (Logs Count) */}
-                        <div className="absolute top-6 right-6 z-10">
-                            <div className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full bg-white/80 dark:bg-black/20 backdrop-blur-sm border border-neutral-200/50 dark:border-neutral-700/50 shadow-sm transition-transform group-hover:scale-105">
-                                <span className="relative flex h-2 w-2">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
-                                </span>
-                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Logs</span>
-                                <span className="text-sm font-mono font-bold text-neutral-700 dark:text-neutral-200">
-                                    {String(logsCount).padStart(2, '0')}
-                                </span>
+                        <div className="flex justify-between items-start">
+                            <div className="p-3 bg-violet-50 dark:bg-violet-900/20 rounded-xl border border-violet-100 dark:border-violet-900/30 group-hover:scale-105 transition-transform duration-200">
+                                <History className="size-7 text-violet-600 dark:text-violet-400" />
                             </div>
+                            <span className="text-xs font-mono font-bold bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 px-2.5 py-1 rounded-full border border-violet-100 dark:border-violet-900/30">
+                                {String(logsCount).padStart(2, '0')} logs
+                            </span>
                         </div>
-
-                        <div className="flex flex-col items-center w-full mt-6">
-                            {/* Icon */}
-                            <div className="relative z-10 mb-8 rounded-2xl bg-gradient-to-br from-violet-50 to-violet-100 p-6 shadow-inner dark:from-violet-900/20 dark:to-violet-900/10 group-hover:scale-110 transition-transform duration-300 ease-out">
-                                <History className="size-14 text-violet-600 dark:text-violet-400" strokeWidth={1.5} />
-                            </div>
-
-                            {/* Text Content */}
-                            <div className="relative z-10 space-y-2">
-                                <h2 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
-                                    Activity Logs
-                                </h2>
-                                <p className="text-sm text-neutral-400 font-medium opacity-80 group-hover:opacity-100 transition-opacity">
-                                    Monitor System Events & Audit Trails
-                                </p>
-                            </div>
+                        <div>
+                            <h2 className="font-bold text-neutral-900 dark:text-neutral-100 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
+                                Activity Logs
+                            </h2>
+                            <p className="text-xs text-neutral-500 mt-0.5">Monitor system events & audit trails</p>
                         </div>
-
-                        {/* Action Button */}
-                        <div className="relative z-10 mt-10 w-full flex items-center justify-center gap-2 rounded-full border border-neutral-200 bg-white px-6 py-3 text-xs font-bold uppercase tracking-wider text-neutral-600 shadow-sm transition-all dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 group-hover:border-violet-200 group-hover:bg-violet-50 group-hover:text-violet-600 dark:group-hover:border-violet-800 dark:group-hover:bg-violet-900/20 dark:group-hover:text-violet-300">
+                        <div className="mt-auto flex items-center gap-1.5 text-xs font-bold text-neutral-400 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors uppercase tracking-wider pt-2 border-t border-sidebar-border/40">
                             <History className="size-3.5" />
-                            <span>VIEW LOGS</span>
-                            <ArrowRight className="size-3.5 ml-1 transition-transform duration-300 group-hover:translate-x-1" />
+                            <span>View Logs</span>
+                            <ArrowRight className="size-3.5 ml-auto transition-transform duration-200 group-hover:translate-x-1" />
                         </div>
                     </Link>
 
-                    {/* Card 3: Archives (Emerald Theme) */}
+                    {/* Card 3: System Archives */}
                     <Link
                         href="/archives"
-                        className="group relative flex flex-col items-center justify-between rounded-3xl border border-sidebar-border/60 bg-white dark:bg-sidebar p-10 text-center shadow-sm transition-all duration-300 hover:border-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/5 hover:-translate-y-1"
+                        className="group bg-white dark:bg-sidebar rounded-2xl border border-sidebar-border/60 shadow-sm p-6 flex flex-col gap-4 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
                     >
-                        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-emerald-50/30 dark:to-emerald-900/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-3xl" />
-
-                        {/* Top Right Counter (Archived Count) */}
-                        <div className="absolute top-6 right-6 z-10">
-                            <div className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full bg-white/80 dark:bg-black/20 backdrop-blur-sm border border-neutral-200/50 dark:border-neutral-700/50 shadow-sm transition-transform group-hover:scale-105">
-                                <span className="relative flex h-2 w-2">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                </span>
-                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Archived</span>
-                                <span className="text-sm font-mono font-bold text-neutral-700 dark:text-neutral-200">
-                                    {String(archivesCount).padStart(2, '0')}
-                                </span>
+                        <div className="flex justify-between items-start">
+                            <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-900/30 group-hover:scale-105 transition-transform duration-200">
+                                <Archive className="size-7 text-emerald-600 dark:text-emerald-400" />
                             </div>
+                            <span className="text-xs font-mono font-bold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-100 dark:border-emerald-900/30">
+                                {String(archivesCount).padStart(2, '0')} archived
+                            </span>
                         </div>
-
-                        <div className="flex flex-col items-center w-full mt-6">
-                            {/* Icon */}
-                            <div className="relative z-10 mb-8 rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100 p-6 shadow-inner dark:from-emerald-900/20 dark:to-emerald-900/10 group-hover:scale-110 transition-transform duration-300 ease-out">
-                                <Archive className="size-14 text-emerald-600 dark:text-emerald-400" strokeWidth={1.5} />
-                            </div>
-
-                            {/* Text Content */}
-                            <div className="relative z-10 space-y-2">
-                                <h2 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                                    System Archives
-                                </h2>
-                                <p className="text-sm text-neutral-400 font-medium opacity-80 group-hover:opacity-100 transition-opacity">
-                                    Restore Soft-Deleted Entity Records
-                                </p>
-                            </div>
+                        <div>
+                            <h2 className="font-bold text-neutral-900 dark:text-neutral-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                                System Archives
+                            </h2>
+                            <p className="text-xs text-neutral-500 mt-0.5">Restore soft-deleted entity records</p>
                         </div>
-
-                        {/* Action Button */}
-                        <div className="relative z-10 mt-10 w-full flex items-center justify-center gap-2 rounded-full border border-neutral-200 bg-white px-6 py-3 text-xs font-bold uppercase tracking-wider text-neutral-600 shadow-sm transition-all dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 group-hover:border-emerald-200 group-hover:bg-emerald-50 group-hover:text-emerald-600 dark:group-hover:border-emerald-800 dark:group-hover:bg-emerald-900/20 dark:group-hover:text-emerald-300">
+                        <div className="mt-auto flex items-center gap-1.5 text-xs font-bold text-neutral-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors uppercase tracking-wider pt-2 border-t border-sidebar-border/40">
                             <Archive className="size-3.5" />
-                            <span>ACCESS ARCHIVES</span>
-                            <ArrowRight className="size-3.5 ml-1 transition-transform duration-300 group-hover:translate-x-1" />
+                            <span>Access Archives</span>
+                            <ArrowRight className="size-3.5 ml-auto transition-transform duration-200 group-hover:translate-x-1" />
+                        </div>
+                    </Link>
+
+                    {/* Card 4: Admin Controls */}
+                    <Link
+                        href="/admin-panel/admin-control"
+                        className="group bg-white dark:bg-sidebar rounded-2xl border border-sidebar-border/60 shadow-sm p-6 flex flex-col gap-4 hover:border-amber-300 dark:hover:border-amber-700 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                    >
+                        <div className="flex justify-between items-start">
+                            <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-100 dark:border-amber-900/30 group-hover:scale-105 transition-transform duration-200">
+                                <SlidersHorizontal className="size-7 text-amber-600 dark:text-amber-400" />
+                            </div>
+                            <span className="text-xs font-mono font-bold bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-full border border-amber-100 dark:border-amber-900/30">
+                                config
+                            </span>
+                        </div>
+                        <div>
+                            <h2 className="font-bold text-neutral-900 dark:text-neutral-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                                Admin Controls
+                            </h2>
+                            <p className="text-xs text-neutral-500 mt-0.5">Configure drop-downs & system categories</p>
+                        </div>
+                        <div className="mt-auto flex items-center gap-1.5 text-xs font-bold text-neutral-400 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors uppercase tracking-wider pt-2 border-t border-sidebar-border/40">
+                            <SlidersHorizontal className="size-3.5" />
+                            <span>System Controls</span>
+                            <ArrowRight className="size-3.5 ml-auto transition-transform duration-200 group-hover:translate-x-1" />
                         </div>
                     </Link>
 
                 </div>
 
-                {/* --- Footer --- */}
-                <div className="mt-auto pt-6 border-t border-dashed border-sidebar-border/50 text-center">
+                {/* Footer */}
+                <div className="pt-4 border-t border-dashed border-sidebar-border/50 text-center">
                     <p className="text-xs font-semibold text-neutral-400/80 tracking-wide">
                         &copy; 2026 RavenLabs Development
                     </p>
