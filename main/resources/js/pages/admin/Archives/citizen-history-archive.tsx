@@ -123,20 +123,11 @@ export default function CitizenHistoryArchive({ records = [], filters = {} }: { 
                                             onClick={() => setSelected(h)}
                                             className={`group cursor-pointer p-4 border-b border-sidebar-border/50 border-l-4 transition-all duration-200 ${selected?.id === h.id ? 'bg-indigo-50 dark:bg-indigo-900/20 border-l-indigo-500' : 'border-l-transparent hover:bg-neutral-50 dark:hover:bg-neutral-800/50 hover:border-l-indigo-200'}`}
                                         >
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <h3 className={`font-bold text-sm ${selected?.id === h.id ? 'text-indigo-700 dark:text-indigo-300' : 'text-neutral-900 dark:text-neutral-100'}`}>
-                                                        {h.lastName}, {h.firstName}
-                                                    </h3>
-                                                    <p className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-medium inline-block mt-1">{h.type}</p>
-                                                </div>
-                                                <button
-                                                    onClick={(e) => handleRestore(e, h)}
-                                                    className="text-neutral-400 hover:text-green-600 transition-colors p-1 rounded hover:bg-green-50 dark:hover:bg-green-900/20"
-                                                    title="Restore"
-                                                >
-                                                    <RotateCcw className="size-3.5" />
-                                                </button>
+                                            <div>
+                                                <h3 className={`font-bold text-sm ${selected?.id === h.id ? 'text-indigo-700 dark:text-indigo-300' : 'text-neutral-900 dark:text-neutral-100'}`}>
+                                                    {h.lastName}, {h.firstName}
+                                                </h3>
+                                                <p className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-medium inline-block mt-1">{h.type}</p>
                                             </div>
                                         </div>
                                     ))}

@@ -92,15 +92,12 @@ export default function MedicalHistoryArchive({ records = [], filters = {} }: { 
                                 <div className="flex flex-col">
                                     {records.map((m) => (
                                         <div key={m.id} onClick={() => setSelected(m)} className={`group cursor-pointer p-4 border-b border-sidebar-border/50 border-l-4 transition-all duration-200 ${selected?.id === m.id ? 'bg-rose-50 dark:bg-rose-900/20 border-l-rose-500' : 'border-l-transparent hover:bg-neutral-50 dark:hover:bg-neutral-800/50 hover:border-l-rose-200'}`}>
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <h3 className={`font-bold text-sm ${selected?.id === m.id ? 'text-rose-700 dark:text-rose-300' : 'text-neutral-900 dark:text-neutral-100'}`}>
-                                                        {m.lastName}, {m.firstName}
-                                                    </h3>
-                                                    <p className="text-xs text-neutral-500 font-mono mt-0.5">{m.uuid}</p>
-                                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 font-medium">{m.type}</span>
-                                                </div>
-                                                <button onClick={(e) => handleRestore(e, m)} className="text-neutral-400 hover:text-green-600 transition-colors p-1 rounded hover:bg-green-50 dark:hover:bg-green-900/20"><RotateCcw className="size-3.5" /></button>
+                                            <div>
+                                                <h3 className={`font-bold text-sm ${selected?.id === m.id ? 'text-rose-700 dark:text-rose-300' : 'text-neutral-900 dark:text-neutral-100'}`}>
+                                                    {m.lastName}, {m.firstName}
+                                                </h3>
+                                                <p className="text-xs text-neutral-500 font-mono mt-0.5">{m.uuid}</p>
+                                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 font-medium">{m.type}</span>
                                             </div>
                                         </div>
                                     ))}

@@ -215,7 +215,7 @@ class SystemAccountController extends Controller
 
         \App\Models\AuditLog::create([
             'action_name' => 'VIEW',
-            'description' => "system_accounts ID = {$account->sys_id}",
+            'description' => "system_accounts {$account->sys_account_id}",
             'sys_id'      => Auth::id() ?? 1,
             'created_at'  => now(),
         ]);

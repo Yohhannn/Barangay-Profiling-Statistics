@@ -22,7 +22,7 @@ class AuditLog extends Model
     ];
 
     protected $casts = [
-        'created_at' => 'date',
+        'created_at' => 'datetime',
     ];
 
     const UPDATED_AT = null;

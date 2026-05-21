@@ -101,12 +101,7 @@ export default function InfrastructuresArchive({ records = [], filters = {} }: {
                                             <tr key={inf.id} onClick={() => setSelected(inf)} className={`cursor-pointer transition-all hover:bg-cyan-50 dark:hover:bg-cyan-900/10 ${selected?.id === inf.id ? 'bg-cyan-50 dark:bg-cyan-900/20 border-l-4 border-l-cyan-500' : 'border-l-4 border-l-transparent'}`}>
                                                 <td className="px-4 py-3 font-mono text-xs text-neutral-500">{inf.infraId}</td>
                                                 <td className="px-4 py-3 font-bold text-neutral-900 dark:text-neutral-100 truncate max-w-[120px]">{inf.name}</td>
-                                                <td className="px-4 py-3 text-right">
-                                                    <div className="flex flex-col items-end gap-1">
-                                                        <span className="text-xs text-neutral-600">{inf.type}</span>
-                                                        <button onClick={(e) => handleRestore(e, inf)} className="text-neutral-400 hover:text-green-600 transition-colors p-1 rounded hover:bg-green-50 dark:hover:bg-green-900/20"><RotateCcw className="size-3" /></button>
-                                                    </div>
-                                                </td>
+                                                <td className="px-4 py-3 text-right text-xs text-neutral-600">{inf.type}</td>
                                             </tr>
                                         ))}
                                     </tbody>

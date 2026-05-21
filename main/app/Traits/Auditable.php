@@ -52,16 +52,20 @@ trait Auditable
      */
     public static function logAction($model, $actionType)
     {
-        // Get currently authenticated system account, default to 1 (System) if none
         $sysId = Auth::id() ?? 1;
 
-        $tableName = $model->getTable();
+        $tableName  = $model->getTable();
         $primaryKey = $model->getKeyName();
-        $id = $model->getAttribute($primaryKey);
+        $id         = $model->getAttribute($primaryKey);
+
+        $uuidCol    = property_exists($model, 'auditUuidColumn') ? $model->auditUuidColumn : null;
+        $identifier = ($uuidCol && !empty($model->getAttribute($uuidCol)))
+            ? $model->getAttribute($uuidCol)
+            : "ID={$id}";
 
         AuditLog::create([
             'action_name' => $actionType,
-            'description' => "{$tableName} ID = {$id}",
+            'description' => "{$tableName} {$identifier}",
             'sys_id'      => $sysId,
             'created_at'  => now(),
         ]);

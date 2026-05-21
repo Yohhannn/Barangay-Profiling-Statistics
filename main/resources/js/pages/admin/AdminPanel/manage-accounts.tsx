@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     ArrowLeft, Search, Plus, Trash2, Shield, User,
     Edit3, X, UserCog, RefreshCw, Users, ChevronDown, ChevronRight,
@@ -65,6 +65,9 @@ export default function ManageAccounts({
     allPermissions: PermissionGroup[];
 }) {
     const { can } = usePermission();
+    const { auth } = usePage<{ auth: { user: { sys_id: number } } }>().props;
+    const isSelf = (user: UserAccount | null) => !!user && user.id === auth?.user?.sys_id;
+
     const [activeTab, setActiveTab]           = useState<ActiveTab>('active');
 
     const [selectedUser, setSelectedUser]     = useState<UserAccount | null>(null);
@@ -390,20 +393,9 @@ export default function ManageAccounts({
                                                         </h3>
                                                         <p className="text-xs text-neutral-500 font-mono mt-0.5">{user.userId}</p>
                                                     </div>
-                                                    <div className="flex flex-col items-end gap-2">
-                                                        <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
-                                                            {user.role}
-                                                        </span>
-                                                        {can('Delete Account') && (
-                                                            <button
-                                                                onClick={(e) => { e.stopPropagation(); openDeactivate(user); }}
-                                                                className="text-neutral-400 hover:text-red-600 transition-colors p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
-                                                                title="Deactivate Account"
-                                                            >
-                                                                <Trash2 className="size-3.5" />
-                                                            </button>
-                                                        )}
-                                                    </div>
+                                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+                                                        {user.role}
+                                                    </span>
                                                 </div>
                                             </div>
                                         ))
@@ -447,7 +439,7 @@ export default function ManageAccounts({
                                                             </span>
                                                         </div>
                                                     </div>
-                                                    {can('Update Account') && (
+                                                    {can('Update Account') && !isSelf(selectedUser) && (
                                                         <button onClick={openUpdate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all hover:shadow-md">
                                                             <Edit3 className="size-3.5" /> Edit Account
                                                         </button>
@@ -534,7 +526,7 @@ export default function ManageAccounts({
                                                 <span>{selectedUser.lastLogin}</span>
                                             </div>
                                         </div>
-                                        {can('Delete Account') && (
+                                        {can('Delete Account') && !isSelf(selectedUser) && (
                                             <button
                                                 onClick={() => openDeactivate(selectedUser)}
                                                 className="flex items-center gap-2 px-3 py-1.5 bg-red-50 border border-red-200 hover:bg-red-100 text-red-600 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all"
@@ -626,15 +618,13 @@ export default function ManageAccounts({
                             </div>
                             <div className="flex items-center gap-3">
                                 <span className="text-[10px] text-neutral-400 font-mono">TOTAL: {roles.length}</span>
-                                {can('Create Control') && (
-                                    <button
-                                        onClick={openCreateRole}
-                                        className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white p-1 rounded-md transition-colors shadow-sm"
-                                        title="Create New Role"
-                                    >
-                                        <Plus className="size-4" />
-                                    </button>
-                                )}
+                                <button
+                                    onClick={openCreateRole}
+                                    className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white p-1 rounded-md transition-colors shadow-sm"
+                                    title="Create New Role"
+                                >
+                                    <Plus className="size-4" />
+                                </button>
                             </div>
                         </div>
 
@@ -667,16 +657,12 @@ export default function ManageAccounts({
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center justify-center gap-2">
-                                                        {can('Update Control') && (
-                                                            <button onClick={() => openUpdateRole(role)} className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 transition-colors" title="Edit">
-                                                                <Edit3 className="size-3.5" />
-                                                            </button>
-                                                        )}
-                                                        {can('Delete Control') && (
-                                                            <button onClick={() => handleDeleteRole(role)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition-colors" title="Delete">
-                                                                <Trash2 className="size-3.5" />
-                                                            </button>
-                                                        )}
+                                                        <button onClick={() => openUpdateRole(role)} className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 transition-colors" title="Edit">
+                                                            <Edit3 className="size-3.5" />
+                                                        </button>
+                                                        <button onClick={() => handleDeleteRole(role)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition-colors" title="Delete">
+                                                            <Trash2 className="size-3.5" />
+                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>

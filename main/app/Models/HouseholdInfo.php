@@ -14,6 +14,7 @@ class HouseholdInfo extends Model
     protected $table = 'household_infos';
     protected $primaryKey = 'hh_id';
     public $incrementing = true;
+    protected $auditUuidColumn = 'hh_uuid';
 
     protected $fillable = [
         'hh_uuid', // Added: Allow filling this (though we auto-generate it)

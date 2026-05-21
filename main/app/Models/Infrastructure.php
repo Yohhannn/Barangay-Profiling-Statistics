@@ -29,6 +29,7 @@ class Infrastructure extends Model
     protected $table = 'infrastructures';
     protected $primaryKey = 'inf_id';
     public $incrementing = true;
+    protected $auditUuidColumn = 'inf_uuid';
 
     protected $fillable = [
         'inf_uuid',

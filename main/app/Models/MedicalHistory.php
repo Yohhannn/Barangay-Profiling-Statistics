@@ -14,6 +14,7 @@ class MedicalHistory extends Model
     protected $table = 'medical_histories';
     protected $primaryKey = 'mh_id';
     public $incrementing = true;
+    protected $auditUuidColumn = 'mh_uuid';
 
     protected $fillable = [
         'mh_uuid',

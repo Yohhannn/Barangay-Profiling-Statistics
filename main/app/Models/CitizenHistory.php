@@ -14,6 +14,7 @@ class CitizenHistory extends Model
     protected $table = 'citizen_histories';
     protected $primaryKey = 'cihi_id';
     public $incrementing = true;
+    protected $auditUuidColumn = 'cihi_uuid';
 
     protected $fillable = [
         'cihi_uuid',

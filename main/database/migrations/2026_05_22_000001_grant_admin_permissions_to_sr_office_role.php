@@ -6,10 +6,16 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration
 {
     /** Admin permission IDs to add to SR_OFFICE (role_id = 1). */
-    private array $adminPerms = [43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53];
+    private array $adminPerms = [43, 44, 45, 46, 47, 48, 53];
 
     public function up(): void
     {
+        // On a fresh install the seeders haven't run yet, so roles/permissions
+        // tables are empty. Skip — the seeders already include the correct perms.
+        if (!DB::table('roles')->where('role_id', 1)->exists()) {
+            return;
+        }
+
         // 1. Add missing admin perms to the SR_OFFICE role template.
         foreach ($this->adminPerms as $permId) {
             DB::table('role_permissions')->updateOrInsert(

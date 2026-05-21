@@ -16,6 +16,7 @@ class SystemAccount extends Authenticatable
     protected $table = 'system_accounts';
     protected $primaryKey = 'sys_id';
     public $incrementing = true;
+    protected $auditUuidColumn = 'sys_account_id';
 
     protected $fillable = [
         'sys_account_id',

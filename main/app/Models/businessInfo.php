@@ -14,6 +14,7 @@ class businessInfo extends Model
     protected $table = 'business_infos';
     protected $primaryKey = 'bs_id';
     public $incrementing = true;
+    protected $auditUuidColumn = 'bs_uuid';
 
     protected $fillable = [
         'bs_uuid',

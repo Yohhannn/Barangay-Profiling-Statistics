@@ -32,6 +32,7 @@ class Citizen extends Model
     protected $table = 'citizens';
     protected $primaryKey = 'ctz_id';
     public $incrementing = true;
+    protected $auditUuidColumn = 'ctz_uuid';
     public $timestamps = false;
 
     protected $fillable = [

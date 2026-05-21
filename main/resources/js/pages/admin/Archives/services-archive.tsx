@@ -106,10 +106,7 @@ export default function ServicesArchive({ records = [], filters = {} }: { record
                                                     <p className="text-xs text-neutral-500 font-mono mt-0.5">{t.transactionId}</p>
                                                     <p className="text-xs text-neutral-500 mt-0.5">{t.citizenName}</p>
                                                 </div>
-                                                <div className="flex flex-col items-end gap-1">
-                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusColor(t.status)}`}>{t.status}</span>
-                                                    <button onClick={(e) => handleRestore(e, t)} className="text-neutral-400 hover:text-green-600 transition-colors p-1 rounded hover:bg-green-50 dark:hover:bg-green-900/20"><RotateCcw className="size-3.5" /></button>
-                                                </div>
+                                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusColor(t.status)}`}>{t.status}</span>
                                             </div>
                                         </div>
                                     ))}

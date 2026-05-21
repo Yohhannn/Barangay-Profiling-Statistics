@@ -127,12 +127,7 @@ export default function HouseholdArchive({ records = [], filters = {} }: { recor
                                             <tr key={hh.id} onClick={() => setSelected(hh)} className={`cursor-pointer transition-all hover:bg-orange-50 dark:hover:bg-orange-900/10 ${selected?.id === hh.id ? 'bg-orange-50 dark:bg-orange-900/20 border-l-4 border-l-orange-500' : 'border-l-4 border-l-transparent'}`}>
                                                 <td className="px-4 py-3 font-mono text-xs text-neutral-500">{hh.householdId}</td>
                                                 <td className="px-4 py-3 font-bold">{hh.members.length}</td>
-                                                <td className="px-4 py-3 text-right">
-                                                    <div className="flex flex-col items-end gap-1">
-                                                        <span className="text-xs text-neutral-600">{hh.sitio}</span>
-                                                        <button onClick={(e) => handleRestore(e, hh)} className="text-neutral-400 hover:text-green-600 transition-colors p-1 rounded hover:bg-green-50 dark:hover:bg-green-900/20" title="Restore"><RotateCcw className="size-3.5" /></button>
-                                                    </div>
-                                                </td>
+                                                <td className="px-4 py-3 text-right text-xs text-neutral-600">{hh.sitio}</td>
                                             </tr>
                                         ))}
                                     </tbody>

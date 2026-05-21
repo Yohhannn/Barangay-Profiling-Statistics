@@ -29,6 +29,7 @@ class TransactionLog extends Model
     protected $table = 'transaction_logs';
     protected $primaryKey = 'tl_id';
     public $incrementing = true;
+    protected $auditUuidColumn = 'tl_uuid';
 
     protected $fillable = [
         'tl_uuid',

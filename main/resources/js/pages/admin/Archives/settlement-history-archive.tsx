@@ -105,10 +105,7 @@ export default function SettlementHistoryArchive({ records = [], filters = {} }:
                                                     </h3>
                                                     <p className="text-xs text-neutral-500 font-mono mt-0.5">{s.uuid}</p>
                                                 </div>
-                                                <div className="flex flex-col items-end gap-1">
-                                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600">{s.dateOfSettlement}</span>
-                                                    <button onClick={(e) => handleRestore(e, s)} className="text-neutral-400 hover:text-green-600 transition-colors p-1 rounded hover:bg-green-50 dark:hover:bg-green-900/20"><RotateCcw className="size-3.5" /></button>
-                                                </div>
+                                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600">{s.dateOfSettlement}</span>
                                             </div>
                                         </div>
                                     ))}

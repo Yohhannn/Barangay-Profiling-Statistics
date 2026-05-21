@@ -180,7 +180,7 @@ class ArchiveController extends Controller
                 'sitio'        => $b->sitio?->sitio_name ?? 'N/A',
                 'address'      => $b->address ?? 'N/A',
                 'description'  => $b->description ?? '',
-                'primaryOwner' => $owners->first()?->get('fullName') ?? 'N/A',
+                'primaryOwner' => $owners->first()['fullName'] ?? 'N/A',
                 'owners'       => $owners,
                 'deleteReason' => $b->delete_reason ?? 'No reason provided.',
                 'dateEncoded'  => $b->date_encoded ? Carbon::parse($b->date_encoded)->format('M d, Y | h:i A') : 'N/A',

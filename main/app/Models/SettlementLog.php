@@ -14,6 +14,7 @@ class SettlementLog extends Model
     protected $table = 'settlement_logs';
     protected $primaryKey = 'sett_id';
     public $incrementing = true;
+    protected $auditUuidColumn = 'sett_uuid';
 
     protected $fillable = [
         'sett_uuid',
