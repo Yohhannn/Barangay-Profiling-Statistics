@@ -5,10 +5,10 @@ import { Head, Link } from '@inertiajs/react';
 import {
     ShieldCheck,
     UserCog,
-    Settings2,
     ArrowRight,
-    LockKeyhole,
-    UsersRound
+    UsersRound,
+    History,
+    Archive
 } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -20,10 +20,15 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 interface AdminPanelProps {
     staffCount?: number;
-    lastModified?: string;
+    logsCount?: number;
+    archivesCount?: number;
 }
 
-export default function AdminPanel({ staffCount = 0, lastModified = "00:00 N/A | #" }: AdminPanelProps) {
+export default function AdminPanel({
+    staffCount = 0,
+    logsCount = 0,
+    archivesCount = 0
+}: AdminPanelProps) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Admin Panel" />
@@ -44,7 +49,7 @@ export default function AdminPanel({ staffCount = 0, lastModified = "00:00 N/A |
                                 <span className="text-neutral-400">System Configuration & Access Control</span>
                             </div>
                             <p className="max-w-xl text-sm leading-relaxed text-neutral-500 dark:text-neutral-400 pt-2">
-                                Interact with the cards below to explore detailed insights. Manage staff accounts, system permissions, and view audit logs.
+                                Interact with the cards below to explore detailed insights. Manage staff accounts, view activity logs, and access soft-deleted system archives.
                             </p>
                         </div>
                         {/* Decorative Icon */}
@@ -56,12 +61,12 @@ export default function AdminPanel({ staffCount = 0, lastModified = "00:00 N/A |
                 </div>
 
                 {/* --- Main Cards Grid --- */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 flex-1 items-start">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 flex-1 items-stretch">
 
                     {/* Card 1: Manage Accounts (Indigo Theme) */}
                     <Link
                         href="/admin-panel/manage-accounts"
-                        className="group relative flex flex-col items-center justify-center rounded-3xl border border-sidebar-border/60 bg-white dark:bg-sidebar p-12 text-center shadow-sm transition-all duration-300 hover:border-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-1"
+                        className="group relative flex flex-col items-center justify-between rounded-3xl border border-sidebar-border/60 bg-white dark:bg-sidebar p-10 text-center shadow-sm transition-all duration-300 hover:border-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-1"
                     >
                         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-indigo-50/30 dark:to-indigo-900/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-3xl" />
 
@@ -72,72 +77,126 @@ export default function AdminPanel({ staffCount = 0, lastModified = "00:00 N/A |
                                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                                   <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
                                 </span>
-                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Staff</span>
+                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Active</span>
                                 <span className="text-sm font-mono font-bold text-neutral-700 dark:text-neutral-200">
                                     {String(staffCount).padStart(2, '0')}
                                 </span>
                             </div>
                         </div>
 
-                        {/* Icon */}
-                        <div className="relative z-10 mb-8 rounded-2xl bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 shadow-inner dark:from-indigo-900/20 dark:to-indigo-900/10 group-hover:scale-110 transition-transform duration-300 ease-out">
-                            <UsersRound className="size-16 text-indigo-600 dark:text-indigo-400" strokeWidth={1.5} />
-                        </div>
+                        <div className="flex flex-col items-center w-full mt-6">
+                            {/* Icon */}
+                            <div className="relative z-10 mb-8 rounded-2xl bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 shadow-inner dark:from-indigo-900/20 dark:to-indigo-900/10 group-hover:scale-110 transition-transform duration-300 ease-out">
+                                <UsersRound className="size-14 text-indigo-600 dark:text-indigo-400" strokeWidth={1.5} />
+                            </div>
 
-                        {/* Text Content */}
-                        <div className="relative z-10 space-y-2">
-                            <h2 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                                Manage Accounts
-                            </h2>
-                            <p className="text-sm text-neutral-400 font-medium opacity-80 group-hover:opacity-100 transition-opacity">
-                                Register, Update & Remove Staff Access
-                            </p>
+                            {/* Text Content */}
+                            <div className="relative z-10 space-y-2">
+                                <h2 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                    Manage Accounts
+                                </h2>
+                                <p className="text-sm text-neutral-400 font-medium opacity-80 group-hover:opacity-100 transition-opacity">
+                                    Register, Update & Remove Staff Access
+                                </p>
+                            </div>
                         </div>
 
                         {/* Action Button */}
-                        <div className="relative z-10 mt-10 flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-6 py-3 text-xs font-bold uppercase tracking-wider text-neutral-600 shadow-sm transition-all dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 group-hover:border-indigo-200 group-hover:bg-indigo-50 group-hover:text-indigo-600 dark:group-hover:border-indigo-800 dark:group-hover:bg-indigo-900/20 dark:group-hover:text-indigo-300">
+                        <div className="relative z-10 mt-10 w-full flex items-center justify-center gap-2 rounded-full border border-neutral-200 bg-white px-6 py-3 text-xs font-bold uppercase tracking-wider text-neutral-600 shadow-sm transition-all dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 group-hover:border-indigo-200 group-hover:bg-indigo-50 group-hover:text-indigo-600 dark:group-hover:border-indigo-800 dark:group-hover:bg-indigo-900/20 dark:group-hover:text-indigo-300">
                             <UserCog className="size-3.5" />
                             <span>MANAGE STAFF</span>
                             <ArrowRight className="size-3.5 ml-1 transition-transform duration-300 group-hover:translate-x-1" />
                         </div>
                     </Link>
 
-                    {/* Card 2: Admin Controls (Cyan/Sky Theme) */}
+                    {/* Card 2: Activity Logs (Violet Theme) */}
                     <Link
-                        href="/admin-panel/admin-control"
-                        className="group relative flex flex-col items-center justify-center rounded-3xl border border-sidebar-border/60 bg-white dark:bg-sidebar p-12 text-center shadow-sm transition-all duration-300 hover:border-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/5 hover:-translate-y-1"
+                        href="/activity-logs"
+                        className="group relative flex flex-col items-center justify-between rounded-3xl border border-sidebar-border/60 bg-white dark:bg-sidebar p-10 text-center shadow-sm transition-all duration-300 hover:border-violet-500/30 hover:shadow-xl hover:shadow-violet-500/5 hover:-translate-y-1"
                     >
-                        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-cyan-50/30 dark:to-cyan-900/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-3xl" />
+                        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-violet-50/30 dark:to-violet-900/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-3xl" />
 
-                        {/* Top Right Info (Last Modified) - Customized for this card */}
+                        {/* Top Right Counter (Logs Count) */}
                         <div className="absolute top-6 right-6 z-10">
-                            <div className="flex items-center gap-2 pl-3 pr-3 py-1.5 rounded-full bg-white/80 dark:bg-black/20 backdrop-blur-sm border border-neutral-200/50 dark:border-neutral-700/50 shadow-sm transition-transform group-hover:scale-105">
-                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Last Modified</span>
-                                <span className="text-[10px] font-mono font-bold text-neutral-700 dark:text-neutral-200 border-l border-neutral-300 dark:border-neutral-700 pl-2 ml-1">
-                                    {lastModified}
+                            <div className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full bg-white/80 dark:bg-black/20 backdrop-blur-sm border border-neutral-200/50 dark:border-neutral-700/50 shadow-sm transition-transform group-hover:scale-105">
+                                <span className="relative flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
+                                </span>
+                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Logs</span>
+                                <span className="text-sm font-mono font-bold text-neutral-700 dark:text-neutral-200">
+                                    {String(logsCount).padStart(2, '0')}
                                 </span>
                             </div>
                         </div>
 
-                        {/* Icon */}
-                        <div className="relative z-10 mb-8 rounded-2xl bg-gradient-to-br from-cyan-50 to-cyan-100 p-6 shadow-inner dark:from-cyan-900/20 dark:to-cyan-900/10 group-hover:scale-110 transition-transform duration-300 ease-out">
-                            <Settings2 className="size-16 text-cyan-600 dark:text-cyan-400" strokeWidth={1.5} />
-                        </div>
+                        <div className="flex flex-col items-center w-full mt-6">
+                            {/* Icon */}
+                            <div className="relative z-10 mb-8 rounded-2xl bg-gradient-to-br from-violet-50 to-violet-100 p-6 shadow-inner dark:from-violet-900/20 dark:to-violet-900/10 group-hover:scale-110 transition-transform duration-300 ease-out">
+                                <History className="size-14 text-violet-600 dark:text-violet-400" strokeWidth={1.5} />
+                            </div>
 
-                        {/* Text Content */}
-                        <div className="relative z-10 space-y-2">
-                            <h2 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
-                                Admin Controls
-                            </h2>
-                            <p className="text-sm text-neutral-400 font-medium opacity-80 group-hover:opacity-100 transition-opacity">
-                                Modify, Add & Control System Actions
-                            </p>
+                            {/* Text Content */}
+                            <div className="relative z-10 space-y-2">
+                                <h2 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
+                                    Activity Logs
+                                </h2>
+                                <p className="text-sm text-neutral-400 font-medium opacity-80 group-hover:opacity-100 transition-opacity">
+                                    Monitor System Events & Audit Trails
+                                </p>
+                            </div>
                         </div>
 
                         {/* Action Button */}
-                        <div className="relative z-10 mt-10 flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-6 py-3 text-xs font-bold uppercase tracking-wider text-neutral-600 shadow-sm transition-all dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 group-hover:border-cyan-200 group-hover:bg-cyan-50 group-hover:text-cyan-600 dark:group-hover:border-cyan-800 dark:group-hover:bg-cyan-900/20 dark:group-hover:text-cyan-300">
-                            <LockKeyhole className="size-3.5" />
-                            <span>SYSTEM SETTINGS</span>
+                        <div className="relative z-10 mt-10 w-full flex items-center justify-center gap-2 rounded-full border border-neutral-200 bg-white px-6 py-3 text-xs font-bold uppercase tracking-wider text-neutral-600 shadow-sm transition-all dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 group-hover:border-violet-200 group-hover:bg-violet-50 group-hover:text-violet-600 dark:group-hover:border-violet-800 dark:group-hover:bg-violet-900/20 dark:group-hover:text-violet-300">
+                            <History className="size-3.5" />
+                            <span>VIEW LOGS</span>
+                            <ArrowRight className="size-3.5 ml-1 transition-transform duration-300 group-hover:translate-x-1" />
+                        </div>
+                    </Link>
+
+                    {/* Card 3: Archives (Emerald Theme) */}
+                    <Link
+                        href="/archives"
+                        className="group relative flex flex-col items-center justify-between rounded-3xl border border-sidebar-border/60 bg-white dark:bg-sidebar p-10 text-center shadow-sm transition-all duration-300 hover:border-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/5 hover:-translate-y-1"
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-emerald-50/30 dark:to-emerald-900/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-3xl" />
+
+                        {/* Top Right Counter (Archived Count) */}
+                        <div className="absolute top-6 right-6 z-10">
+                            <div className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full bg-white/80 dark:bg-black/20 backdrop-blur-sm border border-neutral-200/50 dark:border-neutral-700/50 shadow-sm transition-transform group-hover:scale-105">
+                                <span className="relative flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                </span>
+                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Archived</span>
+                                <span className="text-sm font-mono font-bold text-neutral-700 dark:text-neutral-200">
+                                    {String(archivesCount).padStart(2, '0')}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col items-center w-full mt-6">
+                            {/* Icon */}
+                            <div className="relative z-10 mb-8 rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100 p-6 shadow-inner dark:from-emerald-900/20 dark:to-emerald-900/10 group-hover:scale-110 transition-transform duration-300 ease-out">
+                                <Archive className="size-14 text-emerald-600 dark:text-emerald-400" strokeWidth={1.5} />
+                            </div>
+
+                            {/* Text Content */}
+                            <div className="relative z-10 space-y-2">
+                                <h2 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                                    System Archives
+                                </h2>
+                                <p className="text-sm text-neutral-400 font-medium opacity-80 group-hover:opacity-100 transition-opacity">
+                                    Restore Soft-Deleted Entity Records
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Action Button */}
+                        <div className="relative z-10 mt-10 w-full flex items-center justify-center gap-2 rounded-full border border-neutral-200 bg-white px-6 py-3 text-xs font-bold uppercase tracking-wider text-neutral-600 shadow-sm transition-all dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 group-hover:border-emerald-200 group-hover:bg-emerald-50 group-hover:text-emerald-600 dark:group-hover:border-emerald-800 dark:group-hover:bg-emerald-900/20 dark:group-hover:text-emerald-300">
+                            <Archive className="size-3.5" />
+                            <span>ACCESS ARCHIVES</span>
                             <ArrowRight className="size-3.5 ml-1 transition-transform duration-300 group-hover:translate-x-1" />
                         </div>
                     </Link>

@@ -109,7 +109,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // --- ADMIN PANEL ---
     Route::get('admin-panel', function () {
-        return Inertia::render('admin/AdminPanel/admin-panel');
+        $staffCount = \App\Models\SystemAccount::where('is_deleted', false)->count();
+        $logsCount = \App\Models\AuditLog::count();
+        $archivesCount = 
+            \App\Models\Citizen::where('is_deleted', true)->count() +
+            \App\Models\HouseholdInfo::where('is_deleted', true)->count() +
+            \App\Models\businessInfo::where('is_deleted', true)->count() +
+            \App\Models\Infrastructure::where('is_deleted', true)->count() +
+            \App\Models\TransactionLog::where('is_deleted', true)->count() +
+            \App\Models\MedicalHistory::where('is_deleted', true)->count() +
+            \App\Models\SettlementLog::where('is_deleted', true)->count() +
+            \App\Models\CitizenHistory::where('is_deleted', true)->count();
+
+        return Inertia::render('admin/AdminPanel/admin-panel', [
+            'staffCount' => $staffCount,
+            'logsCount' => $logsCount,
+            'archivesCount' => $archivesCount,
+        ]);
     })->name('admin-panel');
 
     // Sub-modules
