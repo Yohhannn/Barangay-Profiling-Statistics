@@ -36,6 +36,7 @@ export interface User {
     sys_fname: string;
     sys_lname: string;
     email: string | null;
+    role?: string;
     /** Array of permission names assigned to this account */
     permissions: string[];
     [key: string]: unknown;

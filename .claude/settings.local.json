@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(php artisan *)"
+      "Bash(php artisan *)",
+      "Bash(php vendor/composer/installed.json)",
+      "Bash(npx tsc *)"
     ]
   }
 }
