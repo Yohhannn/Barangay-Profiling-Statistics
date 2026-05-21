@@ -27,11 +27,15 @@ class SystemAccount extends Authenticatable
         'is_deleted',
         'delete_reason',
         'date_created',
+        'last_login',
+        'last_activity',
     ];
 
     protected $casts = [
-        'date_created' => 'date',
-        'is_deleted' => 'boolean',
+        'date_created'  => 'date',
+        'is_deleted'    => 'boolean',
+        'last_login'    => 'datetime',
+        'last_activity' => 'datetime',
     ];
 
     protected $hidden = [

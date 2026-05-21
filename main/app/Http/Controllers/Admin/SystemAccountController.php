@@ -46,12 +46,12 @@ class SystemAccountController extends Controller
             ])->values();
 
         $accounts = $this->mapAccounts(
-            SystemAccount::where('is_deleted', false)->with('permissions')->get(),
+            SystemAccount::where('is_deleted', false)->where('sys_account_id', '!=', 100000)->with('permissions')->get(),
             $roles
         );
 
         $deletedAccounts = $this->mapAccounts(
-            SystemAccount::where('is_deleted', true)->with('permissions')->get(),
+            SystemAccount::where('is_deleted', true)->where('sys_account_id', '!=', 100000)->with('permissions')->get(),
             $roles
         );
 
@@ -258,7 +258,8 @@ class SystemAccountController extends Controller
                 'permissions'  => $userPermIds,
                 'isActive'     => ! $account->is_deleted,
                 'deleteReason' => $account->delete_reason ?? null,
-                'lastLogin'    => 'N/A',
+                'lastLogin'    => $account->last_login ? $account->last_login->format('Y-m-d H:i') : 'Never',
+                'lastActivity' => $account->last_activity ? $account->last_activity->format('Y-m-d H:i') : 'Never',
                 'dateEncoded'  => $account->date_created ? $account->date_created->format('Y-m-d') : 'N/A',
                 'encodedBy'    => 'SYSTEM',
                 'dateUpdated'  => 'N/A',

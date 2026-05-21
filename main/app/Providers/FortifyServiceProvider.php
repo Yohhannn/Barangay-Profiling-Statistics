@@ -59,6 +59,7 @@ class FortifyServiceProvider extends ServiceProvider
 
             // Validate password against sys_password column
             if (\Illuminate\Support\Facades\Hash::check($request->password, $user->sys_password)) {
+                $user->update(['last_login' => now()]);
                 return $user;
             }
 
