@@ -1,28 +1,19 @@
 import React, { useState } from 'react';
-import InputError from '@/components/input-error';
-import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { store } from '@/routes/login';
-import { request } from '@/routes/password';
 import { Form, Head, Link } from '@inertiajs/react';
 import { DotScreenShader } from "@/components/ui/dot-shader-background";
 import { Hash, Lock, ArrowRight, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 interface LoginProps {
     status?: string;
-    canResetPassword: boolean;
-    canRegister: boolean;
 }
 
-export default function Login({
-    status,
-    canResetPassword,
-    canRegister,
-}: LoginProps) {
+export default function Login({ status }: LoginProps) {
     const [showPassword, setShowPassword] = useState(false);
 
     return (
@@ -59,6 +50,16 @@ export default function Login({
 
                 {/* Login Card */}
                 <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-8">
+                    {/* Status / Success Banner */}
+                    {status && (
+                        <div className="mb-5 flex items-center gap-3 p-3.5 bg-green-50 rounded-xl border border-green-200 text-green-700">
+                            <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                                <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                            </div>
+                            <p className="text-sm font-semibold">{status}</p>
+                        </div>
+                    )}
+
                     <Form
                         {...store.form()}
                         resetOnSuccess={['password']}
@@ -66,6 +67,21 @@ export default function Login({
                     >
                         {({ processing, errors }) => (
                             <>
+                                {/* Error Banner */}
+                                {(errors.sys_account_id || errors.password) && (
+                                    <div className="flex items-start gap-3 p-3.5 bg-red-50 rounded-xl border border-red-200 text-red-700">
+                                        <div className="w-7 h-7 rounded-full bg-red-100 flex items-center justify-center shrink-0 mt-0.5">
+                                            <svg className="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold">Authentication Failed</p>
+                                            <p className="text-xs mt-0.5 text-red-600">
+                                                {errors.sys_account_id || errors.password || 'Invalid credentials. Please check your Account ID and PIN.'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="grid gap-5">
                                     {/* User ID Field */}
                                     <div className="grid gap-2">
@@ -81,29 +97,19 @@ export default function Login({
                                                 onInput={(e) => {
                                                     e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
                                                 }}
-                                                className="pl-10 bg-white border-slate-200 text-slate-900 focus:ring-blue-500 focus:border-blue-500 h-11 font-mono tracking-[0.2em]"
+                                                className={`pl-10 bg-white text-slate-900 focus:ring-blue-500 focus:border-blue-500 h-11 font-mono tracking-[0.2em] ${errors.sys_account_id ? 'border-red-400 bg-red-50 focus:ring-red-500/20' : 'border-slate-200'}`}
                                                 required
                                                 autoFocus
                                                 tabIndex={1}
                                                 placeholder="XXXXXX"
                                             />
                                         </div>
-                                        <InputError message={errors.sys_user_id} />
                                     </div>
 
                                     {/* PIN Field (Replaced Password) */}
                                     <div className="grid gap-2">
-                                        <div className="flex items-center justify-between ml-1">
+                                        <div className="flex items-center ml-1">
                                             <Label htmlFor="password" className="text-slate-700 font-bold">Security PIN</Label>
-                                            {canResetPassword && (
-                                                <TextLink
-                                                    href={request()}
-                                                    className="text-xs font-semibold text-blue-600 hover:text-blue-700"
-                                                    tabIndex={5}
-                                                >
-                                                    Forgot PIN?
-                                                </TextLink>
-                                            )}
                                         </div>
                                         <div className="relative">
                                             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -117,7 +123,7 @@ export default function Login({
                                                 onInput={(e) => {
                                                     e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
                                                 }}
-                                                className="pl-10 pr-10 bg-white border-slate-200 text-slate-900 focus:ring-blue-500 focus:border-blue-500 h-11 font-mono tracking-[0.3em]"
+                                                className={`pl-10 pr-10 bg-white text-slate-900 focus:ring-blue-500 focus:border-blue-500 h-11 font-mono tracking-[0.3em] ${errors.password ? 'border-red-400 bg-red-50 focus:ring-red-500/20' : 'border-slate-200'}`}
                                                 required
                                                 tabIndex={2}
                                                 autoComplete="current-password"
@@ -131,7 +137,6 @@ export default function Login({
                                                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                             </button>
                                         </div>
-                                        <InputError message={errors.password} />
                                     </div>
 
                                     <div className="flex items-center space-x-3 ml-1">
@@ -157,12 +162,6 @@ export default function Login({
                             </>
                         )}
                     </Form>
-
-                    {status && (
-                        <div className="mt-6 p-3 bg-green-50 rounded-lg text-center text-sm font-bold text-green-600 border border-green-100">
-                            {status}
-                        </div>
-                    )}
                 </div>
             </div>
         </div>

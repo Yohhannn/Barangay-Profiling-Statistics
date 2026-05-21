@@ -112,7 +112,6 @@ export default function BusinessArchive({ records = [], filters = {} }: { record
                                                 <td className="px-4 py-3 text-right">
                                                     <div className="flex flex-col items-end gap-1">
                                                         <span className="text-xs text-neutral-600 truncate max-w-[80px]">{b.primaryOwner}</span>
-                                                        <button onClick={(e) => handleRestore(e, b)} className="text-neutral-400 hover:text-green-600 transition-colors p-1 rounded hover:bg-green-50 dark:hover:bg-green-900/20"><RotateCcw className="size-3" /></button>
                                                     </div>
                                                 </td>
                                             </tr>

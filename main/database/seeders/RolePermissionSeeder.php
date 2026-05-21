@@ -124,8 +124,7 @@ class RolePermissionSeeder extends Seeder
         ];
 
         // ─────────────────────────────────────────────────────────────────────
-        // Role 1: SR_OFFICE  (inherits OFFICE + all deletes, except admin panel)
-        // Can do everything outside of admin panel — can delete.
+        // Role 1: SR_OFFICE  (inherits OFFICE + all deletes + full admin panel)
         // ─────────────────────────────────────────────────────────────────────
         $srOffice = array_unique(array_merge($office, [
             5,              // Delete Citizen Profile
@@ -136,9 +135,12 @@ class RolePermissionSeeder extends Seeder
             34,             // Delete Citizen History
             38,             // Delete Medical History
             42,             // Delete Settlement History
+            // Admin Panel
+            43, 44,         // View/Restore Archive
+            45, 46, 47, 48, // View/Create/Update/Delete Account
+            49, 50, 51, 52, // View/Create/Update/Delete Control
+            53,             // View Audit Logs
         ]));
-        // Remove ALL admin permissions from SR_OFFICE (43–53)
-        $srOffice = array_values(array_filter($srOffice, fn($p) => $p <= 42));
 
         // ─────────────────────────────────────────────────────────────────────
         // Build insert rows
