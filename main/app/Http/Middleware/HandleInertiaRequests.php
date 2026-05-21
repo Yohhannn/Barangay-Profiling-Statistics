@@ -43,7 +43,14 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
-                'user' => $request->user(),
+                'user' => $request->user() ? [
+                    'sys_id'         => $request->user()->sys_id,
+                    'sys_account_id' => $request->user()->sys_account_id,
+                    'sys_fname'      => $request->user()->sys_fname,
+                    'sys_lname'      => $request->user()->sys_lname,
+                    'email'          => $request->user()->email,
+                    'permissions'    => $request->user()->permissionNames(),
+                ] : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

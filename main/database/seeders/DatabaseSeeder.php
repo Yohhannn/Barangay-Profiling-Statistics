@@ -1,25 +1,26 @@
 <?php
 
 namespace Database\Seeders;
-use App\Models\SystemAccount;
-use App\Models\User;
+
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
+
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        SystemAccount::factory()->count(7)->create();
         $this->call([
-            RoleSeeder::class,
+            // 1. Permissions first (no FK dependencies)
             PermissionSeeder::class,
-            RolePermissionSeeder::class,
-            SystemPermissionSeeder::class,
+
+            // 2. Accounts + Roles + Role-Permissions in one self-contained seeder
+            //    StaffAccountSeeder handles the correct creation order internally.
+            StaffAccountSeeder::class,
+
+            // 3. Reference / lookup data
             SitioSeeder::class,
+
+            // 4. Sample citizen/household data
             HouseholdAndCitizenSeeder::class,
         ]);
-        // $this->call(UserSeeder::class);
     }
 }

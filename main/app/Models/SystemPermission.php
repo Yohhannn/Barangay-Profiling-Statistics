@@ -13,6 +13,7 @@ class SystemPermission extends Model
     protected $table = 'system_permissions';
     protected $primaryKey = 'sys_perm_id';
     public $incrementing = true;
+    public $timestamps = false;
 
     protected $fillable = [
         'sys_id',
