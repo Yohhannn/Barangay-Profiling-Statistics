@@ -46,12 +46,12 @@ class SystemAccountController extends Controller
             ])->values();
 
         $accounts = $this->mapAccounts(
-            SystemAccount::where('is_deleted', false)->where('sys_account_id', '!=', 100000)->with('permissions')->get(),
+            SystemAccount::where('is_deleted', false)->with('permissions')->get(),
             $roles
         );
 
         $deletedAccounts = $this->mapAccounts(
-            SystemAccount::where('is_deleted', true)->where('sys_account_id', '!=', 100000)->with('permissions')->get(),
+            SystemAccount::where('is_deleted', true)->with('permissions')->get(),
             $roles
         );
 
