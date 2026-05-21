@@ -10,23 +10,25 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 /**
- * Clears ALL system account data and seeds 10 fresh accounts:
- *   - 1  Admin      (111111 / 111111) — all 53 permissions
- *   - 1  SR_OFFICE  (role 1)
- *   - 2  OFFICE     (role 2)
- *   - 1  OFFICE_ENCODER (role 3)
- *   - 1  SR_BPSO    (role 4)
- *   - 1  BPSO       (role 5)
- *   - 1  SR_BHW     (role 6)
- *   - 2  BHW        (role 7)
+ * Clears ALL system account data and seeds fresh accounts.
+ * SR_OFFICE is the top-level role with all 53 permissions.
+ * No hidden admin account — the first SR_OFFICE staff account is used
+ * as the created_by reference for role records.
  *
- * All account IDs and passwords are 6 digits.
+ * Seeded accounts:
+ *   - 1  SR_OFFICE      (100001 / 100001) — all 53 permissions
+ *   - 2  OFFICE         (role 2)
+ *   - 1  OFFICE_ENCODER (role 3)
+ *   - 1  SR_BPSO        (role 4)
+ *   - 1  BPSO           (role 5)
+ *   - 1  SR_BHW         (role 6)
+ *   - 2  BHW            (role 7)
  */
 class StaffAccountSeeder extends Seeder
 {
     public function run(): void
     {
-        // ── Step 1: Wipe dependent tables in safe order (PostgreSQL cascade) ──
+        // ── Step 1: Wipe dependent tables in safe order ──────────────────────
         DB::statement('TRUNCATE TABLE system_permissions RESTART IDENTITY CASCADE;');
         DB::statement('TRUNCATE TABLE role_permissions RESTART IDENTITY CASCADE;');
         DB::statement('TRUNCATE TABLE system_accounts RESTART IDENTITY CASCADE;');
@@ -34,38 +36,32 @@ class StaffAccountSeeder extends Seeder
         $this->command->info('🗑  Cleared system_accounts, system_permissions, roles, role_permissions.');
 
         // ── Step 2: Ensure permissions exist ────────────────────────────────
-        $permCount = DB::table('permissions')->count();
-        if ($permCount === 0) {
+        if (DB::table('permissions')->count() === 0) {
             $this->call(PermissionSeeder::class);
         }
 
-        // ── Step 3: Seed admin first (so roles can use sys_id=1 as created_by) ─
-        $admin = SystemAccount::create([
-            'sys_account_id' => 111111,
-            'sys_fname'      => 'System',
-            'sys_mname'      => null,
-            'sys_lname'      => 'Administrator',
-            'email'          => 'admin@barangay.gov.ph',
-            'sys_password'   => Hash::make('111111'),
+        // ── Step 3: Create first SR_OFFICE account for created_by FK ─────────
+        // Roles require a valid created_by → seed one account before roles.
+        $srOfficeAccount = SystemAccount::create([
+            'sys_account_id' => 100001,
+            'sys_fname'      => 'Ana',
+            'sys_mname'      => 'R.',
+            'sys_lname'      => 'Reyes',
+            'email'          => 'ana.reyes@barangay.gov.ph',
+            'sys_password'   => Hash::make('100001'),
             'is_deleted'     => false,
             'date_created'   => now(),
         ]);
-        $allPermIds = Permission::pluck('perm_id')->toArray();
-        foreach ($allPermIds as $pid) {
-            SystemPermission::create(['sys_id' => $admin->sys_id, 'perm_id' => $pid]);
-        }
-        $this->command->info("  ✅ [111111] System Administrator (ADMIN) — " . count($allPermIds) . " permissions");
 
-        // ── Step 4: Seed roles (using admin's sys_id as created_by) ─────────
-        $adminSysId = $admin->sys_id;
+        // ── Step 4: Seed roles using that account as created_by ──────────────
         DB::table('roles')->insert([
-            ['name' => 'SR_OFFICE',      'description' => 'SR_OFFICE ACCOUNT (VIEW DASHBOARD AND DELETE ABILITY)', 'date_created' => now(), 'created_by' => $adminSysId],
-            ['name' => 'OFFICE',         'description' => 'OFFICE ACCOUNT',         'date_created' => now(), 'created_by' => $adminSysId],
-            ['name' => 'OFFICE_ENCODER', 'description' => 'OFFICE ENCODER ACCOUNT', 'date_created' => now(), 'created_by' => $adminSysId],
-            ['name' => 'SR_BPSO',        'description' => 'SR BPSO ACCOUNT',        'date_created' => now(), 'created_by' => $adminSysId],
-            ['name' => 'BPSO',           'description' => 'BPSO ACCOUNT',           'date_created' => now(), 'created_by' => $adminSysId],
-            ['name' => 'SR_BHW',         'description' => 'SR BHW ACCOUNT',         'date_created' => now(), 'created_by' => $adminSysId],
-            ['name' => 'BHW',            'description' => 'BHW ACCOUNT',            'date_created' => now(), 'created_by' => $adminSysId],
+            ['name' => 'SR_OFFICE',      'description' => 'SR_OFFICE — Full access including Admin Panel', 'date_created' => now(), 'created_by' => $srOfficeAccount->sys_id],
+            ['name' => 'OFFICE',         'description' => 'OFFICE ACCOUNT',         'date_created' => now(), 'created_by' => $srOfficeAccount->sys_id],
+            ['name' => 'OFFICE_ENCODER', 'description' => 'OFFICE ENCODER ACCOUNT', 'date_created' => now(), 'created_by' => $srOfficeAccount->sys_id],
+            ['name' => 'SR_BPSO',        'description' => 'SR BPSO ACCOUNT',        'date_created' => now(), 'created_by' => $srOfficeAccount->sys_id],
+            ['name' => 'BPSO',           'description' => 'BPSO ACCOUNT',           'date_created' => now(), 'created_by' => $srOfficeAccount->sys_id],
+            ['name' => 'SR_BHW',         'description' => 'SR BHW ACCOUNT',         'date_created' => now(), 'created_by' => $srOfficeAccount->sys_id],
+            ['name' => 'BHW',            'description' => 'BHW ACCOUNT',            'date_created' => now(), 'created_by' => $srOfficeAccount->sys_id],
         ]);
         $this->command->info('  📋 Seeded 7 roles.');
 
@@ -73,18 +69,22 @@ class StaffAccountSeeder extends Seeder
         $this->call(RolePermissionSeeder::class);
         $this->command->info('  🔗 Seeded role permissions.');
 
-        // ── Step 6: Helper to get perm_ids for a role ────────────────────────
-        $rolePerms = function (int $roleId): array {
-            return DB::table('role_permissions')
-                ->where('role_id', $roleId)
-                ->pluck('perm_id')
-                ->toArray();
-        };
+        // ── Step 6: Assign SR_OFFICE (role 1) permissions to first account ───
+        $srOfficePerms = DB::table('role_permissions')->where('role_id', 1)->pluck('perm_id')->toArray();
+        foreach ($srOfficePerms as $pid) {
+            SystemPermission::create(['sys_id' => $srOfficeAccount->sys_id, 'perm_id' => $pid]);
+        }
+        $this->command->info("  ✅ [100001] Ana Reyes (SR_OFFICE) — " . count($srOfficePerms) . ' permissions');
 
-        // ── Step 7: Staff accounts ────────────────────────────────────────────
+        // ── Step 7: Helper to get perm_ids for a role ────────────────────────
+        $rolePerms = fn(int $roleId): array => DB::table('role_permissions')
+            ->where('role_id', $roleId)
+            ->pluck('perm_id')
+            ->toArray();
+
+        // ── Step 8: Remaining staff accounts ─────────────────────────────────
         $staffAccounts = [
             // [sys_account_id, password, fname, mname, lname, email, roleLabel, roleId]
-            [100001, '100001', 'Ana',   'R.', 'Reyes',      'ana.reyes@barangay.gov.ph',    'SR_OFFICE',      1],
             [100002, '100002', 'Ben',   'C.', 'Cruz',       'ben.cruz@barangay.gov.ph',     'OFFICE',         2],
             [100003, '100003', 'Carla', 'M.', 'Mendoza',    'carla.mendoza@barangay.gov.ph','OFFICE',         2],
             [100004, '100004', 'Dante', 'P.', 'Paglinawan', 'dante.p@barangay.gov.ph',      'OFFICE_ENCODER', 3],
@@ -116,7 +116,7 @@ class StaffAccountSeeder extends Seeder
         }
 
         $this->command->info('');
-        $this->command->info('🔑 Admin login:  ID = 111111 | Password = 111111');
-        $this->command->info('📊 Total accounts seeded: 10');
+        $this->command->info('🔑 SR_OFFICE login: ID = 100001 | Password = 100001');
+        $this->command->info('📊 Total accounts seeded: 9');
     }
 }
