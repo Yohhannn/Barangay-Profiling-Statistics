@@ -16,7 +16,6 @@ import {
   Download,
   Menu,
   X,
-  Scan // Added Scan icon for the new button
 } from 'lucide-react';
 
 const LandingPage = () => {
@@ -50,15 +49,6 @@ const LandingPage = () => {
             <a href="#problem" className="hover:text-blue-600 transition">Challenges</a>
             <a href="#features" className="hover:text-blue-600 transition">System</a>
 
-            {/* New Scan Face Button */}
-            <Link
-                href="/scan"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 hover:border-blue-300 transition-all text-slate-700"
-            >
-              <Scan className="w-4 h-4 text-blue-600" />
-              <span>Scan Face</span>
-            </Link>
-
             <Link
               href={login()}
               className="group relative overflow-hidden bg-slate-900 text-white px-6 py-2.5 rounded-lg transition-all duration-200 hover:bg-slate-800 hover:scale-105 active:scale-95 hover:shadow-lg shadow-sm"
@@ -88,16 +78,6 @@ const LandingPage = () => {
           <div className="flex flex-col p-6 gap-4 text-sm font-semibold text-slate-600">
             <a href="#problem" onClick={() => setIsMenuOpen(false)} className="hover:text-blue-600 transition py-2">Challenges</a>
             <a href="#features" onClick={() => setIsMenuOpen(false)} className="hover:text-blue-600 transition py-2">System</a>
-
-            {/* Mobile Scan Face Button */}
-            <Link
-              href="/scan"
-              onClick={() => setIsMenuOpen(false)}
-              className="flex items-center justify-center gap-2 border border-slate-200 text-slate-700 px-6 py-3 rounded-lg hover:bg-slate-50 transition"
-            >
-              <Scan className="w-4 h-4 text-blue-600" />
-              Scan Face Recognition
-            </Link>
 
             <Link
               href={login()}
