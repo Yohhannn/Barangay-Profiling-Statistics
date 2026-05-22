@@ -3,7 +3,8 @@
     "allow": [
       "Bash(php artisan *)",
       "Bash(php vendor/composer/installed.json)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(Remove-Item \"e:\\\\AntigravityFiles\\\\Side\\\\Barangay-Profiling-Statistics\\\\main\\\\resources\\\\js\\\\pages\\\\auth\\\\login.tsx\")"
     ]
   }
 }
