@@ -4,6 +4,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { ArrowLeft, Search, FolderOpen, User, FileText, RotateCcw, AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 import Swal from 'sweetalert2';
+import CitizenQuickView from '../../main/CitizenRecords/popup/citizen-quick-view';
 
 interface ArchivedService {
     id: number;
@@ -11,8 +12,14 @@ interface ArchivedService {
     transactionType: string;
     status: string;
     purpose: string;
+    firstName: string;
+    lastName: string;
+    middleName: string;
+    suffix: string;
     citizenName: string;
+    ctzId: number | null;
     citizenId: string | null;
+    ctzUuid: string | null;
     deleteReason: string;
     dateRequested: string;
     dateEncoded: string;
@@ -39,6 +46,8 @@ export default function ServicesArchive({ records = [], filters = {} }: { record
     const [selected, setSelected] = useState<ArchivedService | null>(records[0] ?? null);
     const [search, setSearch] = useState(filters?.search || '');
     const [isDebouncing, setIsDebouncing] = useState(false);
+    const [citizenQuickViewOpen, setCitizenQuickViewOpen] = useState(false);
+    const [selectedCitizenId, setSelectedCitizenId] = useState<number | null>(null);
 
     const handleSearch = (val: string) => {
         setSearch(val);
@@ -66,6 +75,7 @@ export default function ServicesArchive({ records = [], filters = {} }: { record
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Archived Services" />
+            <CitizenQuickView isOpen={citizenQuickViewOpen} onClose={() => setCitizenQuickViewOpen(false)} citizenId={selectedCitizenId} />
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
                 <div className="flex items-center gap-4 pb-2 border-b border-sidebar-border/60">
                     <Link href="/archives" className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
@@ -147,27 +157,34 @@ export default function ServicesArchive({ records = [], filters = {} }: { record
                                         </div>
                                     </div>
 
-                                    <div className="flex items-start gap-3 p-4 bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl">
-                                        <User className="size-4 text-neutral-400 mt-0.5 shrink-0" />
-                                        <div>
-                                            <p className="text-xs font-bold text-neutral-500 uppercase mb-1">Requesting Citizen</p>
-                                            <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{selected.citizenName}</p>
-                                            {selected.citizenId && <p className="text-xs text-neutral-500 font-mono">{selected.citizenId}</p>}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 bg-white dark:bg-sidebar border border-sidebar-border rounded-xl p-5 shadow-sm relative overflow-hidden">
+                                        <div className="col-span-1 md:col-span-2 pb-2 border-b border-sidebar-border flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <User className="size-4 text-yellow-600" />
+                                                <h3 className="text-sm font-bold text-neutral-700 dark:text-neutral-200 uppercase tracking-wider">Requestor Profile</h3>
+                                            </div>
+                                            {selected.ctzUuid ? (
+                                                <button onClick={() => { setSelectedCitizenId(selected.ctzId); setCitizenQuickViewOpen(true); }} className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 px-2 py-1 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900/40 transition-all border border-yellow-200 dark:border-yellow-800">
+                                                    <User className="size-3" /> {selected.ctzUuid} — View Citizen
+                                                </button>
+                                            ) : (
+                                                <span className="text-[10px] font-mono font-medium text-neutral-500 bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded">Unlinked Requestor</span>
+                                            )}
                                         </div>
+                                        <InfoRow label="First Name" value={selected.firstName} />
+                                        <InfoRow label="Last Name" value={selected.lastName} />
+                                        <InfoRow label="Middle Name" value={selected.middleName || 'N/A'} />
+                                        <InfoRow label="Suffix" value={selected.suffix || 'N/A'} />
+                                        <InfoRow label="Date Requested" value={selected.dateRequested} highlight />
+                                        <InfoRow label="Transaction Type" value={selected.transactionType} highlight />
                                     </div>
 
                                     {selected.purpose && (
                                         <div className="space-y-2">
-                                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2"><FileText className="size-3.5" /> Purpose / Remarks</h3>
-                                            <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">{selected.purpose}</div>
+                                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2"><FileText className="size-3.5" /> Purpose / Description</h3>
+                                            <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 min-h-[120px]">{selected.purpose}</div>
                                         </div>
                                     )}
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <InfoCard label="Transaction Type" value={selected.transactionType} />
-                                        <InfoCard label="Status" value={selected.status} />
-                                        <InfoCard label="Date Requested" value={selected.dateRequested} />
-                                    </div>
                                 </div>
 
                                 <div className="p-4 border-t border-sidebar-border/60 bg-neutral-50 dark:bg-neutral-900/50 flex flex-col md:flex-row justify-between items-start md:items-center text-[10px] text-neutral-400 font-mono gap-4">
@@ -193,11 +210,11 @@ export default function ServicesArchive({ records = [], filters = {} }: { record
     );
 }
 
-function InfoCard({ label, value }: { label: string; value: string }) {
+function InfoRow({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
     return (
-        <div className="bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-4">
-            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide mb-1">{label}</p>
-            <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{value || '—'}</p>
+        <div className="flex justify-between border-b border-sidebar-border/50 pb-1">
+            <span className="text-neutral-500 font-medium text-sm">{label}:</span>
+            <span className={`font-semibold text-sm ${highlight ? 'text-yellow-600 dark:text-yellow-400 font-mono' : 'text-neutral-900 dark:text-neutral-100'}`}>{value || '—'}</span>
         </div>
     );
 }

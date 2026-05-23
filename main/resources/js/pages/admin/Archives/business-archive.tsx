@@ -18,6 +18,9 @@ interface ArchivedBusiness {
     description: string;
     primaryOwner: string;
     owners: Owner[];
+    isDti: boolean;
+    dtiPhoto: string | null;
+    dateRegistered: string;
     deleteReason: string;
     dateEncoded: string;
     encodedBy: string;
@@ -135,7 +138,9 @@ export default function BusinessArchive({ records = [], filters = {} }: { record
                                                 <div className="flex items-center gap-2 mt-1 text-sm text-neutral-500">
                                                     <Users className="size-3.5" />
                                                     <span className="font-medium">{selected.owners.length} Owner{selected.owners.length !== 1 ? 's' : ''}</span>
-                                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold ml-2 bg-red-100 text-red-700">ARCHIVED</span>
+                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ml-2 ${getStatusColor(selected.status)}`}>{selected.status}</span>
+                                                    {selected.isDti && <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-blue-100 text-blue-700 flex items-center gap-1"><BadgeCheck className="size-3" /> DTI</span>}
+                                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-red-100 text-red-700">ARCHIVED</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -157,7 +162,7 @@ export default function BusinessArchive({ records = [], filters = {} }: { record
                                     <div className="grid grid-cols-2 gap-x-8 gap-y-4 bg-white dark:bg-sidebar border border-sidebar-border rounded-xl p-5 shadow-sm">
                                         <InfoRow label="Business ID" value={selected.businessId} highlight />
                                         <InfoRow label="Business Type" value={selected.businessType} />
-                                        <InfoRow label="Status" value={selected.status} />
+                                        <InfoRow label="Date Registered" value={selected.dateRegistered} />
                                         <InfoRow label="Sitio / Location" value={selected.sitio} />
                                         <div className="col-span-2 pt-2 border-t border-dashed border-sidebar-border">
                                             <div className="flex gap-2">
@@ -195,8 +200,25 @@ export default function BusinessArchive({ records = [], filters = {} }: { record
 
                                     {selected.description && (
                                         <div className="space-y-2">
-                                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2"><FileText className="size-3.5" /> Description</h3>
-                                            <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">{selected.description}</div>
+                                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2"><FileText className="size-3.5" /> Description / Business Nature</h3>
+                                            <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 min-h-[100px]">{selected.description || <span className="text-neutral-400 italic">No description provided.</span>}</div>
+                                        </div>
+                                    )}
+
+                                    {selected.isDti && (
+                                        <div className="space-y-2">
+                                            <h3 className="text-xs font-bold text-blue-600 uppercase tracking-widest flex items-center gap-2">
+                                                <BadgeCheck className="size-3.5" /> DTI Certificate
+                                            </h3>
+                                            {selected.dtiPhoto ? (
+                                                <div className="rounded-xl overflow-hidden border border-blue-200 dark:border-blue-800">
+                                                    <img src={selected.dtiPhoto} alt="DTI Certificate" className="w-full max-h-64 object-contain bg-neutral-50 dark:bg-neutral-900" />
+                                                </div>
+                                            ) : (
+                                                <div className="p-4 border border-dashed border-blue-200 rounded-xl text-center text-xs text-blue-400 italic">
+                                                    No DTI certificate photo uploaded.
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -222,6 +244,16 @@ export default function BusinessArchive({ records = [], filters = {} }: { record
             </div>
         </AppLayout>
     );
+}
+
+function getStatusColor(status: string) {
+    switch (status) {
+        case 'Active': return 'bg-green-100 text-green-700';
+        case 'Inactive': return 'bg-neutral-100 text-neutral-600';
+        case 'Closed': return 'bg-red-100 text-red-700';
+        case 'Suspended': return 'bg-yellow-100 text-yellow-700';
+        default: return 'bg-neutral-100 text-neutral-600';
+    }
 }
 
 function InfoRow({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {

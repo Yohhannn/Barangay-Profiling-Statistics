@@ -2,7 +2,8 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import {
-    ArrowLeft, Search, Home, MapPin, RotateCcw, AlertTriangle, Users, Info
+    ArrowLeft, Search, Home, MapPin, RotateCcw, AlertTriangle, Users, Info,
+    Hash, UserCheck, Droplets, FileText, Link as LinkIcon
 } from 'lucide-react';
 import { useState } from 'react';
 import Swal from 'sweetalert2';
@@ -18,6 +19,8 @@ interface ArchivedHousehold {
     waterSource: string;
     toiletType: string;
     homeAddress: string;
+    homeLink: string;
+    coordinates: string;
     interviewedBy: string;
     reviewedBy: string;
     dateOfVisit: string;
@@ -117,7 +120,7 @@ export default function HouseholdArchive({ records = [], filters = {} }: { recor
                                 <table className="w-full text-sm text-left">
                                     <thead className="text-[10px] text-neutral-500 uppercase bg-neutral-50 dark:bg-neutral-800/50 sticky top-0 z-10 backdrop-blur-sm">
                                         <tr>
-                                            <th className="px-4 py-3 font-semibold border-b border-sidebar-border">ID</th>
+                                            <th className="px-4 py-3 font-semibold border-b border-sidebar-border w-16">ID</th>
                                             <th className="px-4 py-3 font-semibold border-b border-sidebar-border">Members</th>
                                             <th className="px-4 py-3 font-semibold border-b border-sidebar-border text-right">Sitio</th>
                                         </tr>
@@ -161,7 +164,8 @@ export default function HouseholdArchive({ records = [], filters = {} }: { recor
                                     </div>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                                    {/* Archive Reason Banner */}
                                     <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800">
                                         <AlertTriangle className="size-5 text-red-500 shrink-0 mt-0.5" />
                                         <div>
@@ -170,24 +174,100 @@ export default function HouseholdArchive({ records = [], filters = {} }: { recor
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                        <InfoCard label="Household #" value={selected.householdNumber} />
-                                        <InfoCard label="Ownership" value={selected.ownershipStatus} />
-                                        <InfoCard label="Water Source" value={selected.waterSource} />
-                                        <InfoCard label="Toilet Type" value={selected.toiletType} />
-                                        <InfoCard label="Date of Visit" value={selected.dateOfVisit} />
-                                        <InfoCard label="Interviewed By" value={selected.interviewedBy} />
-                                    </div>
-
-                                    {selected.homeAddress && (
-                                        <div className="flex items-start gap-3 p-4 bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl">
-                                            <MapPin className="size-4 text-neutral-400 mt-0.5 shrink-0" />
-                                            <div>
-                                                <p className="text-xs font-bold text-neutral-500 uppercase mb-1">Home Address</p>
-                                                <p className="text-sm text-neutral-800 dark:text-neutral-200">{selected.homeAddress}</p>
+                                    {/* Household Info + Interview Details */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 space-y-3">
+                                            <div className="flex items-center gap-2 pb-2 border-b border-sidebar-border/50 text-orange-600">
+                                                <Hash className="size-4" />
+                                                <h3 className="text-xs font-bold uppercase tracking-wider">Household Info</h3>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <InfoItem label="Household Number" value={selected.householdNumber} highlight />
+                                                <InfoItem label="Ownership Status" value={selected.ownershipStatus} />
                                             </div>
                                         </div>
-                                    )}
+                                        <div className="bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 space-y-3">
+                                            <div className="flex items-center gap-2 pb-2 border-b border-sidebar-border/50 text-blue-600">
+                                                <UserCheck className="size-4" />
+                                                <h3 className="text-xs font-bold uppercase tracking-wider">Interview Details</h3>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <div className="flex justify-between">
+                                                    <span className="text-xs text-neutral-500">Interviewed By:</span>
+                                                    <span className="text-sm font-medium">{selected.interviewedBy}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-xs text-neutral-500">Reviewed By:</span>
+                                                    <span className="text-sm font-medium">{selected.reviewedBy}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-xs text-neutral-500">Date of Visit:</span>
+                                                    <span className="text-sm font-medium">{selected.dateOfVisit}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Water + Location */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 flex flex-col justify-center">
+                                            <div className="grid grid-cols-2 text-center divide-x divide-sidebar-border">
+                                                <div className="px-2">
+                                                    <div className="flex flex-col items-center gap-1 mb-2">
+                                                        <Droplets className="size-4 text-cyan-500" />
+                                                        <span className="text-[10px] font-bold text-neutral-400 uppercase">Water Source</span>
+                                                    </div>
+                                                    <span className="text-sm font-medium">{selected.waterSource}</span>
+                                                </div>
+                                                <div className="px-2">
+                                                    <div className="flex flex-col items-center gap-1 mb-2">
+                                                        <FileText className="size-4 text-purple-500" />
+                                                        <span className="text-[10px] font-bold text-neutral-400 uppercase">Toilet Type</span>
+                                                    </div>
+                                                    <span className="text-sm font-medium">{selected.toiletType}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 flex flex-col items-center justify-center text-center overflow-hidden">
+                                            <div className="flex items-center gap-2 mb-3 text-neutral-500">
+                                                <MapPin className="size-4 text-red-500" />
+                                                <span className="text-xs font-bold uppercase">Household Location</span>
+                                            </div>
+                                            {selected.homeLink && selected.homeLink !== 'N/A' ? (
+                                                <div className="w-full flex flex-col gap-3">
+                                                    {(selected.homeLink.includes('<iframe') || selected.homeLink.includes('/embed')) && (
+                                                        <div className="w-full h-32 rounded-lg overflow-hidden border border-sidebar-border bg-neutral-200">
+                                                            {selected.homeLink.startsWith('http') ? (
+                                                                <iframe src={selected.homeLink} width="100%" height="100%" style={{ border: 0 }} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
+                                                            ) : (
+                                                                <div dangerouslySetInnerHTML={{ __html: selected.homeLink }} className="w-full h-full [&>iframe]:w-full [&>iframe]:h-full" />
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    <a href={selected.homeLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 px-4 py-2 rounded-lg border border-sidebar-border text-xs font-bold uppercase tracking-wider text-blue-600 transition-colors cursor-pointer w-full">
+                                                        <LinkIcon className="size-3.5" />
+                                                        Open in Google Maps
+                                                    </a>
+                                                </div>
+                                            ) : (
+                                                <div className="bg-white dark:bg-neutral-800 px-4 py-3 rounded border border-sidebar-border font-mono text-xs text-neutral-400 w-full">
+                                                    No Location Data Provided
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Address + Coordinates */}
+                                    <div className="bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-4 flex flex-col md:flex-row gap-4">
+                                        <div className="flex-1 flex items-center gap-4">
+                                            <span className="text-xs font-bold text-neutral-500 uppercase whitespace-nowrap">Home Address:</span>
+                                            <span className="text-sm font-medium truncate">{selected.homeAddress}</span>
+                                        </div>
+                                        <div className="flex-1 flex items-center gap-4 border-t md:border-t-0 md:border-l border-sidebar-border pt-3 md:pt-0 md:pl-4">
+                                            <span className="text-xs font-bold text-neutral-500 uppercase whitespace-nowrap">Coordinates:</span>
+                                            <span className="text-sm font-mono text-neutral-600 dark:text-neutral-400">{selected.coordinates || 'N/A'}</span>
+                                        </div>
+                                    </div>
 
                                     {/* Members Table */}
                                     <div>
@@ -248,11 +328,13 @@ export default function HouseholdArchive({ records = [], filters = {} }: { recor
     );
 }
 
-function InfoCard({ label, value }: { label: string; value: string }) {
+function InfoItem({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
     return (
-        <div className="bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-4">
-            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide mb-1">{label}</p>
-            <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{value || '—'}</p>
+        <div className="flex flex-col">
+            <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wide mb-0.5">{label}</span>
+            <span className={`text-sm truncate font-medium ${highlight ? 'text-orange-600 dark:text-orange-400 font-bold' : 'text-neutral-800 dark:text-neutral-200'}`}>
+                {value || '—'}
+            </span>
         </div>
     );
 }

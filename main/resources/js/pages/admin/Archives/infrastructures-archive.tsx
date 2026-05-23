@@ -1,9 +1,10 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Search, Landmark, MapPin, FileText, RotateCcw, AlertTriangle, User } from 'lucide-react';
+import { ArrowLeft, Search, Landmark, MapPin, FileText, RotateCcw, AlertTriangle, Users, BadgeCheck, Info } from 'lucide-react';
 import { useState } from 'react';
 import Swal from 'sweetalert2';
+import CitizenQuickView from '../../main/CitizenRecords/popup/citizen-quick-view';
 
 interface ArchivedInfrastructure {
     id: number;
@@ -14,6 +15,9 @@ interface ArchivedInfrastructure {
     address: string;
     description: string;
     ownerFullName: string;
+    ctzId: number | null;
+    ownerCtzUuid: string | null;
+    dateRegistered: string;
     deleteReason: string;
     dateEncoded: string;
     encodedBy: string;
@@ -30,6 +34,8 @@ export default function InfrastructuresArchive({ records = [], filters = {} }: {
     const [selected, setSelected] = useState<ArchivedInfrastructure | null>(records[0] ?? null);
     const [search, setSearch] = useState(filters?.search || '');
     const [isDebouncing, setIsDebouncing] = useState(false);
+    const [citizenQuickViewOpen, setCitizenQuickViewOpen] = useState(false);
+    const [selectedCitizenId, setSelectedCitizenId] = useState<number | null>(null);
 
     const handleSearch = (val: string) => {
         setSearch(val);
@@ -57,6 +63,7 @@ export default function InfrastructuresArchive({ records = [], filters = {} }: {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Archived Infrastructures" />
+            <CitizenQuickView isOpen={citizenQuickViewOpen} onClose={() => setCitizenQuickViewOpen(false)} citizenId={selectedCitizenId} />
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
                 <div className="flex items-center gap-4 pb-2 border-b border-sidebar-border/60">
                     <Link href="/archives" className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
@@ -144,17 +151,33 @@ export default function InfrastructuresArchive({ records = [], filters = {} }: {
                                     <div className="grid grid-cols-2 gap-x-8 gap-y-4 bg-white dark:bg-sidebar border border-sidebar-border rounded-xl p-5 shadow-sm">
                                         <InfoRow label="Infrastructure ID" value={selected.infraId} highlight />
                                         <InfoRow label="Type" value={selected.type} />
+                                        <InfoRow label="Date Registered" value={selected.dateRegistered} />
                                         <InfoRow label="Sitio / Location" value={selected.sitio} />
                                         <div className="col-span-2 pt-2 border-t border-dashed border-sidebar-border">
                                             <div className="flex gap-2"><MapPin className="size-4 text-neutral-400 mt-0.5" /><div className="flex flex-col"><span className="text-xs font-bold text-neutral-500 uppercase">Full Address</span><span className="text-sm text-neutral-800 dark:text-neutral-200">{selected.address}</span></div></div>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-start gap-3 p-4 bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl">
-                                        <User className="size-4 text-neutral-400 mt-0.5 shrink-0" />
-                                        <div>
-                                            <p className="text-xs font-bold text-neutral-500 uppercase mb-1">Owner</p>
-                                            <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{selected.ownerFullName}</p>
+                                    <div className="space-y-3">
+                                        <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2"><Users className="size-3.5" /> Infrastructure Owner (1)</h3>
+                                        <div className="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-neutral-900/30 border border-sidebar-border rounded-xl">
+                                            <div className="w-8 h-8 rounded-full bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center text-cyan-600 font-bold text-xs shrink-0">1</div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center justify-between">
+                                                    <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-100 truncate">{selected.ownerFullName}</p>
+                                                    {selected.ctzId && (
+                                                        <button onClick={() => { setSelectedCitizenId(selected.ctzId); setCitizenQuickViewOpen(true); }} className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-cyan-100 dark:bg-cyan-900/40 text-cyan-600 hover:bg-cyan-200 transition-all shadow-sm border border-cyan-200 dark:border-cyan-800 shrink-0">
+                                                            <Info className="size-3" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                {selected.ownerCtzUuid ? (
+                                                    <p className="text-[10px] text-cyan-500 font-mono flex items-center gap-1 mt-0.5"><BadgeCheck className="size-3" />{selected.ownerCtzUuid}</p>
+                                                ) : (
+                                                    <p className="text-[10px] text-neutral-400 italic mt-0.5">No citizen record linked</p>
+                                                )}
+                                            </div>
+                                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-cyan-100 text-cyan-600 uppercase shrink-0">Primary</span>
                                         </div>
                                     </div>
 

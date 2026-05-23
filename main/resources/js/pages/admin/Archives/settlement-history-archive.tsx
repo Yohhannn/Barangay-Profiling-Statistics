@@ -1,12 +1,34 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Search, ScrollText, Users, User, FileText, RotateCcw, AlertTriangle, Scale } from 'lucide-react';
+import { ArrowLeft, Search, ScrollText, User, RotateCcw, AlertTriangle, Scale, Info, FileClock, ShieldAlert, Handshake } from 'lucide-react';
 import { useState } from 'react';
 import Swal from 'sweetalert2';
+import CitizenQuickView from '../../main/CitizenRecords/popup/citizen-quick-view';
+import HistoryQuickView from '../../main/CitizenRecords/popup/history-quick-view';
 
-interface Complainant { name: string; }
-interface Respondent { name: string; type: string; status: string; }
+interface Complainant {
+    id: number;
+    name: string;
+    firstName: string;
+    middleName: string | null;
+    lastName: string;
+    ctzId: number | null;
+    citizenId: string | null;
+    compDescription: string | null;
+}
+interface Respondent {
+    id: number;
+    name: string;
+    firstName: string;
+    lastName: string;
+    ctzId: number | null;
+    cihi_uuid: string;
+    citizenId: string | null;
+    type: string;
+    status: string;
+    title: string;
+}
 interface ArchivedSettlement {
     id: number;
     uuid: string;
@@ -36,6 +58,10 @@ export default function SettlementHistoryArchive({ records = [], filters = {} }:
     const [selected, setSelected] = useState<ArchivedSettlement | null>(records[0] ?? null);
     const [search, setSearch] = useState(filters?.search || '');
     const [isDebouncing, setIsDebouncing] = useState(false);
+    const [citizenQuickViewOpen, setCitizenQuickViewOpen] = useState(false);
+    const [selectedCitizenId, setSelectedCitizenId] = useState<number | null>(null);
+    const [historyQuickViewOpen, setHistoryQuickViewOpen] = useState(false);
+    const [historyQuickViewUuid, setHistoryQuickViewUuid] = useState<string | null>(null);
 
     const handleSearch = (val: string) => {
         setSearch(val);
@@ -63,6 +89,8 @@ export default function SettlementHistoryArchive({ records = [], filters = {} }:
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Archived Settlement History" />
+            <CitizenQuickView isOpen={citizenQuickViewOpen} onClose={() => setCitizenQuickViewOpen(false)} citizenId={selectedCitizenId} />
+            <HistoryQuickView isOpen={historyQuickViewOpen} onClose={() => setHistoryQuickViewOpen(false)} historyUuid={historyQuickViewUuid} rawHistory={null} />
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
                 <div className="flex items-center gap-4 pb-2 border-b border-sidebar-border/60">
                     <Link href="/archives" className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
@@ -147,55 +175,109 @@ export default function SettlementHistoryArchive({ records = [], filters = {} }:
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <InfoCard label="Date of Settlement" value={selected.dateOfSettlement} />
-                                        <InfoCard label="Mediator" value={selected.mediator} />
+                                    <div className="grid grid-cols-2 gap-x-8 gap-y-4 bg-white dark:bg-sidebar border border-sidebar-border rounded-xl p-5 shadow-sm">
+                                        <InfoRow label="Settlement UUID" value={selected.uuid} highlight />
+                                        <InfoRow label="Record Number" value={`#${selected.id}`} />
+                                        <InfoRow label="Date of Settlement" value={selected.dateOfSettlement} />
+                                        <InfoRow label="Mediator / Lupon" value={selected.mediator} />
+                                        <InfoRow label="Complainants" value={`${selected.complainantCount} Person(s)`} />
+                                        <InfoRow label="Respondents" value={`${selected.respondents.length} Linked Record(s)`} />
                                     </div>
 
-                                    {/* Complainants */}
-                                    <div>
-                                        <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-3 flex items-center gap-2"><Users className="size-3.5" /> Complainants ({selected.complainantCount})</h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                            {selected.complainants.map((c, i) => (
-                                                <div key={i} className="flex items-center gap-2 p-3 bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl">
-                                                    <User className="size-4 text-neutral-400 shrink-0" />
-                                                    <span className="text-sm font-medium">{c.name}</span>
-                                                </div>
-                                            ))}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        {/* Complainants */}
+                                        <div className="bg-white dark:bg-sidebar border border-sidebar-border rounded-xl p-5 shadow-sm space-y-4">
+                                            <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 border-b border-sidebar-border/50 pb-2">
+                                                <ShieldAlert className="size-4" />
+                                                <span className="text-sm font-bold uppercase tracking-wider">Complainants ({selected.complainantCount})</span>
+                                            </div>
+                                            <div className="space-y-3">
+                                                {selected.complainants.map((c) => (
+                                                    <div key={c.id} className="flex flex-col bg-neutral-50 dark:bg-neutral-800 p-3 rounded-lg border border-sidebar-border/50 gap-2">
+                                                        <div className="flex justify-between items-center">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-bold text-neutral-900 dark:text-neutral-100">
+                                                                    {c.firstName} {c.middleName ? `${c.middleName} ` : ''}{c.lastName}
+                                                                </span>
+                                                                {c.ctzId && (
+                                                                    <button onClick={() => { setSelectedCitizenId(c.ctzId); setCitizenQuickViewOpen(true); }} className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-rose-50 dark:bg-rose-900/20 text-rose-600 hover:bg-rose-100 transition-all shadow-sm border border-rose-100 dark:border-rose-900/30">
+                                                                        <Info className="size-3" />
+                                                                        <span className="text-[9px] font-bold uppercase tracking-tight">Quick View</span>
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                            {c.citizenId ? (
+                                                                <span className="text-[10px] font-mono bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 px-1.5 py-0.5 rounded border border-rose-100 dark:border-rose-900/50 font-bold">{c.citizenId}</span>
+                                                            ) : (
+                                                                <span className="text-[10px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-400 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-700">Manual Entry</span>
+                                                            )}
+                                                        </div>
+                                                        {c.compDescription && (
+                                                            <p className="text-[10px] text-neutral-500 italic border-l-2 border-rose-200 pl-2 py-0.5">"{c.compDescription}"</p>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    {/* Respondents */}
-                                    {selected.respondents.length > 0 && (
-                                        <div>
-                                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-3 flex items-center gap-2"><ScrollText className="size-3.5" /> Respondents ({selected.respondents.length})</h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                                {selected.respondents.map((r, i) => (
-                                                    <div key={i} className="flex items-start gap-2 p-3 bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl">
-                                                        <User className="size-4 text-neutral-400 shrink-0 mt-0.5" />
-                                                        <div>
-                                                            <p className="text-sm font-medium">{r.name}</p>
-                                                            <p className="text-xs text-neutral-500">{r.type} · {r.status}</p>
+                                        {/* Respondents */}
+                                        <div className="bg-white dark:bg-sidebar border border-sidebar-border rounded-xl p-5 shadow-sm space-y-4">
+                                            <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 border-b border-sidebar-border/50 pb-2">
+                                                <ScrollText className="size-4" />
+                                                <span className="text-sm font-bold uppercase tracking-wider">Respondents ({selected.respondents.length})</span>
+                                            </div>
+                                            <div className="space-y-3">
+                                                {selected.respondents.length === 0 ? (
+                                                    <p className="text-xs text-neutral-400 italic py-2">No history records linked.</p>
+                                                ) : selected.respondents.map((r) => (
+                                                    <div key={r.id} className="flex flex-col gap-1.5 bg-neutral-50 dark:bg-neutral-800 p-3 rounded-lg border border-sidebar-border/50 hover:border-purple-200 transition-colors">
+                                                        <div className="flex justify-between items-start">
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-center gap-2 mb-0.5">
+                                                                    <span className="font-bold text-neutral-900 dark:text-neutral-100 truncate">{r.firstName} {r.lastName}</span>
+                                                                    {r.ctzId && (
+                                                                        <button onClick={() => { setSelectedCitizenId(r.ctzId); setCitizenQuickViewOpen(true); }} className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-100 transition-all shadow-sm border border-blue-100 dark:border-blue-900/30">
+                                                                            <User className="size-3" />
+                                                                            <span className="text-[9px] font-bold uppercase tracking-tight">Profile View</span>
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                                                    {r.citizenId ? (
+                                                                        <span className="text-[10px] font-mono bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded border border-blue-100 font-bold">{r.citizenId}</span>
+                                                                    ) : (
+                                                                        <span className="text-[10px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-400 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-neutral-700">Manual Entry</span>
+                                                                    )}
+                                                                    <button onClick={() => { setHistoryQuickViewUuid(r.cihi_uuid); setHistoryQuickViewOpen(true); }} className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-600 hover:bg-purple-100 transition-all border border-purple-100 dark:border-purple-800/50">
+                                                                        <FileClock className="size-3" />
+                                                                        <span className="text-[9px] font-bold uppercase tracking-tight">History View</span>
+                                                                    </button>
+                                                                    <span className="text-[10px] font-mono text-neutral-500 truncate">{r.cihi_uuid}</span>
+                                                                    <span className="text-[9px] px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-400 rounded uppercase font-bold">{r.type}</span>
+                                                                </div>
+                                                            </div>
+                                                            <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-bold shrink-0 ml-2 ${r.status === 'Pending' ? 'bg-orange-100 text-orange-800' : 'bg-emerald-100 text-emerald-800'}`}>{r.status || 'Resolved'}</span>
                                                         </div>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
-                                    )}
+                                    </div>
 
-                                    {/* Descriptions */}
-                                    {selected.complaintDescription && (
-                                        <div className="space-y-2">
-                                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2"><FileText className="size-3.5" /> Complaint Description</h3>
-                                            <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">{selected.complaintDescription}</div>
-                                        </div>
-                                    )}
-                                    {selected.settlementDescription && (
-                                        <div className="space-y-2">
-                                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2"><FileText className="size-3.5" /> Settlement Description</h3>
-                                            <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">{selected.settlementDescription}</div>
-                                        </div>
-                                    )}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
+                                        {selected.complaintDescription && (
+                                            <div className="space-y-3">
+                                                <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2"><ShieldAlert className="size-3.5" /> Incident / Complaint</h3>
+                                                <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 min-h-[120px] whitespace-pre-wrap font-mono shadow-inner">{selected.complaintDescription}</div>
+                                            </div>
+                                        )}
+                                        {selected.settlementDescription && (
+                                            <div className="space-y-3">
+                                                <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2"><Handshake className="size-3.5" /> Resolution / Settlement</h3>
+                                                <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 min-h-[120px] whitespace-pre-wrap font-mono shadow-inner">{selected.settlementDescription}</div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div className="p-4 border-t border-sidebar-border/60 bg-neutral-50 dark:bg-neutral-900/50 flex flex-col md:flex-row justify-between items-start md:items-center text-[10px] text-neutral-400 font-mono gap-4">
@@ -221,11 +303,11 @@ export default function SettlementHistoryArchive({ records = [], filters = {} }:
     );
 }
 
-function InfoCard({ label, value }: { label: string; value: string }) {
+function InfoRow({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
     return (
-        <div className="bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-4">
-            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide mb-1">{label}</p>
-            <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{value || '—'}</p>
+        <div className="flex justify-between border-b border-sidebar-border/50 pb-1">
+            <span className="text-neutral-500 font-medium text-sm">{label}:</span>
+            <span className={`font-semibold text-sm ${highlight ? 'text-purple-600 dark:text-purple-400 font-mono' : 'text-neutral-900 dark:text-neutral-100'}`}>{value || '—'}</span>
         </div>
     );
 }

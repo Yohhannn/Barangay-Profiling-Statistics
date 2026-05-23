@@ -1,9 +1,10 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Search, Stethoscope, User, FileText, RotateCcw, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Search, Stethoscope, User, FileText, RotateCcw, AlertTriangle, Info, Activity } from 'lucide-react';
 import { useState } from 'react';
 import Swal from 'sweetalert2';
+import CitizenQuickView from '../../main/CitizenRecords/popup/citizen-quick-view';
 
 interface ArchivedMedical {
     id: number;
@@ -15,6 +16,7 @@ interface ArchivedMedical {
     description: string;
     dateDiagnosed: string;
     citizenId: string | null;
+    ctzId: number | null;
     deleteReason: string;
     dateEncoded: string;
     encodedBy: string;
@@ -31,6 +33,8 @@ export default function MedicalHistoryArchive({ records = [], filters = {} }: { 
     const [selected, setSelected] = useState<ArchivedMedical | null>(records[0] ?? null);
     const [search, setSearch] = useState(filters?.search || '');
     const [isDebouncing, setIsDebouncing] = useState(false);
+    const [citizenQuickViewOpen, setCitizenQuickViewOpen] = useState(false);
+    const [selectedCitizenId, setSelectedCitizenId] = useState<number | null>(null);
 
     const handleSearch = (val: string) => {
         setSearch(val);
@@ -58,6 +62,7 @@ export default function MedicalHistoryArchive({ records = [], filters = {} }: { 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Archived Medical History" />
+            <CitizenQuickView isOpen={citizenQuickViewOpen} onClose={() => setCitizenQuickViewOpen(false)} citizenId={selectedCitizenId} />
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
                 <div className="flex items-center gap-4 pb-2 border-b border-sidebar-border/60">
                     <Link href="/archives" className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
@@ -117,6 +122,17 @@ export default function MedicalHistoryArchive({ records = [], filters = {} }: { 
                                             <div>
                                                 <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{selected.firstName} {selected.middleName} {selected.lastName}</h2>
                                                 <div className="flex items-center gap-2 mt-1">
+                                                    <User className="size-3.5 text-neutral-400" />
+                                                    <span className="font-medium text-sm text-neutral-500">{selected.firstName} {selected.lastName}</span>
+                                                    {selected.ctzId && (
+                                                        <button onClick={() => { setSelectedCitizenId(selected.ctzId); setCitizenQuickViewOpen(true); }} className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 hover:bg-neutral-200 transition-all shadow-sm border border-neutral-200 dark:border-neutral-700 group ml-1">
+                                                            <Info className="size-3" />
+                                                            <span className="text-[9px] font-bold uppercase tracking-tight">Quick View</span>
+                                                        </button>
+                                                    )}
+                                                    <span className="font-mono text-xs bg-white dark:bg-black/20 border px-1.5 rounded text-neutral-500 ml-1">{selected.citizenId}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 mt-1">
                                                     <span className="font-mono text-xs text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 px-2 py-0.5 rounded">{selected.uuid}</span>
                                                     <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-rose-100 text-rose-700">{selected.type}</span>
                                                     <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-red-100 text-red-700">ARCHIVED</span>
@@ -138,25 +154,16 @@ export default function MedicalHistoryArchive({ records = [], filters = {} }: { 
                                         </div>
                                     </div>
 
-                                    {selected.citizenId && (
-                                        <div className="flex items-start gap-3 p-4 bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl">
-                                            <User className="size-4 text-neutral-400 mt-0.5 shrink-0" />
-                                            <div>
-                                                <p className="text-xs font-bold text-neutral-500 uppercase mb-1">Linked Citizen</p>
-                                                <p className="text-sm font-mono text-neutral-800 dark:text-neutral-200">{selected.citizenId}</p>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <InfoCard label="Condition / Type" value={selected.type} />
-                                        <InfoCard label="Date Diagnosed" value={selected.dateDiagnosed} />
+                                    <div className="grid grid-cols-2 gap-x-8 gap-y-4 bg-white dark:bg-sidebar border border-sidebar-border rounded-xl p-5 shadow-sm">
+                                        <InfoRow label="Record ID" value={selected.uuid} highlight />
+                                        <InfoRow label="Date Diagnosed" value={selected.dateDiagnosed} />
+                                        <InfoRow label="Medical Type" value={selected.type} />
                                     </div>
 
                                     {selected.description && (
                                         <div className="space-y-2">
-                                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2"><FileText className="size-3.5" /> Description</h3>
-                                            <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">{selected.description}</div>
+                                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2"><Activity className="size-3.5" /> Medical Details / Observations</h3>
+                                            <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 min-h-[150px]">{selected.description}</div>
                                         </div>
                                     )}
                                 </div>
@@ -184,11 +191,11 @@ export default function MedicalHistoryArchive({ records = [], filters = {} }: { 
     );
 }
 
-function InfoCard({ label, value }: { label: string; value: string }) {
+function InfoRow({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
     return (
-        <div className="bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-4">
-            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide mb-1">{label}</p>
-            <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{value || '—'}</p>
+        <div className="flex justify-between border-b border-sidebar-border/50 pb-1">
+            <span className="text-neutral-500 font-medium text-sm">{label}:</span>
+            <span className={`font-semibold text-sm ${highlight ? 'text-rose-600 dark:text-rose-400 font-mono' : 'text-neutral-900 dark:text-neutral-100'}`}>{value || '—'}</span>
         </div>
     );
 }
