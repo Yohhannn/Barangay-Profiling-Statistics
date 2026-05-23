@@ -138,16 +138,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('admin-panel/manage-accounts', [\App\Http\Controllers\Admin\SystemAccountController::class, 'index'])->name('manage-accounts');
             Route::post('admin-panel/manage-accounts', [\App\Http\Controllers\Admin\SystemAccountController::class, 'store'])->middleware('permission:Create Account');
             Route::put('admin-panel/manage-accounts/{id}', [\App\Http\Controllers\Admin\SystemAccountController::class, 'update'])->middleware('permission:Update Account');
-            Route::delete('admin-panel/manage-accounts/{id}', [\App\Http\Controllers\Admin\SystemAccountController::class, 'destroy'])->middleware('permission:Delete Account');
-            Route::post('admin-panel/manage-accounts/{id}/restore', [\App\Http\Controllers\Admin\SystemAccountController::class, 'restore'])->middleware('permission:Update Account');
+            Route::delete('admin-panel/manage-accounts/{id}', [\App\Http\Controllers\Admin\SystemAccountController::class, 'destroy'])->middleware('permission:Deactivate Account');
+            Route::post('admin-panel/manage-accounts/{id}/restore', [\App\Http\Controllers\Admin\SystemAccountController::class, 'restore'])->middleware('permission:Reactivate Account');
             Route::post('admin-panel/manage-accounts/{id}/log-view', [\App\Http\Controllers\Admin\SystemAccountController::class, 'logView'])->name('manage-accounts.log-view');
         });
 
         // Role Management Routes
-        Route::middleware('permission:View Control')->group(function () {
-            Route::post('admin-panel/roles', [\App\Http\Controllers\Admin\RoleController::class, 'store'])->middleware('permission:Create Control');
-            Route::put('admin-panel/roles/{id}', [\App\Http\Controllers\Admin\RoleController::class, 'update'])->middleware('permission:Update Control');
-            Route::delete('admin-panel/roles/{id}', [\App\Http\Controllers\Admin\RoleController::class, 'destroy'])->middleware('permission:Delete Control');
+        Route::middleware('permission:View Account')->group(function () {
+            Route::post('admin-panel/roles', [\App\Http\Controllers\Admin\RoleController::class, 'store'])->middleware('permission:Create Role');
+            Route::put('admin-panel/roles/{id}', [\App\Http\Controllers\Admin\RoleController::class, 'update'])->middleware('permission:Update Role');
+            Route::delete('admin-panel/roles/{id}', [\App\Http\Controllers\Admin\RoleController::class, 'destroy'])->middleware('permission:Delete Role');
         });
 
         // Admin Control Route

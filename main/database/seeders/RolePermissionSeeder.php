@@ -38,8 +38,9 @@ use Illuminate\Support\Facades\DB;
  *  --- Admin Panel ---
  *  43 = View Archive               44 = Restore Archive
  *  45 = View Account               46 = Create Account
- *  47 = Update Account             48 = Delete Account
- *  49-52 reserved (removed Control permissions)
+ *  47 = Update Account             48 = Deactivate Account
+ *  49 = Create Role                50 = Update Role
+ *  51 = Delete Role                52 = Reactivate Account
  *  53 = View Audit Logs
  */
 class RolePermissionSeeder extends Seeder
@@ -136,7 +137,9 @@ class RolePermissionSeeder extends Seeder
             42,             // Delete Settlement History
             // Admin Panel
             43, 44,         // View/Restore Archive
-            45, 46, 47, 48, // View/Create/Update/Delete Account
+            45, 46, 47, 48, // View/Create/Update/Deactivate Account
+            49, 50, 51,     // Create/Update/Delete Role
+            52,             // Reactivate Account
             53,             // View Audit Logs
         ]));
 

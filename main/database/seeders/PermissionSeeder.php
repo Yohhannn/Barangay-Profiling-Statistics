@@ -38,8 +38,9 @@ use Illuminate\Support\Facades\DB;
  *  --- Admin Panel ---
  *  43 = View Archive               44 = Restore Archive
  *  45 = View Account               46 = Create Account
- *  47 = Update Account             48 = Delete Account
- *  49-52 reserved (removed Control permissions)
+ *  47 = Update Account             48 = Deactivate Account
+ *  49 = Create Role                50 = Update Role
+ *  51 = Delete Role                52 = Reactivate Account
  *  53 = View Audit Logs
  */
 class PermissionSeeder extends Seeder
@@ -101,13 +102,17 @@ class PermissionSeeder extends Seeder
             ['perm_id' => 41, 'name' => 'Update Settlement History', 'category' => 'History Records Panel'],
             ['perm_id' => 42, 'name' => 'Delete Settlement History', 'category' => 'History Records Panel'],
 
-            // Admin Panel  (49-52 intentionally skipped — Control permissions removed)
+            // Admin Panel
             ['perm_id' => 43, 'name' => 'View Archive',              'category' => 'Admin Panel'],
             ['perm_id' => 44, 'name' => 'Restore Archive',           'category' => 'Admin Panel'],
             ['perm_id' => 45, 'name' => 'View Account',              'category' => 'Admin Panel'],
             ['perm_id' => 46, 'name' => 'Create Account',            'category' => 'Admin Panel'],
             ['perm_id' => 47, 'name' => 'Update Account',            'category' => 'Admin Panel'],
-            ['perm_id' => 48, 'name' => 'Delete Account',            'category' => 'Admin Panel'],
+            ['perm_id' => 48, 'name' => 'Deactivate Account',        'category' => 'Admin Panel'],
+            ['perm_id' => 49, 'name' => 'Create Role',               'category' => 'Admin Panel'],
+            ['perm_id' => 50, 'name' => 'Update Role',               'category' => 'Admin Panel'],
+            ['perm_id' => 51, 'name' => 'Delete Role',               'category' => 'Admin Panel'],
+            ['perm_id' => 52, 'name' => 'Reactivate Account',        'category' => 'Admin Panel'],
             ['perm_id' => 53, 'name' => 'View Audit Logs',           'category' => 'Admin Panel'],
         ]);
 

@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\RolePermission;
+use App\Models\SystemAccount;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 class RoleController extends Controller
 {
@@ -100,11 +102,35 @@ class RoleController extends Controller
 
     /**
      * Delete a role (and its role_permissions entries).
+     * Blocks deletion if any active staff accounts are currently assigned to this role.
      */
     public function destroy($id)
     {
         $role = Role::findOrFail($id);
         $roleName = $role->name;
+
+        // Determine which accounts are "assigned" to this role by matching permission sets
+        $rolePermIds = RolePermission::where('role_id', $role->role_id)
+            ->pluck('perm_id')
+            ->sort()
+            ->values()
+            ->toArray();
+
+        $assignedCount = SystemAccount::where('is_deleted', false)
+            ->where('sys_account_id', '!=', 100000)
+            ->with('permissions')
+            ->get()
+            ->filter(function ($account) use ($rolePermIds) {
+                $userPermIds = $account->permissions->pluck('perm_id')->sort()->values()->toArray();
+                return $userPermIds === $rolePermIds;
+            })
+            ->count();
+
+        if ($assignedCount > 0) {
+            throw ValidationException::withMessages([
+                'role' => ["{$assignedCount} active account(s) are currently assigned to \"{$roleName}\". Reassign them before deleting this role."],
+            ]);
+        }
 
         RolePermission::where('role_id', $role->role_id)->delete();
         $role->delete();

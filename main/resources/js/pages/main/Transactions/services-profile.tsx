@@ -89,49 +89,29 @@ export default function ServicesProfile({ transactions = [] }: ServicesProfilePr
         });
     }, [searchQuery, filterStatus, transactions]);
 
-    const handleDelete = async (e: React.MouseEvent, id: number) => {
-        e.stopPropagation();
-        
-        const result = await Swal.fire({
-            title: 'Archive Transaction',
-            text: 'Are you sure you want to move this transaction to archives? Please provide a reason.',
-            icon: 'warning',
-            input: 'textarea',
-            inputPlaceholder: 'Reason for archiving...',
-            inputAttributes: {
-                'aria-label': 'Reason for archiving'
-            },
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#6b7280',
-            confirmButtonText: 'Yes, Archive',
-            preConfirm: (reason) => {
-                if (!reason || reason.trim() === '') {
-                    Swal.showValidationMessage('A reason is required to archive a record');
-                    return false;
-                }
-                return reason;
-            }
-        });
+    const [archiveTarget, setArchiveTarget] = useState<{ id: number; label: string } | null>(null);
+    const [archiveReason, setArchiveReason] = useState('');
+    const [archiveError, setArchiveError] = useState('');
+    const [archiveLoading, setArchiveLoading] = useState(false);
 
-        if (result.isConfirmed && result.value) {
-            router.delete(`/transactions/services/${id}`, {
-                data: { deleted_reason: result.value },
-                preserveScroll: true,
-                onSuccess: () => {
-                    Swal.fire({
-                        title: 'Archived!',
-                        text: 'Transaction has been moved to archives.',
-                        icon: 'success',
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
-                    if (selectedTransaction?.id === id) {
-                        setSelectedTransaction(null);
-                    }
-                }
-            });
-        }
+    const handleDelete = (e: React.MouseEvent, id: number, label: string) => {
+        e.stopPropagation();
+        setArchiveTarget({ id, label });
+        setArchiveReason('');
+        setArchiveError('');
+    };
+
+    const handleArchiveSubmit = () => {
+        if (!archiveTarget) return;
+        if (!archiveReason.trim()) { setArchiveError('A reason is required.'); return; }
+        setArchiveLoading(true);
+        router.delete(`/transactions/services/${archiveTarget.id}`, {
+            data: { deleted_reason: archiveReason },
+            preserveScroll: true,
+            onSuccess: () => { setArchiveTarget(null); setSelectedTransaction(null); },
+            onError: (errors: any) => { setArchiveError(errors?.error || 'Failed to archive. Please try again.'); },
+            onFinish: () => setArchiveLoading(false),
+        });
     };
 
     const handleExportPdf = () => {
@@ -224,6 +204,32 @@ export default function ServicesProfile({ transactions = [] }: ServicesProfilePr
             <ServicesEdit isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} transaction={selectedTransaction} />
             <ServicesQuickView isOpen={quickViewId !== null} onClose={() => setQuickViewId(null)} transactionId={quickViewId} />
             <CitizenQuickView isOpen={citizenQuickViewId !== null} onClose={() => setCitizenQuickViewId(null)} citizenId={citizenQuickViewId} />
+
+            {archiveTarget !== null && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-[#0f172a] w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-white/20">
+                        <div className="bg-red-950 text-white p-5 flex justify-between items-center">
+                            <div>
+                                <h2 className="text-lg font-bold flex items-center gap-2"><Trash2 className="size-5 text-red-400" /> Archive Transaction</h2>
+                                <p className="text-[10px] text-red-300 mt-1 uppercase tracking-wider">{archiveTarget.label}</p>
+                            </div>
+                            <button onClick={() => setArchiveTarget(null)} className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all"><X className="size-5" /></button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <p className="text-sm text-neutral-600 dark:text-neutral-400">Are you sure you want to move this transaction to archives?</p>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold uppercase text-neutral-500 tracking-wide">Reason for Archiving <span className="text-red-500">*</span></label>
+                                <textarea rows={3} value={archiveReason} onChange={e => { setArchiveReason(e.target.value); setArchiveError(''); }} placeholder="State the reason..." className={`w-full text-xs p-2.5 rounded-lg border resize-none ${archiveError ? 'border-red-500' : 'border-neutral-300 dark:border-neutral-600'} bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none`} />
+                                {archiveError && <p className="text-[10px] text-red-500">{archiveError}</p>}
+                            </div>
+                            <div className="pt-2 flex gap-2 justify-end">
+                                <button type="button" onClick={() => setArchiveTarget(null)} className="px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg text-xs font-bold text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">Cancel</button>
+                                <button onClick={handleArchiveSubmit} disabled={archiveLoading} className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold uppercase tracking-wider disabled:opacity-50 transition-all">{archiveLoading ? 'Archiving...' : 'Archive'}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
 
@@ -338,7 +344,7 @@ export default function ServicesProfile({ transactions = [] }: ServicesProfilePr
                                                 <span className="text-xs text-neutral-600 truncate max-w-[100px]">{trx.type}</span>
                                                 {/* TRASH ICON */}
                                                 <button
-                                                    onClick={(e) => handleDelete(e, trx.id)}
+                                                    onClick={(e) => handleDelete(e, trx.id, trx.transactionId)}
                                                     className="text-neutral-300 hover:text-red-500 transition-colors p-1"
                                                 >
                                                     <Trash2 className="size-3" />

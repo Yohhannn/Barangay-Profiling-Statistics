@@ -4,7 +4,11 @@
       "Bash(php artisan *)",
       "Bash(php vendor/composer/installed.json)",
       "Bash(npx tsc *)",
-      "Bash(Remove-Item \"e:\\\\AntigravityFiles\\\\Side\\\\Barangay-Profiling-Statistics\\\\main\\\\resources\\\\js\\\\pages\\\\auth\\\\login.tsx\")"
+      "Bash(Remove-Item \"e:\\\\AntigravityFiles\\\\Side\\\\Barangay-Profiling-Statistics\\\\main\\\\resources\\\\js\\\\pages\\\\auth\\\\login.tsx\")",
+      "Bash(Get-ChildItem -Path \"e:\\\\AntigravityFiles\\\\Side\\\\Barangay-Profiling-Statistics\\\\main\" -Directory)",
+      "Bash(Select-Object -First 20)",
+      "Bash(Get-ChildItem -Path \"e:\\\\AntigravityFiles\\\\Side\\\\Barangay-Profiling-Statistics\\\\main\\\\resources\\\\js\" -Recurse -File -Filter \"*.js\")",
+      "Bash(Select-Object -ExpandProperty FullName)"
     ]
   }
 }

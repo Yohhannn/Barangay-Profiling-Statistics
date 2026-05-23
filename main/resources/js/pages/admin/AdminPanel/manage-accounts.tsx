@@ -6,7 +6,7 @@ import {
     Edit3, X, UserCog, RefreshCw, Users, ChevronDown, ChevronRight,
     CheckSquare, Square, UserX, History,
 } from 'lucide-react';
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { usePermission } from '@/hooks/use-permission';
@@ -238,7 +238,11 @@ export default function ManageAccounts({
                 Swal.fire({ icon: 'success', title: 'Role Created', confirmButtonColor: '#4f46e5' });
                 setIsCreateRoleOpen(false); setRoleData(blankRole);
             },
-            onError: (errors) => setRoleErrors(errors as any),
+            onError: (errors) => {
+                setRoleErrors(errors as any);
+                const msg = (errors as any).role || (errors as any).name || (errors as any).permissions || 'Please fix the errors and try again.';
+                Swal.fire({ icon: 'error', title: 'Failed to Create Role', text: msg, confirmButtonColor: '#ef4444' });
+            },
             onFinish: () => setRoleLoading(false),
         });
     };
@@ -259,7 +263,11 @@ export default function ManageAccounts({
                 Swal.fire({ icon: 'success', title: 'Role Updated', confirmButtonColor: '#4f46e5' });
                 setIsUpdateRoleOpen(false);
             },
-            onError: (errors) => setRoleErrors(errors as any),
+            onError: (errors) => {
+                setRoleErrors(errors as any);
+                const msg = (errors as any).role || (errors as any).name || (errors as any).permissions || 'Please fix the errors and try again.';
+                Swal.fire({ icon: 'error', title: 'Failed to Update Role', text: msg, confirmButtonColor: '#ef4444' });
+            },
             onFinish: () => setRoleLoading(false),
         });
     };
@@ -268,12 +276,16 @@ export default function ManageAccounts({
     const handleDeleteRole = (role: RoleItem) => {
         Swal.fire({
             icon: 'warning', title: `Delete "${role.name}"?`,
-            text: 'This will permanently remove the role. Existing accounts keep their permissions.',
+            text: 'This will permanently remove the role. Accounts currently using it must be reassigned first.',
             showCancelButton: true, confirmButtonText: 'Delete', confirmButtonColor: '#ef4444',
         }).then(res => {
             if (res.isConfirmed) {
                 router.delete(`/admin-panel/roles/${role.role_id}`, {
                     onSuccess: () => Swal.fire({ icon: 'success', title: 'Role Deleted', confirmButtonColor: '#4f46e5' }),
+                    onError: (errors) => {
+                        const msg = (errors as any).role || 'This role cannot be deleted.';
+                        Swal.fire({ icon: 'error', title: 'Cannot Delete Role', text: msg, confirmButtonColor: '#ef4444' });
+                    },
                 });
             }
         });
@@ -526,7 +538,7 @@ export default function ManageAccounts({
                                                 <span>{selectedUser.lastLogin}</span>
                                             </div>
                                         </div>
-                                        {can('Delete Account') && !isSelf(selectedUser) && (
+                                        {can('Deactivate Account') && !isSelf(selectedUser) && (
                                             <button
                                                 onClick={() => openDeactivate(selectedUser)}
                                                 className="flex items-center gap-2 px-3 py-1.5 bg-red-50 border border-red-200 hover:bg-red-100 text-red-600 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all"
@@ -589,7 +601,7 @@ export default function ManageAccounts({
                                                 </td>
                                                 <td className="px-4 py-3 text-xs text-red-500 max-w-xs truncate">{user.deleteReason ?? '—'}</td>
                                                 <td className="px-4 py-3 text-center">
-                                                    {can('Update Account') && (
+                                                    {can('Reactivate Account') && (
                                                         <button
                                                             onClick={() => handleRestore(user)}
                                                             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all"
@@ -716,6 +728,7 @@ export default function ManageAccounts({
                 passwordOptional
                 showIdField={false}
                 onRoleSelect={roleId => applyRole(roleId, setUpdateData)}
+                currentRoleId={selectedUser?.roleId}
             />
 
             {/* DEACTIVATE MODAL */}
@@ -897,12 +910,24 @@ interface AccountModalProps {
     passwordOptional?: boolean;
     showIdField?: boolean;
     onRoleSelect: (roleId: string) => void;
+    currentRoleId?: number | null;
 }
 
 function AccountModal({
     open, title, subtitle, onClose, onSubmit, loading, submitLabel, submitColor,
     data, errors, onChange, roles, allPermissions, showPassword, passwordOptional, onRoleSelect,
+    currentRoleId,
 }: AccountModalProps) {
+    const [rolePreset, setRolePreset] = useState('');
+    const prevOpen = useRef(false);
+
+    useEffect(() => {
+        if (open && !prevOpen.current) {
+            setRolePreset(currentRoleId ? String(currentRoleId) : '');
+        }
+        prevOpen.current = open;
+    }, [open, currentRoleId]);
+
     if (!open) return null;
 
     return (
@@ -938,8 +963,8 @@ function AccountModal({
                         <p className="text-[10px] font-bold uppercase text-neutral-400 tracking-wider mb-2">Quick Role Preset <span className="font-normal text-neutral-400 normal-case">(optional — auto-fills permissions below)</span></p>
                         <select
                             className="w-full text-xs p-2.5 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
-                            onChange={e => onRoleSelect(e.target.value)}
-                            defaultValue=""
+                            value={rolePreset}
+                            onChange={e => { setRolePreset(e.target.value); onRoleSelect(e.target.value); }}
                         >
                             <option value="">— Select a role to auto-fill permissions —</option>
                             {roles.map(r => <option key={r.role_id} value={r.role_id}>{r.name}{r.description ? ` — ${r.description}` : ''}</option>)}

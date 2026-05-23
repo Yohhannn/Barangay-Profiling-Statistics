@@ -8,7 +8,6 @@ import {
     Download, Edit3, X, SlidersHorizontal, Activity, Info
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
-import Swal from 'sweetalert2';
 import MedicalHistoryCreation from './popup/medical-history-creation'; // IMPORTED
 import MedicalHistoryEdit from './popup/medical-history-edit'; // IMPORTED
 import MedicalQuickView from './popup/medical-quick-view';
@@ -138,42 +137,28 @@ export default function MedicalHistory({ histories = [], filters = {} as any }: 
         });
     };
 
-    const handleDelete = (e: React.MouseEvent, id: number) => {
+    const [archiveTarget, setArchiveTarget] = useState<{ id: number; label: string } | null>(null);
+    const [archiveReason, setArchiveReason] = useState('');
+    const [archiveError, setArchiveError] = useState('');
+    const [archiveLoading, setArchiveLoading] = useState(false);
+
+    const handleDelete = (e: React.MouseEvent, id: number, label: string) => {
         e.stopPropagation();
-        Swal.fire({
-            title: 'Archive Record',
-            text: 'Are you sure you want to move this medical record to archives? Please provide a reason.',
-            icon: 'warning',
-            input: 'textarea',
-            inputPlaceholder: 'Reason for archiving...',
-            inputAttributes: {
-                'aria-label': 'Reason for archiving'
-            },
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, archive it!',
-            preConfirm: (reason) => {
-                if (!reason) {
-                    Swal.showValidationMessage('A reason is required to archive a record');
-                }
-                return reason;
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                router.delete(`/citizen-records/medical-history/${id}`, {
-                    data: { delete_reason: result.value },
-                    onSuccess: () => {
-                        if (selectedRecord?.id === id) {
-                            setSelectedRecord(null);
-                        }
-                        Swal.fire('Archived!', 'The record has been moved to archives.', 'success');
-                    },
-                    onError: (errors: any) => {
-                        Swal.fire('Error', errors?.error || 'Failed to archive record.', 'error');
-                    }
-                });
-            }
+        setArchiveTarget({ id, label });
+        setArchiveReason('');
+        setArchiveError('');
+    };
+
+    const handleArchiveSubmit = () => {
+        if (!archiveTarget) return;
+        if (!archiveReason.trim()) { setArchiveError('A reason is required.'); return; }
+        setArchiveLoading(true);
+        router.delete(`/citizen-records/medical-history/${archiveTarget.id}`, {
+            data: { delete_reason: archiveReason },
+            preserveScroll: true,
+            onSuccess: () => { setArchiveTarget(null); setSelectedRecord(null); },
+            onError: (errors: any) => { setArchiveError(errors?.error || 'Failed to archive. Please try again.'); },
+            onFinish: () => setArchiveLoading(false),
         });
     };
 
@@ -181,9 +166,34 @@ export default function MedicalHistory({ histories = [], filters = {} as any }: 
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Medical History" />
 
-            {/* --- MOUNT THE MODAL HERE --- */}
             <MedicalHistoryCreation isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
             <MedicalHistoryEdit isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} historyData={selectedRecord} />
+
+            {archiveTarget !== null && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-[#0f172a] w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-white/20">
+                        <div className="bg-red-950 text-white p-5 flex justify-between items-center">
+                            <div>
+                                <h2 className="text-lg font-bold flex items-center gap-2"><Trash2 className="size-5 text-red-400" /> Archive Medical Record</h2>
+                                <p className="text-[10px] text-red-300 mt-1 uppercase tracking-wider">{archiveTarget.label}</p>
+                            </div>
+                            <button onClick={() => setArchiveTarget(null)} className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all"><X className="size-5" /></button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <p className="text-sm text-neutral-600 dark:text-neutral-400">Are you sure you want to move this medical record to archives?</p>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold uppercase text-neutral-500 tracking-wide">Reason for Archiving <span className="text-red-500">*</span></label>
+                                <textarea rows={3} value={archiveReason} onChange={e => { setArchiveReason(e.target.value); setArchiveError(''); }} placeholder="State the reason..." className={`w-full text-xs p-2.5 rounded-lg border resize-none ${archiveError ? 'border-red-500' : 'border-neutral-300 dark:border-neutral-600'} bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none`} />
+                                {archiveError && <p className="text-[10px] text-red-500">{archiveError}</p>}
+                            </div>
+                            <div className="pt-2 flex gap-2 justify-end">
+                                <button type="button" onClick={() => setArchiveTarget(null)} className="px-4 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg text-xs font-bold text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">Cancel</button>
+                                <button onClick={handleArchiveSubmit} disabled={archiveLoading} className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold uppercase tracking-wider disabled:opacity-50 transition-all">{archiveLoading ? 'Archiving...' : 'Archive'}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
 
@@ -348,7 +358,7 @@ export default function MedicalHistory({ histories = [], filters = {} as any }: 
                                                                 <span className="text-[9px] font-bold uppercase tracking-tight">View</span>
                                                             </button>
                                                             <button
-                                                                onClick={(e) => handleDelete(e, rec.id)}
+                                                                onClick={(e) => handleDelete(e, rec.id, `${rec.firstName} ${rec.lastName}`)}
                                                                 className="text-neutral-300 hover:text-red-500 transition-colors p-1 bg-white dark:bg-neutral-800 rounded border border-transparent hover:border-red-200 dark:hover:border-red-900"
                                                                 title="Delete Record"
                                                             >

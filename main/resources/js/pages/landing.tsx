@@ -105,10 +105,14 @@ export default function Landing({ status }: LandingProps) {
             </div>
 
             {/* ── RIGHT PANEL — login form ──────────────────────────────── */}
-            <div className="flex w-full flex-col items-center justify-center bg-slate-50 px-6 py-12 lg:w-1/2">
+            <div className="relative flex w-full flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 via-white to-blue-50/40 px-6 py-12 lg:w-1/2">
+
+                {/* Subtle decorative circles */}
+                <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-blue-100/40" />
+                <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-blue-100/30" />
 
                 {/* Mobile logo */}
-                <div className="mb-8 flex flex-col items-center lg:hidden">
+                <div className="relative z-10 mb-8 flex flex-col items-center lg:hidden">
                     <div className="mb-3 flex items-center gap-3">
                         <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-blue-600 shadow-lg">
                             <img src="/logo/w-icon.png" alt="MaPro" className="h-9 w-9 object-contain" />
@@ -119,136 +123,158 @@ export default function Landing({ status }: LandingProps) {
                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Barangay Marigondon</p>
                 </div>
 
-                <div className="w-full max-w-sm">
-                    <div className="mb-8">
-                        <h2 className="text-2xl font-black tracking-tight text-slate-900">Welcome Back</h2>
-                        <p className="mt-1 text-sm text-slate-500">Sign in to access the portal</p>
+                {/* Card */}
+                <div className="relative z-10 w-full max-w-sm">
+                    <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xl shadow-slate-200/60">
+
+                        {/* Blue top accent bar */}
+                        <div className="h-1 w-full bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700" />
+
+                        <div className="p-8">
+                            {/* Heading */}
+                            <div className="mb-7 flex items-start gap-4">
+                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 shadow-md shadow-blue-200">
+                                    <ShieldCheck className="h-5 w-5 text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black tracking-tight text-slate-900">Welcome Back</h2>
+                                    <p className="mt-0.5 text-xs text-slate-500">Sign in to access the portal</p>
+                                </div>
+                            </div>
+
+                            {/* Success banner */}
+                            {status && (
+                                <div className="mb-5 flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 p-3.5 text-green-700">
+                                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-100">
+                                        <svg className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                    <p className="text-sm font-semibold">{status}</p>
+                                </div>
+                            )}
+
+                            <Form {...store.form()} resetOnSuccess={['password']} className="flex flex-col gap-4">
+                                {({ processing, errors }) => (
+                                    <>
+                                        {/* Error banner */}
+                                        {(errors.sys_account_id || errors.password) && (
+                                            <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-3.5 text-red-700">
+                                                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-100">
+                                                    <svg className="h-4 w-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold">Authentication Failed</p>
+                                                    <p className="mt-0.5 text-xs text-red-600">
+                                                        {errors.sys_account_id || errors.password || 'Invalid credentials. Please check your Account ID and PIN.'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Account ID */}
+                                        <div className="grid gap-1.5">
+                                            <Label htmlFor="account_id" className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">
+                                                <Hash className="h-3 w-3" />
+                                                Account ID
+                                            </Label>
+                                            <Input
+                                                id="account_id"
+                                                type="text"
+                                                name="sys_account_id"
+                                                maxLength={6}
+                                                inputMode="numeric"
+                                                onInput={(e) => {
+                                                    e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
+                                                }}
+                                                className={`h-12 rounded-xl text-center font-mono text-lg tracking-[0.35em] text-slate-900 shadow-sm ${errors.sys_account_id ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-slate-50 focus-visible:bg-white'}`}
+                                                required
+                                                autoFocus
+                                                tabIndex={1}
+                                                placeholder="— — — — — —"
+                                            />
+                                        </div>
+
+                                        {/* Security PIN */}
+                                        <div className="grid gap-1.5">
+                                            <Label htmlFor="password" className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">
+                                                <Lock className="h-3 w-3" />
+                                                Security PIN
+                                            </Label>
+                                            <div className="relative">
+                                                <Input
+                                                    id="password"
+                                                    type={showPassword ? 'text' : 'password'}
+                                                    name="password"
+                                                    maxLength={6}
+                                                    inputMode="numeric"
+                                                    pattern="[0-9]*"
+                                                    onInput={(e) => {
+                                                        e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
+                                                    }}
+                                                    className={`h-12 rounded-xl pr-10 text-center font-mono text-lg tracking-[0.35em] text-slate-900 shadow-sm ${errors.password ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-slate-50 focus-visible:bg-white'}`}
+                                                    required
+                                                    tabIndex={2}
+                                                    autoComplete="current-password"
+                                                    placeholder="• • • • • •"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPassword(!showPassword)}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                                                    tabIndex={-1}
+                                                >
+                                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Divider + remember me */}
+                                        <div className="flex items-center justify-between pt-1">
+                                            <div className="flex items-center gap-2.5">
+                                                <Checkbox
+                                                    id="remember"
+                                                    name="remember"
+                                                    tabIndex={3}
+                                                    className="border-slate-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                                />
+                                                <Label htmlFor="remember" className="cursor-pointer text-xs font-medium text-slate-500">
+                                                    Remember this session
+                                                </Label>
+                                            </div>
+                                        </div>
+
+                                        {/* Submit */}
+                                        <Button
+                                            type="submit"
+                                            tabIndex={4}
+                                            disabled={processing}
+                                            className="group relative mt-1 h-12 w-full overflow-hidden rounded-xl bg-blue-600 font-bold text-white shadow-lg shadow-blue-200/70 transition-all duration-300 hover:bg-blue-700 hover:shadow-blue-300/60 active:scale-[0.99]"
+                                        >
+                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full transition-transform duration-700 group-hover:translate-x-full" />
+                                            <span className="relative z-10 flex items-center justify-center gap-2 text-sm">
+                                                {processing ? <Spinner /> : (
+                                                    <>
+                                                        Sign In to Portal
+                                                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                                                    </>
+                                                )}
+                                            </span>
+                                        </Button>
+                                    </>
+                                )}
+                            </Form>
+                        </div>
                     </div>
 
-                    {/* Success banner */}
-                    {status && (
-                        <div className="mb-5 flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 p-3.5 text-green-700">
-                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-100">
-                                <svg className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                            </div>
-                            <p className="text-sm font-semibold">{status}</p>
-                        </div>
-                    )}
-
-                    <Form {...store.form()} resetOnSuccess={['password']} className="flex flex-col gap-4">
-                        {({ processing, errors }) => (
-                            <>
-                                {/* Error banner */}
-                                {(errors.sys_account_id || errors.password) && (
-                                    <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-3.5 text-red-700">
-                                        <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-100">
-                                            <svg className="h-4 w-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-bold">Authentication Failed</p>
-                                            <p className="mt-0.5 text-xs text-red-600">
-                                                {errors.sys_account_id || errors.password || 'Invalid credentials. Please check your Account ID and PIN.'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Account ID */}
-                                <div className="grid gap-1.5">
-                                    <Label htmlFor="account_id" className="ml-0.5 text-sm font-bold text-slate-700">Account ID</Label>
-                                    <div className="relative">
-                                        <Hash className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                        <Input
-                                            id="account_id"
-                                            type="text"
-                                            name="sys_account_id"
-                                            maxLength={6}
-                                            inputMode="numeric"
-                                            onInput={(e) => {
-                                                e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
-                                            }}
-                                            className={`h-11 pl-10 font-mono tracking-[0.2em] text-slate-900 ${errors.sys_account_id ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-white'}`}
-                                            required
-                                            autoFocus
-                                            tabIndex={1}
-                                            placeholder="XXXXXX"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Security PIN */}
-                                <div className="grid gap-1.5">
-                                    <Label htmlFor="password" className="ml-0.5 text-sm font-bold text-slate-700">Security PIN</Label>
-                                    <div className="relative">
-                                        <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                        <Input
-                                            id="password"
-                                            type={showPassword ? 'text' : 'password'}
-                                            name="password"
-                                            maxLength={6}
-                                            inputMode="numeric"
-                                            pattern="[0-9]*"
-                                            onInput={(e) => {
-                                                e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
-                                            }}
-                                            className={`h-11 pl-10 pr-10 font-mono tracking-[0.3em] text-slate-900 ${errors.password ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-white'}`}
-                                            required
-                                            tabIndex={2}
-                                            autoComplete="current-password"
-                                            placeholder="••••••"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600"
-                                            tabIndex={-1}
-                                        >
-                                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Remember me */}
-                                <div className="flex items-center gap-2.5">
-                                    <Checkbox
-                                        id="remember"
-                                        name="remember"
-                                        tabIndex={3}
-                                        className="border-slate-300 data-[state=checked]:bg-blue-600"
-                                    />
-                                    <Label htmlFor="remember" className="cursor-pointer text-sm font-medium text-slate-600">
-                                        Remember this session
-                                    </Label>
-                                </div>
-
-                                {/* Submit */}
-                                <Button
-                                    type="submit"
-                                    tabIndex={4}
-                                    disabled={processing}
-                                    className="group relative mt-2 h-11 w-full overflow-hidden rounded-xl bg-blue-600 font-bold text-white shadow-lg shadow-blue-200 transition-all duration-300 hover:bg-blue-700 hover:scale-[1.01] active:scale-[0.99]"
-                                >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full transition-transform duration-700 group-hover:translate-x-full" />
-                                    <span className="relative z-10 flex items-center justify-center gap-2">
-                                        {processing ? <Spinner /> : (
-                                            <>
-                                                Authenticate
-                                                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                                            </>
-                                        )}
-                                    </span>
-                                </Button>
-                            </>
-                        )}
-                    </Form>
-
-                    <p className="mt-8 text-center text-xs text-slate-400">
-                        Barangay Marigondon Information System · For authorized personnel only
-                    </p>
+                    {/* Footer */}
+                    <div className="mt-5 flex items-center justify-center gap-2">
+                        <div className="h-px flex-1 bg-slate-200" />
+                        <p className="text-center text-[11px] text-slate-400">For authorized personnel only</p>
+                        <div className="h-px flex-1 bg-slate-200" />
+                    </div>
                 </div>
             </div>
         </div>
