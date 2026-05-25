@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Inertia\Inertia;
@@ -358,6 +359,8 @@ class CitizenController extends Controller
             'fp_status' => 'nullable|string',
             'fp_start_date' => 'nullable|date',
             'fp_end_date' => 'nullable|date',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
+            'face_recog_uuid' => 'nullable|string|max:255',
         ]);
 
         try {
@@ -482,6 +485,12 @@ class CitizenController extends Controller
                 'demo_id' => $demographic->demo_id,
             ]);
 
+            // Handle photo upload (local for now — swap 'public' disk for 's3' when ready)
+            $photoPath = null;
+            if ($request->hasFile('photo') && $request->file('photo')->isValid()) {
+                $photoPath = $request->file('photo')->store('citizen-photos', 'public');
+            }
+
             // Create System Citizen Record
             // Note: ctz_uuid is handled by the Model event
             $ctzNumber = (int) (Carbon::now()->format('Y') . rand(1000, 9999));
@@ -494,8 +503,8 @@ class CitizenController extends Controller
                 'date_encoded' => now(),
                 'encoded_by' => $systemUserId,
                 'updated_by' => $systemUserId,
-                'face_recog_uuid' => null, // Explicitly null
-                'photo_uuid' => null,      // Explicitly null
+                'face_recog_uuid' => $request->input('face_recog_uuid') ?: null,
+                'photo_uuid' => $photoPath,
             ]);
 
             DB::commit();
@@ -716,6 +725,81 @@ class CitizenController extends Controller
             return redirect()->back()->with('success', 'Citizen moved to archives successfully!');
         } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => 'Error archiving citizen: ' . $e->getMessage()]);
+        }
+    }
+
+    public function registerFace(Request $request)
+    {
+        $request->validate([
+            'face_image' => 'required|image|max:4096',
+        ]);
+
+        $awsKey    = env('AWS_ACCESS_KEY_ID');
+        $awsSecret = env('AWS_SECRET_ACCESS_KEY');
+        $awsRegion = env('AWS_DEFAULT_REGION', 'us-east-1');
+
+        if (empty($awsKey) || empty($awsSecret)) {
+            return response()->json(['error' => 'AWS credentials are not configured. Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in your .env file.'], 500);
+        }
+
+        try {
+            $rekognition = new \Aws\Rekognition\RekognitionClient([
+                'version'     => 'latest',
+                'region'      => $awsRegion,
+                'credentials' => [
+                    'key'    => $awsKey,
+                    'secret' => $awsSecret,
+                ],
+            ]);
+
+            $collectionId = env('AWS_REKOGNITION_COLLECTION_ID', 'barangay-citizens');
+
+            // Create the collection if it doesn't exist yet (idempotent)
+            try {
+                $rekognition->describeCollection(['CollectionId' => $collectionId]);
+            } catch (\Aws\Exception\AwsException $e) {
+                if ($e->getAwsErrorCode() === 'ResourceNotFoundException') {
+                    $rekognition->createCollection(['CollectionId' => $collectionId]);
+                } else {
+                    throw $e;
+                }
+            }
+
+            $realPath = $request->file('face_image')->getRealPath();
+            if (!$realPath || !file_exists($realPath)) {
+                return response()->json(['error' => 'Uploaded image could not be read.'], 500);
+            }
+            $imageBytes = file_get_contents($realPath);
+
+            $result = $rekognition->indexFaces([
+                'CollectionId'        => $collectionId,
+                'Image'               => ['Bytes' => $imageBytes],
+                'ExternalImageId'     => 'pending-' . uniqid(),
+                'DetectionAttributes' => [],
+                'MaxFaces'            => 1,
+                'QualityFilter'       => 'AUTO',
+            ]);
+
+            if (empty($result['FaceRecords'])) {
+                return response()->json(['error' => 'No face detected. Ensure your face is clearly visible and well-lit.'], 422);
+            }
+
+            $faceId = $result['FaceRecords'][0]['Face']['FaceId'];
+
+            return response()->json(['face_id' => $faceId]);
+
+        } catch (\Aws\Exception\AwsException $e) {
+            \Illuminate\Support\Facades\Log::error('Rekognition AwsException', [
+                'code'       => $e->getAwsErrorCode(),
+                'message'    => $e->getAwsErrorMessage(),
+                'statusCode' => $e->getStatusCode(),
+            ]);
+            return response()->json([
+                'error' => '[' . $e->getAwsErrorCode() . '] ' . $e->getAwsErrorMessage(),
+            ], 500);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Rekognition Throwable', ['message' => $e->getMessage()]);
+            return response()->json(['error' => 'Face registration failed: ' . $e->getMessage()], 500);
         }
     }
 

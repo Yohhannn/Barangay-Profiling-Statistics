@@ -43,6 +43,7 @@ class Citizen extends Model
         'date_encoded',
         'date_updated',
         'face_recog_uuid',
+        'photo_uuid',
         'updated_by',
         'encoded_by',
         'ctz_info_id',

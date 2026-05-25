@@ -3,7 +3,7 @@ import {
     User, MapPin, Briefcase, GraduationCap, Activity, Home,
     CreditCard, Heart, CheckCircle, Search, Loader2
 } from 'lucide-react';
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, useRef, FormEvent } from 'react';
 import { useForm } from '@inertiajs/react';
 import RegisterFace from './register-face';
 import Swal from 'sweetalert2';
@@ -35,7 +35,7 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
 
 
     // --- Setup Inertia Form ---
-    const { data, setData, post, processing, reset, errors } = useForm({
+    const { data, setData, post, processing, reset, errors, transform } = useForm({
         // Personal
         first_name: '',
         middle_name: '',
@@ -92,10 +92,17 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
         fp_status: '',
         fp_start_date: '',
         fp_end_date: '',
+
+        // Media — photo stored in a ref (not here) to avoid Lodash cloneDeep breaking File objects
+        face_recog_uuid: '',
     });
 
     // --- Local UI State ---
     const [isFaceScanOpen, setIsFaceScanOpen] = useState(false);
+    const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+    const photoInputRef = useRef<HTMLInputElement>(null);
+    // Use ref so Lodash cloneDeep (called by useForm on every setData) never touches the File object
+    const photoFileRef = useRef<File | null>(null);
     const [searchHHQuery, setSearchHHQuery] = useState('');
     const [householdInfo, setHouseholdInfo] = useState<{ members: { name: string; relationship: string; address: string }[], status: string } | null>(null);
     const [isSearchingHH, setIsSearchingHH] = useState(false);
@@ -172,12 +179,23 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
         // a better pattern for Inertia is to set the data first or use transform.
         setData('relationship_to_head', data.relationship_to_head || 'None');
 
+        // Inject the photo (File) at submit time via transform so it never goes through
+        // Lodash cloneDeep (which destroys File objects and would silently corrupt the upload)
+        transform((d) => ({
+            ...d,
+            ...(photoFileRef.current ? { photo: photoFileRef.current } : {}),
+        }));
+
         post('/citizens/store', {
+            forceFormData: true,
             onSuccess: () => {
                 Swal.fire({ icon: 'success', title: 'Success', text: 'Citizen Record Created!' });
                 reset();
                 setSearchHHQuery('');
                 setHouseholdInfo(null);
+                setPhotoPreview(null);
+                photoFileRef.current = null;
+                if (photoInputRef.current) photoInputRef.current.value = '';
                 onClose();
             },
             onError: (err) => {
@@ -202,7 +220,11 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
 
     return (
         <>
-            <RegisterFace isOpen={isFaceScanOpen} onClose={() => setIsFaceScanOpen(false)} />
+            <RegisterFace
+                isOpen={isFaceScanOpen}
+                onClose={() => setIsFaceScanOpen(false)}
+                onCapture={(faceId) => setData('face_recog_uuid', faceId)}
+            />
 
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
                 <div className="bg-[#F8F9FC] dark:bg-[#0f172a] w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] border border-white/20">
@@ -235,12 +257,47 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
                                 <SectionLabel icon={<User className="size-4" />} label="Personal Identity" />
                                 <div className="bg-white dark:bg-[#1e293b] p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm flex flex-col sm:flex-row gap-6">
                                     <div className="flex flex-col gap-3 w-full sm:w-40 shrink-0">
-                                        <div className="w-full aspect-[3/4] bg-neutral-100 dark:bg-black/20 rounded-lg border-2 border-dashed border-neutral-300 dark:border-neutral-600 flex flex-col items-center justify-center text-neutral-400 gap-2 hover:border-indigo-400 transition-colors cursor-pointer group">
-                                            <Camera className="size-8 group-hover:text-indigo-500 transition-colors" />
-                                            <span className="text-[10px] font-medium uppercase tracking-wide">No Photo</span>
+                                        <div
+                                            onClick={() => photoInputRef.current?.click()}
+                                            className="w-full aspect-[3/4] bg-neutral-100 dark:bg-black/20 rounded-lg border-2 border-dashed border-neutral-300 dark:border-neutral-600 flex flex-col items-center justify-center text-neutral-400 gap-2 hover:border-indigo-400 transition-colors cursor-pointer group overflow-hidden relative"
+                                        >
+                                            {photoPreview ? (
+                                                <>
+                                                    <img src={photoPreview} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
+                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                        <Camera className="size-6 text-white" />
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Camera className="size-8 group-hover:text-indigo-500 transition-colors" />
+                                                    <span className="text-[10px] font-medium uppercase tracking-wide">Click to Upload</span>
+                                                </>
+                                            )}
                                         </div>
-                                        <button type="button" onClick={() => setIsFaceScanOpen(true)} className="w-full flex items-center justify-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 dark:border-indigo-800 p-2.5 rounded-lg transition-all text-[10px] font-bold uppercase tracking-wide shadow-sm mt-1">
-                                            <ScanFace className="size-4" /> Register Face Data
+                                        <input
+                                            ref={photoInputRef}
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/gif,image/jpg"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+                                                if (photoPreview) URL.revokeObjectURL(photoPreview);
+                                                photoFileRef.current = file;
+                                                setPhotoPreview(URL.createObjectURL(file));
+                                            }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsFaceScanOpen(true)}
+                                            className={`w-full flex items-center justify-center gap-2 border p-2.5 rounded-lg transition-all text-[10px] font-bold uppercase tracking-wide shadow-sm mt-1 ${data.face_recog_uuid ? 'bg-green-50 hover:bg-green-100 text-green-700 border-green-200 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 dark:border-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400'}`}
+                                        >
+                                            {data.face_recog_uuid ? (
+                                                <><CheckCircle className="size-4" /> Face Registered</>
+                                            ) : (
+                                                <><ScanFace className="size-4" /> Register Face Data</>
+                                            )}
                                         </button>
                                     </div>
 
