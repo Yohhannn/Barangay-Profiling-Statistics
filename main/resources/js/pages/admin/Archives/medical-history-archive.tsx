@@ -120,21 +120,19 @@ export default function MedicalHistoryArchive({ records = [], filters = {} }: { 
                                         <div className="flex items-start gap-4">
                                             <div className="p-3 rounded-xl bg-rose-100 dark:bg-rose-900/20"><Stethoscope className="size-8 text-rose-600 dark:text-rose-400" /></div>
                                             <div>
-                                                <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{selected.firstName} {selected.middleName} {selected.lastName}</h2>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <User className="size-3.5 text-neutral-400" />
-                                                    <span className="font-medium text-sm text-neutral-500">{selected.firstName} {selected.lastName}</span>
+                                                <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{selected.type}</h2>
+                                                <div className="flex items-center gap-2 mt-1 text-sm text-neutral-500">
+                                                    <User className="size-3.5" />
+                                                    <span className="font-medium">{selected.firstName} {selected.lastName}</span>
                                                     {selected.ctzId && (
-                                                        <button onClick={() => { setSelectedCitizenId(selected.ctzId); setCitizenQuickViewOpen(true); }} className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 hover:bg-neutral-200 transition-all shadow-sm border border-neutral-200 dark:border-neutral-700 group ml-1">
+                                                        <button onClick={(e) => { e.stopPropagation(); setSelectedCitizenId(selected.ctzId); setCitizenQuickViewOpen(true); }} className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all shadow-sm border border-neutral-200 dark:border-neutral-700 group ml-2">
                                                             <Info className="size-3" />
                                                             <span className="text-[9px] font-bold uppercase tracking-tight">Quick View</span>
                                                         </button>
                                                     )}
-                                                    <span className="font-mono text-xs bg-white dark:bg-black/20 border px-1.5 rounded text-neutral-500 ml-1">{selected.citizenId}</span>
+                                                    <span className="font-mono bg-white dark:bg-black/20 border px-1.5 rounded text-xs ml-2">{selected.citizenId}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2 mt-1">
-                                                    <span className="font-mono text-xs text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 px-2 py-0.5 rounded">{selected.uuid}</span>
-                                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-rose-100 text-rose-700">{selected.type}</span>
                                                     <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-red-100 text-red-700">ARCHIVED</span>
                                                 </div>
                                             </div>
@@ -157,15 +155,15 @@ export default function MedicalHistoryArchive({ records = [], filters = {} }: { 
                                     <div className="grid grid-cols-2 gap-x-8 gap-y-4 bg-white dark:bg-sidebar border border-sidebar-border rounded-xl p-5 shadow-sm">
                                         <InfoRow label="Record ID" value={selected.uuid} highlight />
                                         <InfoRow label="Date Diagnosed" value={selected.dateDiagnosed} />
-                                        <InfoRow label="Medical Type" value={selected.type} />
+                                        <InfoRow label="Medical Type" value={selected.type} className="text-rose-600 dark:text-rose-400 font-bold" />
                                     </div>
 
-                                    {selected.description && (
-                                        <div className="space-y-2">
-                                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2"><Activity className="size-3.5" /> Medical Details / Observations</h3>
-                                            <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 min-h-[150px]">{selected.description}</div>
+                                    <div className="space-y-2">
+                                        <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2"><Activity className="size-3.5" /> Medical Details / Observations</h3>
+                                        <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 min-h-[150px]">
+                                            {selected.description || <span className="text-neutral-400 italic">No description provided.</span>}
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
 
                                 <div className="p-4 border-t border-sidebar-border/60 bg-neutral-50 dark:bg-neutral-900/50 flex flex-col md:flex-row justify-between items-start md:items-center text-[10px] text-neutral-400 font-mono gap-4">
@@ -191,11 +189,11 @@ export default function MedicalHistoryArchive({ records = [], filters = {} }: { 
     );
 }
 
-function InfoRow({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
+function InfoRow({ label, value, highlight = false, className = '' }: { label: string; value: string; highlight?: boolean; className?: string }) {
     return (
         <div className="flex justify-between border-b border-sidebar-border/50 pb-1">
             <span className="text-neutral-500 font-medium text-sm">{label}:</span>
-            <span className={`font-semibold text-sm ${highlight ? 'text-rose-600 dark:text-rose-400 font-mono' : 'text-neutral-900 dark:text-neutral-100'}`}>{value || '—'}</span>
+            <span className={`font-semibold text-sm ${highlight ? 'text-rose-600 dark:text-rose-400 font-mono' : 'text-neutral-900 dark:text-neutral-100'} ${className}`}>{value || '—'}</span>
         </div>
     );
 }

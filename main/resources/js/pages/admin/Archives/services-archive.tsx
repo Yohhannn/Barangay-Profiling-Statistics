@@ -179,12 +179,10 @@ export default function ServicesArchive({ records = [], filters = {} }: { record
                                         <InfoRow label="Transaction Type" value={selected.transactionType} highlight />
                                     </div>
 
-                                    {selected.purpose && (
-                                        <div className="space-y-2">
-                                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2"><FileText className="size-3.5" /> Purpose / Description</h3>
-                                            <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 min-h-[120px]">{selected.purpose}</div>
-                                        </div>
-                                    )}
+                                    <div className="space-y-2">
+                                        <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2"><FileText className="size-3.5" /> Purpose / Description</h3>
+                                        <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 min-h-[120px]">{selected.purpose || <span className="text-neutral-400 italic">No purpose or description provided.</span>}</div>
+                                    </div>
                                 </div>
 
                                 <div className="p-4 border-t border-sidebar-border/60 bg-neutral-50 dark:bg-neutral-900/50 flex flex-col md:flex-row justify-between items-start md:items-center text-[10px] text-neutral-400 font-mono gap-4">

@@ -1,7 +1,7 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, Search, ScrollText, User, RotateCcw, AlertTriangle, Scale, Info, FileClock, ShieldAlert, Handshake } from 'lucide-react';
+import { ArrowLeft, Search, ScrollText, User, RotateCcw, AlertTriangle, Scale, Info, FileClock, ShieldAlert, Handshake, FileText } from 'lucide-react';
 import { useState } from 'react';
 import Swal from 'sweetalert2';
 import CitizenQuickView from '../../main/CitizenRecords/popup/citizen-quick-view';
@@ -149,11 +149,13 @@ export default function SettlementHistoryArchive({ records = [], filters = {} }:
                                 <div className="bg-neutral-50 dark:bg-neutral-900/20 border-b border-sidebar-border p-6">
                                     <div className="flex justify-between items-start">
                                         <div className="flex items-start gap-4">
-                                            <div className="p-3 rounded-xl bg-purple-100 dark:bg-purple-900/20"><Scale className="size-8 text-purple-600 dark:text-purple-400" /></div>
+                                            <div className="p-3 rounded-xl bg-purple-100 dark:bg-purple-900/20"><Handshake className="size-8 text-purple-600 dark:text-purple-400" /></div>
                                             <div>
-                                                <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
-                                                    {selected.complainantFirstName} {selected.complainantLastName}
-                                                </h2>
+                                                <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Settlement Details</h2>
+                                                <div className="flex items-center gap-2 mt-1 text-sm text-neutral-500">
+                                                    <Scale className="size-3.5" />
+                                                    <span className="font-medium">#{selected.id} • {selected.dateOfSettlement}</span>
+                                                </div>
                                                 <div className="flex items-center gap-2 mt-1">
                                                     <span className="font-mono text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded">{selected.uuid}</span>
                                                     <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-red-100 text-red-700">ARCHIVED</span>
@@ -223,8 +225,8 @@ export default function SettlementHistoryArchive({ records = [], filters = {} }:
                                         {/* Respondents */}
                                         <div className="bg-white dark:bg-sidebar border border-sidebar-border rounded-xl p-5 shadow-sm space-y-4">
                                             <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 border-b border-sidebar-border/50 pb-2">
-                                                <ScrollText className="size-4" />
-                                                <span className="text-sm font-bold uppercase tracking-wider">Respondents ({selected.respondents.length})</span>
+                                                <FileText className="size-4" />
+                                                <span className="text-sm font-bold uppercase tracking-wider">Respondents / Complainees ({selected.respondents.length})</span>
                                             </div>
                                             <div className="space-y-3">
                                                 {selected.respondents.length === 0 ? (
@@ -258,6 +260,7 @@ export default function SettlementHistoryArchive({ records = [], filters = {} }:
                                                             </div>
                                                             <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-bold shrink-0 ml-2 ${r.status === 'Pending' ? 'bg-orange-100 text-orange-800' : 'bg-emerald-100 text-emerald-800'}`}>{r.status || 'Resolved'}</span>
                                                         </div>
+                                                        <div className="text-[10px] text-neutral-400 border-t border-sidebar-border/50 pt-1.5 mt-0.5">Related to: {r.firstName} {r.lastName}</div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -265,18 +268,14 @@ export default function SettlementHistoryArchive({ records = [], filters = {} }:
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
-                                        {selected.complaintDescription && (
-                                            <div className="space-y-3">
-                                                <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2"><ShieldAlert className="size-3.5" /> Incident / Complaint</h3>
-                                                <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 min-h-[120px] whitespace-pre-wrap font-mono shadow-inner">{selected.complaintDescription}</div>
-                                            </div>
-                                        )}
-                                        {selected.settlementDescription && (
-                                            <div className="space-y-3">
-                                                <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2"><Handshake className="size-3.5" /> Resolution / Settlement</h3>
-                                                <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 min-h-[120px] whitespace-pre-wrap font-mono shadow-inner">{selected.settlementDescription}</div>
-                                            </div>
-                                        )}
+                                        <div className="space-y-3">
+                                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2"><ShieldAlert className="size-3.5" /> Incident / Complaint</h3>
+                                            <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 min-h-[120px] whitespace-pre-wrap font-mono shadow-inner">{selected.complaintDescription || <span className="text-neutral-400 italic font-sans">No description provided.</span>}</div>
+                                        </div>
+                                        <div className="space-y-3">
+                                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2"><Handshake className="size-3.5" /> Resolution / Settlement</h3>
+                                            <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 min-h-[120px] whitespace-pre-wrap font-mono shadow-inner">{selected.settlementDescription || <span className="text-neutral-400 italic font-sans">Pending resolution.</span>}</div>
+                                        </div>
                                     </div>
                                 </div>
 

@@ -128,8 +128,13 @@ export default function InfrastructuresArchive({ records = [], filters = {} }: {
                                             <div>
                                                 <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{selected.name}</h2>
                                                 <div className="flex items-center gap-2 mt-1 text-sm text-neutral-500">
-                                                    <span className="font-mono text-xs text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-900/20 px-2 py-0.5 rounded">{selected.infraId}</span>
+                                                    <Users className="size-3.5" />
+                                                    <span className="font-medium">1 Owner</span>
+                                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold ml-2 bg-cyan-100 text-cyan-700">{selected.type}</span>
                                                     <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-red-100 text-red-700">ARCHIVED</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className="font-mono text-xs text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-900/20 px-2 py-0.5 rounded">{selected.infraId}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -181,12 +186,12 @@ export default function InfrastructuresArchive({ records = [], filters = {} }: {
                                         </div>
                                     </div>
 
-                                    {selected.description && (
-                                        <div className="space-y-2">
-                                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2"><FileText className="size-3.5" /> Description</h3>
-                                            <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">{selected.description}</div>
+                                    <div className="space-y-2">
+                                        <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-2"><FileText className="size-3.5" /> Description / Notes</h3>
+                                        <div className="bg-neutral-50/50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 min-h-[120px]">
+                                            {selected.description || <span className="text-neutral-400 italic">No description provided.</span>}
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
 
                                 <div className="p-4 border-t border-sidebar-border/60 bg-neutral-50 dark:bg-neutral-900/50 flex flex-col md:flex-row justify-between items-start md:items-center text-[10px] text-neutral-400 font-mono gap-4">
