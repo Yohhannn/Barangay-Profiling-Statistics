@@ -9,7 +9,7 @@ import {
     Filter, X, SlidersHorizontal, Edit3, ScanFace, Check, RotateCcw,
     Activity, FileText, Info, Store, Building, Lock
 } from 'lucide-react';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import CitizenCreation from './popup/citizen-creation';
 import CitizenEdit from './popup/citizen-edit';
 import FaceSearch from './popup/face-search';
@@ -270,27 +270,45 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
     }, []);
 
     // --- Filter State ---
-    // Initialize from props to persist state on reload
-    const [filterState, setFilterState] = useState({
-        search: new URLSearchParams(window.location.search).get('search') || '',
-        sitio: new URLSearchParams(window.location.search).get('sitio') || '',
-        sex: new URLSearchParams(window.location.search).get('sex') || '',
-        civilStatus: new URLSearchParams(window.location.search).get('civilStatus') || '',
-        employmentStatus: new URLSearchParams(window.location.search).get('employmentStatus') || '',
-        isVoter: new URLSearchParams(window.location.search).get('isVoter') || '',
-        dateEncodedStart: new URLSearchParams(window.location.search).get('dateEncodedRange')?.split(' to ')[0] || '',
-        dateEncodedEnd: new URLSearchParams(window.location.search).get('dateEncodedRange')?.split(' to ')[1] || '',
-        dateUpdatedStart: new URLSearchParams(window.location.search).get('dateUpdatedRange')?.split(' to ')[0] || '',
-        dateUpdatedEnd: new URLSearchParams(window.location.search).get('dateUpdatedRange')?.split(' to ')[1] || '',
-        encodedBy: new URLSearchParams(window.location.search).get('encodedBy') ? new URLSearchParams(window.location.search).get('encodedBy')!.split(',') : [],
-        updatedBy: new URLSearchParams(window.location.search).get('updatedBy') ? new URLSearchParams(window.location.search).get('updatedBy')!.split(',') : [],
+    // Lazy initializer parses URL params once instead of 11 separate calls
+    const [filterState, setFilterState] = useState(() => {
+        const p = new URLSearchParams(window.location.search);
+        return {
+            search: p.get('search') || '',
+            sitio: p.get('sitio') || '',
+            sex: p.get('sex') || '',
+            civilStatus: p.get('civilStatus') || '',
+            employmentStatus: p.get('employmentStatus') || '',
+            isVoter: p.get('isVoter') || '',
+            dateEncodedStart: p.get('dateEncodedRange')?.split(' to ')[0] || '',
+            dateEncodedEnd: p.get('dateEncodedRange')?.split(' to ')[1] || '',
+            dateUpdatedStart: p.get('dateUpdatedRange')?.split(' to ')[0] || '',
+            dateUpdatedEnd: p.get('dateUpdatedRange')?.split(' to ')[1] || '',
+            encodedBy: p.get('encodedBy') ? p.get('encodedBy')!.split(',') : [] as string[],
+            updatedBy: p.get('updatedBy') ? p.get('updatedBy')!.split(',') : [] as string[],
+        };
     });
 
     const [isDebouncing, setIsDebouncing] = useState(false);
 
+    // Tracks first render (skip) and previous search value (to differentiate debounce delay)
+    const isFirstRender = useRef(true);
+    const prevSearchRef = useRef(filterState.search);
+
     // --- Search/Filter Effect ---
-    // Debounce search input, but trigger immediate update for dropdowns
+    // Search input: 350ms debounce. Dropdowns/selects: immediate (0ms).
     useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        const isSearchChange = prevSearchRef.current !== filterState.search;
+        prevSearchRef.current = filterState.search;
+        const delay = isSearchChange ? 350 : 0;
+
+        if (isSearchChange) setIsDebouncing(true);
+
         const timer = setTimeout(() => {
             router.get(
                 '/citizen-panel/citizen-profile',
@@ -301,8 +319,12 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                     civilStatus: filterState.civilStatus,
                     employmentStatus: filterState.employmentStatus,
                     isVoter: filterState.isVoter,
-                    dateEncodedRange: filterState.dateEncodedStart && filterState.dateEncodedEnd ? `${filterState.dateEncodedStart} to ${filterState.dateEncodedEnd}` : '',
-                    dateUpdatedRange: filterState.dateUpdatedStart && filterState.dateUpdatedEnd ? `${filterState.dateUpdatedStart} to ${filterState.dateUpdatedEnd}` : '',
+                    dateEncodedRange: filterState.dateEncodedStart && filterState.dateEncodedEnd
+                        ? `${filterState.dateEncodedStart} to ${filterState.dateEncodedEnd}`
+                        : '',
+                    dateUpdatedRange: filterState.dateUpdatedStart && filterState.dateUpdatedEnd
+                        ? `${filterState.dateUpdatedStart} to ${filterState.dateUpdatedEnd}`
+                        : '',
                     encodedBy: filterState.encodedBy.join(','),
                     updatedBy: filterState.updatedBy.join(','),
                 },
@@ -310,18 +332,17 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                     preserveState: true,
                     preserveScroll: true,
                     replace: true,
-                    onStart: () => setIsDebouncing(true),
                     onFinish: () => setIsDebouncing(false),
                 }
             );
-        }, 400); // 400ms debounce
+        }, delay);
 
         return () => clearTimeout(timer);
     }, [filterState]);
 
-    const handleFilterChange = (key: string, value: any) => {
+    const handleFilterChange = useCallback((key: string, value: any) => {
         setFilterState(prev => ({ ...prev, [key]: value }));
-    };
+    }, []);
 
     // Reset photo state when switching citizens
     useEffect(() => {
@@ -364,13 +385,20 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
         });
     };
 
-    // Get unique Sitios for dropdown
-    const uniqueSitios = useMemo(() => {
-        if (sitios && sitios.length > 0) {
-            return sitios.map(s => s.sitio_name);
-        }
-        return [];
-    }, [sitios]);
+    // Count active (non-empty) filters for the badge on the toggle button
+    const activeFilterCount = useMemo(() => {
+        let count = 0;
+        if (filterState.sitio) count++;
+        if (filterState.sex) count++;
+        if (filterState.civilStatus) count++;
+        if (filterState.employmentStatus) count++;
+        if (filterState.isVoter) count++;
+        if (filterState.dateEncodedStart || filterState.dateEncodedEnd) count++;
+        if (filterState.dateUpdatedStart || filterState.dateUpdatedEnd) count++;
+        if (filterState.encodedBy.length > 0) count++;
+        if (filterState.updatedBy.length > 0) count++;
+        return count;
+    }, [filterState]);
 
     // Use citizens directly from props (backend filtered)
     const filteredCitizens = citizens;
@@ -556,214 +584,18 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                                 </div>
                                 <button
                                     onClick={() => setShowFilters(!showFilters)}
-                                    className={`p-2 rounded-lg border border-sidebar-border transition-colors ${showFilters ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white hover:bg-neutral-50 text-neutral-500'}`}
+                                    className={`relative p-2 rounded-lg border transition-colors ${showFilters ? 'bg-blue-50 border-blue-200 text-blue-600' : activeFilterCount > 0 ? 'bg-blue-50 border-blue-200 text-blue-600' : 'border-sidebar-border bg-white hover:bg-neutral-50 text-neutral-500'}`}
+                                    title={activeFilterCount > 0 ? `${activeFilterCount} filter${activeFilterCount > 1 ? 's' : ''} active` : 'Filter'}
                                 >
                                     {showFilters ? <X className="size-4" /> : <SlidersHorizontal className="size-4" />}
+                                    {!showFilters && activeFilterCount > 0 && (
+                                        <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[9px] font-bold text-white leading-none">
+                                            {activeFilterCount}
+                                        </span>
+                                    )}
                                 </button>
                             </div>
 
-                            {/* Collapsible Filters */}
-                            {showFilters && (
-                                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-sidebar-border/50 animate-in slide-in-from-top-2 duration-200">
-                                    <select
-                                        className="text-xs p-2 rounded-lg border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-blue-500/20"
-                                        value={filterState.employmentStatus}
-                                        onChange={(e) => handleFilterChange('employmentStatus', e.target.value)}
-                                    >
-                                        <option value="">All Employment</option>
-                                        <option value="Employed">Employed</option>
-                                        <option value="Unemployed">Unemployed</option>
-                                        <option value="Self-Employed">Self-Employed</option>
-                                        <option value="Student">Student</option>
-                                    </select>
-                                    <select
-                                        className="text-xs p-2 rounded-lg border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-blue-500/20"
-                                        value={filterState.sex}
-                                        onChange={(e) => handleFilterChange('sex', e.target.value)}
-                                    >
-                                        <option value="">All Sex</option>
-                                        <option value="Male">Male</option>
-                                        <option value="Female">Female</option>
-                                    </select>
-                                    <select
-                                        className="text-xs p-2 rounded-lg border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-blue-500/20"
-                                        value={filterState.civilStatus}
-                                        onChange={(e) => handleFilterChange('civilStatus', e.target.value)}
-                                    >
-                                        <option value="">All Civil Status</option>
-                                        <option value="Single">Single</option>
-                                        <option value="Married">Married</option>
-                                        <option value="Widowed">Widowed</option>
-                                        <option value="Separated">Separated</option>
-                                    </select>
-                                    <select
-                                        className="text-xs p-2 rounded-lg border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-blue-500/20"
-                                        value={filterState.isVoter}
-                                        onChange={(e) => handleFilterChange('isVoter', e.target.value)}
-                                    >
-                                        <option value="">Voter Status</option>
-                                        <option value="Yes">Registered Voter</option>
-                                        <option value="No">Non-Voter</option>
-                                    </select>
-                                    <select
-                                        className="col-span-2 text-xs p-2 rounded-lg border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-blue-500/20"
-                                        value={filterState.sitio}
-                                        onChange={(e) => handleFilterChange('sitio', e.target.value)}
-                                    >
-                                        <option value="">All Sitios / Locations</option>
-                                        {sitios && sitios.map(s => (
-                                            <option key={s.sitio_id} value={s.sitio_id}>{s.sitio_name}</option>
-                                        ))}
-                                    </select>
-
-                                    {/* Advanced Audit Filters */}
-                                    <div className="col-span-2 md:col-span-4 grid grid-cols-2 md:grid-cols-4 gap-2 border-t border-sidebar-border/50 pt-2 mt-2">
-                                        <div className="flex flex-col gap-1">
-                                            <span className="text-[10px] text-neutral-500 uppercase tracking-wider">Date Encoded</span>
-                                            <div className="flex flex-col gap-1">
-                                                <input type="date" className="text-[10px] p-1.5 rounded-md border border-sidebar-border w-full bg-white dark:bg-neutral-800" value={filterState.dateEncodedStart} onChange={e => handleFilterChange('dateEncodedStart', e.target.value)} />
-                                                <input type="date" className="text-[10px] p-1.5 rounded-md border border-sidebar-border w-full bg-white dark:bg-neutral-800" value={filterState.dateEncodedEnd} onChange={e => handleFilterChange('dateEncodedEnd', e.target.value)} />
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col gap-1">
-                                            <span className="text-[10px] text-neutral-500 uppercase tracking-wider">Date Updated</span>
-                                            <div className="flex flex-col gap-1">
-                                                <input type="date" className="text-[10px] p-1.5 rounded-md border border-sidebar-border w-full bg-white dark:bg-neutral-800" value={filterState.dateUpdatedStart} onChange={e => handleFilterChange('dateUpdatedStart', e.target.value)} />
-                                                <input type="date" className="text-[10px] p-1.5 rounded-md border border-sidebar-border w-full bg-white dark:bg-neutral-800" value={filterState.dateUpdatedEnd} onChange={e => handleFilterChange('dateUpdatedEnd', e.target.value)} />
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col gap-1 w-full" ref={encodedByRef}>
-                                            <span className="text-[10px] text-neutral-500 uppercase tracking-wider">Encoded By (Multi)</span>
-                                            <div className="relative">
-                                                <button
-                                                    onClick={() => setShowEncodedByDropdown(!showEncodedByDropdown)}
-                                                    className="w-full text-left text-[10px] p-2 rounded-md border border-sidebar-border bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 flex justify-between items-center"
-                                                >
-                                                    <span className="truncate">
-                                                        {filterState.encodedBy.length === 0 ? 'All Users' : `${filterState.encodedBy.length} Selected`}
-                                                    </span>
-                                                    <Search className="size-3 text-neutral-400" />
-                                                </button>
-                                                
-                                                {showEncodedByDropdown && (
-                                                    <div className="absolute z-50 mt-1 w-full bg-white dark:bg-neutral-800 border border-sidebar-border rounded-md shadow-lg py-1 max-h-48 flex flex-col">
-                                                        <div className="px-2 py-1 sticky top-0 bg-white dark:bg-neutral-800 border-b border-sidebar-border/50">
-                                                            <input 
-                                                                type="text" 
-                                                                className="w-full text-[10px] p-1.5 bg-neutral-50 dark:bg-neutral-900 border border-sidebar-border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                                                placeholder="Search users..."
-                                                                value={encodedBySearch}
-                                                                onChange={(e) => setEncodedBySearch(e.target.value)}
-                                                                onClick={(e) => e.stopPropagation()}
-                                                            />
-                                                        </div>
-                                                        <div className="overflow-y-auto flex-1 p-1">
-                                                            <div 
-                                                                className="flex items-center gap-2 px-2 py-1.5 text-[10px] hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer rounded"
-                                                                onClick={() => handleFilterChange('encodedBy', [])}
-                                                            >
-                                                                <div className={`size-3.5 rounded border flex items-center justify-center ${filterState.encodedBy.length === 0 ? 'bg-blue-600 border-blue-600' : 'border-neutral-300 dark:border-neutral-600'}`}>
-                                                                    {filterState.encodedBy.length === 0 && <Check className="size-2.5 text-white" />}
-                                                                </div>
-                                                                <span>All Users</span>
-                                                            </div>
-                                                            {systemAccounts?.filter(acc => acc.name.toLowerCase().includes(encodedBySearch.toLowerCase())).map(acc => {
-                                                                const isSelected = filterState.encodedBy.includes(acc.id.toString());
-                                                                return (
-                                                                    <div 
-                                                                        key={acc.id}
-                                                                        className="flex items-center gap-2 px-2 py-1.5 text-[10px] hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer rounded"
-                                                                        onClick={() => {
-                                                                            const newSelection = isSelected 
-                                                                                ? filterState.encodedBy.filter((id: string) => id !== acc.id.toString())
-                                                                                : [...filterState.encodedBy, acc.id.toString()];
-                                                                            handleFilterChange('encodedBy', newSelection);
-                                                                        }}
-                                                                    >
-                                                                        <div className={`size-3.5 rounded border flex flex-shrink-0 items-center justify-center ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-neutral-300 dark:border-neutral-600'}`}>
-                                                                            {isSelected && <Check className="size-2.5 text-white" />}
-                                                                        </div>
-                                                                        <span className="truncate">{acc.name}</span>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col gap-1 w-full" ref={updatedByRef}>
-                                            <span className="text-[10px] text-neutral-500 uppercase tracking-wider">Updated By (Multi)</span>
-                                            <div className="relative">
-                                                <button
-                                                    onClick={() => setShowUpdatedByDropdown(!showUpdatedByDropdown)}
-                                                    className="w-full text-left text-[10px] p-2 rounded-md border border-sidebar-border bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 flex justify-between items-center"
-                                                >
-                                                    <span className="truncate">
-                                                        {filterState.updatedBy.length === 0 ? 'All Users' : `${filterState.updatedBy.length} Selected`}
-                                                    </span>
-                                                    <Search className="size-3 text-neutral-400" />
-                                                </button>
-                                                
-                                                {showUpdatedByDropdown && (
-                                                    <div className="absolute z-50 mt-1 w-full bg-white dark:bg-neutral-800 border border-sidebar-border rounded-md shadow-lg py-1 max-h-48 flex flex-col">
-                                                        <div className="px-2 py-1 sticky top-0 bg-white dark:bg-neutral-800 border-b border-sidebar-border/50">
-                                                            <input 
-                                                                type="text" 
-                                                                className="w-full text-[10px] p-1.5 bg-neutral-50 dark:bg-neutral-900 border border-sidebar-border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                                                placeholder="Search users..."
-                                                                value={updatedBySearch}
-                                                                onChange={(e) => setUpdatedBySearch(e.target.value)}
-                                                                onClick={(e) => e.stopPropagation()}
-                                                            />
-                                                        </div>
-                                                        <div className="overflow-y-auto flex-1 p-1">
-                                                            <div 
-                                                                className="flex items-center gap-2 px-2 py-1.5 text-[10px] hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer rounded"
-                                                                onClick={() => handleFilterChange('updatedBy', [])}
-                                                            >
-                                                                <div className={`size-3.5 rounded border flex items-center justify-center ${filterState.updatedBy.length === 0 ? 'bg-blue-600 border-blue-600' : 'border-neutral-300 dark:border-neutral-600'}`}>
-                                                                    {filterState.updatedBy.length === 0 && <Check className="size-2.5 text-white" />}
-                                                                </div>
-                                                                <span>All Users</span>
-                                                            </div>
-                                                            {systemAccounts?.filter(acc => acc.name.toLowerCase().includes(updatedBySearch.toLowerCase())).map(acc => {
-                                                                const isSelected = filterState.updatedBy.includes(acc.id.toString());
-                                                                return (
-                                                                    <div 
-                                                                        key={acc.id}
-                                                                        className="flex items-center gap-2 px-2 py-1.5 text-[10px] hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer rounded"
-                                                                        onClick={() => {
-                                                                            const newSelection = isSelected 
-                                                                                ? filterState.updatedBy.filter((id: string) => id !== acc.id.toString())
-                                                                                : [...filterState.updatedBy, acc.id.toString()];
-                                                                            handleFilterChange('updatedBy', newSelection);
-                                                                        }}
-                                                                    >
-                                                                        <div className={`size-3.5 rounded border flex flex-shrink-0 items-center justify-center ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-neutral-300 dark:border-neutral-600'}`}>
-                                                                            {isSelected && <Check className="size-2.5 text-white" />}
-                                                                        </div>
-                                                                        <span className="truncate">{acc.name}</span>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="col-span-2 md:col-span-4 flex justify-end mt-2">
-                                        <button 
-                                            onClick={resetFilters}
-                                            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 transition-colors"
-                                        >
-                                            <RotateCcw className="size-3.5" />
-                                            Reset Filters
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
                         </div>
 
                         {/* Table Content */}
@@ -1309,42 +1141,322 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                 </div>
             </div>
 
-            {/* --- QUICK VIEW MODALS --- */}
-            <MedicalQuickView 
-                isOpen={medicalQuickViewOpen} 
-                onClose={() => setMedicalQuickViewOpen(false)} 
-                medicalUuid={selectedMedicalUuid} 
-            />
-            <HistoryQuickView 
-                isOpen={historyQuickViewOpen} 
-                onClose={() => setHistoryQuickViewOpen(false)} 
-                historyUuid={selectedHistoryUuid} 
-            />
-            <SettlementQuickView 
-                isOpen={settlementQuickViewOpen} 
-                onClose={() => setSettlementQuickViewOpen(false)} 
-                settlementUuid={selectedSettlementUuid} 
-            />
-            <CitizenQuickView 
-                isOpen={citizenQuickViewOpen} 
-                onClose={() => setCitizenQuickViewOpen(false)} 
-                citizenId={selectedCitizenId} 
-            />
-            <HouseholdQuickView
-                isOpen={householdQuickViewOpen}
-                onClose={() => setHouseholdQuickViewOpen(false)}
-                householdUuid={selectedHouseholdUuid}
-            />
-            <BusinessQuickView 
-                isOpen={businessQuickViewOpen} 
-                onClose={() => setBusinessQuickViewOpen(false)} 
-                businessUuid={selectedBusinessUuid} 
-            />
-            <InfrastructureQuickView 
-                isOpen={infrastructureQuickViewOpen} 
-                onClose={() => setInfrastructureQuickViewOpen(false)} 
-                infrastructureId={selectedInfrastructureId} 
-            />
+            {/* ===== FILTER DRAWER ===== */}
+            {showFilters && (
+                <>
+                    {/* Backdrop */}
+                    <div
+                        className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px]"
+                        onClick={() => setShowFilters(false)}
+                    />
+
+                    {/* Drawer panel */}
+                    <div className="fixed right-0 top-0 bottom-0 z-50 flex flex-col w-[380px] bg-white dark:bg-neutral-900 border-l border-sidebar-border shadow-2xl animate-in slide-in-from-right duration-200">
+
+                        {/* Drawer Header */}
+                        <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-sidebar-border bg-neutral-50 dark:bg-neutral-800/60">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-900/40">
+                                    <SlidersHorizontal className="size-4 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">Filter Citizens</h3>
+                                    <p className="text-xs text-neutral-500 mt-0.5">
+                                        {activeFilterCount > 0
+                                            ? `${activeFilterCount} filter${activeFilterCount > 1 ? 's' : ''} active`
+                                            : 'No filters applied'}
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowFilters(false)}
+                                className="p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors text-neutral-500 dark:text-neutral-400"
+                            >
+                                <X className="size-5" />
+                            </button>
+                        </div>
+
+                        {/* Drawer Body */}
+                        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-7">
+
+                            {/* ---- Section: Profile ---- */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-xs font-bold uppercase tracking-widest text-neutral-500 shrink-0">Profile</span>
+                                    <div className="flex-1 h-px bg-sidebar-border/60" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">Employment Status</label>
+                                        <select
+                                            className="w-full text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 focus:outline-none transition-colors"
+                                            value={filterState.employmentStatus}
+                                            onChange={(e) => handleFilterChange('employmentStatus', e.target.value)}
+                                        >
+                                            <option value="">All</option>
+                                            <option value="Employed">Employed</option>
+                                            <option value="Unemployed">Unemployed</option>
+                                            <option value="Self-Employed">Self-Employed</option>
+                                            <option value="Student">Student</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">Sex</label>
+                                        <select
+                                            className="w-full text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 focus:outline-none transition-colors"
+                                            value={filterState.sex}
+                                            onChange={(e) => handleFilterChange('sex', e.target.value)}
+                                        >
+                                            <option value="">All</option>
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">Civil Status</label>
+                                        <select
+                                            className="w-full text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 focus:outline-none transition-colors"
+                                            value={filterState.civilStatus}
+                                            onChange={(e) => handleFilterChange('civilStatus', e.target.value)}
+                                        >
+                                            <option value="">All</option>
+                                            <option value="Single">Single</option>
+                                            <option value="Married">Married</option>
+                                            <option value="Widowed">Widowed</option>
+                                            <option value="Separated">Separated</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">Voter Status</label>
+                                        <select
+                                            className="w-full text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 focus:outline-none transition-colors"
+                                            value={filterState.isVoter}
+                                            onChange={(e) => handleFilterChange('isVoter', e.target.value)}
+                                        >
+                                            <option value="">All</option>
+                                            <option value="Yes">Registered Voter</option>
+                                            <option value="No">Non-Voter</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">Sitio / Location</label>
+                                    <select
+                                        className="w-full text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 focus:outline-none transition-colors"
+                                        value={filterState.sitio}
+                                        onChange={(e) => handleFilterChange('sitio', e.target.value)}
+                                    >
+                                        <option value="">All Sitios</option>
+                                        {sitios && sitios.map(s => (
+                                            <option key={s.sitio_id} value={s.sitio_id}>{s.sitio_name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* ---- Section: Date Filters ---- */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-xs font-bold uppercase tracking-widest text-neutral-500 shrink-0">Date Filters</span>
+                                    <div className="flex-1 h-px bg-sidebar-border/60" />
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="space-y-1.5">
+                                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">Date Encoded</label>
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="date"
+                                                className="flex-1 text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 min-w-0 transition-colors"
+                                                value={filterState.dateEncodedStart}
+                                                onChange={e => handleFilterChange('dateEncodedStart', e.target.value)}
+                                            />
+                                            <span className="text-sm text-neutral-400 font-medium shrink-0">→</span>
+                                            <input
+                                                type="date"
+                                                className="flex-1 text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 min-w-0 transition-colors"
+                                                value={filterState.dateEncodedEnd}
+                                                onChange={e => handleFilterChange('dateEncodedEnd', e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">Date Updated</label>
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="date"
+                                                className="flex-1 text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 min-w-0 transition-colors"
+                                                value={filterState.dateUpdatedStart}
+                                                onChange={e => handleFilterChange('dateUpdatedStart', e.target.value)}
+                                            />
+                                            <span className="text-sm text-neutral-400 font-medium shrink-0">→</span>
+                                            <input
+                                                type="date"
+                                                className="flex-1 text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 min-w-0 transition-colors"
+                                                value={filterState.dateUpdatedEnd}
+                                                onChange={e => handleFilterChange('dateUpdatedEnd', e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ---- Section: Audit Trail ---- */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-xs font-bold uppercase tracking-widest text-neutral-500 shrink-0">Audit Trail</span>
+                                    <div className="flex-1 h-px bg-sidebar-border/60" />
+                                </div>
+                                <div className="space-y-4">
+
+                                    {/* Encoded By */}
+                                    <div className="space-y-1.5" ref={encodedByRef}>
+                                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">Encoded By</label>
+                                        <div className="relative">
+                                            <button
+                                                onClick={() => setShowEncodedByDropdown(!showEncodedByDropdown)}
+                                                className="w-full text-left text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 flex justify-between items-center gap-2 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                            >
+                                                <span className="truncate">
+                                                    {filterState.encodedBy.length === 0 ? 'All Users' : `${filterState.encodedBy.length} user${filterState.encodedBy.length > 1 ? 's' : ''} selected`}
+                                                </span>
+                                                <Search className="size-4 text-neutral-400 shrink-0" />
+                                            </button>
+                                            {showEncodedByDropdown && (
+                                                <div className="absolute z-[60] top-full mt-1 left-0 right-0 bg-white dark:bg-neutral-800 border border-sidebar-border rounded-xl shadow-2xl py-1 max-h-56 flex flex-col">
+                                                    <div className="px-3 py-2 border-b border-sidebar-border/50">
+                                                        <input
+                                                            type="text"
+                                                            className="w-full text-sm p-2 bg-neutral-50 dark:bg-neutral-900 border border-sidebar-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                                            placeholder="Search users..."
+                                                            value={encodedBySearch}
+                                                            onChange={(e) => setEncodedBySearch(e.target.value)}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        />
+                                                    </div>
+                                                    <div className="overflow-y-auto flex-1 p-1.5">
+                                                        <div
+                                                            className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer rounded-lg"
+                                                            onClick={() => handleFilterChange('encodedBy', [])}
+                                                        >
+                                                            <div className={`size-4 rounded border shrink-0 flex items-center justify-center ${filterState.encodedBy.length === 0 ? 'bg-blue-600 border-blue-600' : 'border-neutral-300 dark:border-neutral-600'}`}>
+                                                                {filterState.encodedBy.length === 0 && <Check className="size-3 text-white" />}
+                                                            </div>
+                                                            <span className="font-medium">All Users</span>
+                                                        </div>
+                                                        {systemAccounts?.filter(acc => acc.name.toLowerCase().includes(encodedBySearch.toLowerCase())).map(acc => {
+                                                            const isSelected = filterState.encodedBy.includes(acc.id.toString());
+                                                            return (
+                                                                <div
+                                                                    key={acc.id}
+                                                                    className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer rounded-lg"
+                                                                    onClick={() => {
+                                                                        const newSelection = isSelected
+                                                                            ? filterState.encodedBy.filter((id: string) => id !== acc.id.toString())
+                                                                            : [...filterState.encodedBy, acc.id.toString()];
+                                                                        handleFilterChange('encodedBy', newSelection);
+                                                                    }}
+                                                                >
+                                                                    <div className={`size-4 rounded border shrink-0 flex items-center justify-center ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-neutral-300 dark:border-neutral-600'}`}>
+                                                                        {isSelected && <Check className="size-3 text-white" />}
+                                                                    </div>
+                                                                    <span className="truncate">{acc.name}</span>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Updated By */}
+                                    <div className="space-y-1.5" ref={updatedByRef}>
+                                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">Updated By</label>
+                                        <div className="relative">
+                                            <button
+                                                onClick={() => setShowUpdatedByDropdown(!showUpdatedByDropdown)}
+                                                className="w-full text-left text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 flex justify-between items-center gap-2 hover:border-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                            >
+                                                <span className="truncate">
+                                                    {filterState.updatedBy.length === 0 ? 'All Users' : `${filterState.updatedBy.length} user${filterState.updatedBy.length > 1 ? 's' : ''} selected`}
+                                                </span>
+                                                <Search className="size-4 text-neutral-400 shrink-0" />
+                                            </button>
+                                            {showUpdatedByDropdown && (
+                                                <div className="absolute z-[60] top-full mt-1 left-0 right-0 bg-white dark:bg-neutral-800 border border-sidebar-border rounded-xl shadow-2xl py-1 max-h-56 flex flex-col">
+                                                    <div className="px-3 py-2 border-b border-sidebar-border/50">
+                                                        <input
+                                                            type="text"
+                                                            className="w-full text-sm p-2 bg-neutral-50 dark:bg-neutral-900 border border-sidebar-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                                            placeholder="Search users..."
+                                                            value={updatedBySearch}
+                                                            onChange={(e) => setUpdatedBySearch(e.target.value)}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        />
+                                                    </div>
+                                                    <div className="overflow-y-auto flex-1 p-1.5">
+                                                        <div
+                                                            className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer rounded-lg"
+                                                            onClick={() => handleFilterChange('updatedBy', [])}
+                                                        >
+                                                            <div className={`size-4 rounded border shrink-0 flex items-center justify-center ${filterState.updatedBy.length === 0 ? 'bg-blue-600 border-blue-600' : 'border-neutral-300 dark:border-neutral-600'}`}>
+                                                                {filterState.updatedBy.length === 0 && <Check className="size-3 text-white" />}
+                                                            </div>
+                                                            <span className="font-medium">All Users</span>
+                                                        </div>
+                                                        {systemAccounts?.filter(acc => acc.name.toLowerCase().includes(updatedBySearch.toLowerCase())).map(acc => {
+                                                            const isSelected = filterState.updatedBy.includes(acc.id.toString());
+                                                            return (
+                                                                <div
+                                                                    key={acc.id}
+                                                                    className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer rounded-lg"
+                                                                    onClick={() => {
+                                                                        const newSelection = isSelected
+                                                                            ? filterState.updatedBy.filter((id: string) => id !== acc.id.toString())
+                                                                            : [...filterState.updatedBy, acc.id.toString()];
+                                                                        handleFilterChange('updatedBy', newSelection);
+                                                                    }}
+                                                                >
+                                                                    <div className={`size-4 rounded border shrink-0 flex items-center justify-center ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-neutral-300 dark:border-neutral-600'}`}>
+                                                                        {isSelected && <Check className="size-3 text-white" />}
+                                                                    </div>
+                                                                    <span className="truncate">{acc.name}</span>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                        </div>
+
+                        {/* Drawer Footer */}
+                        <div className="shrink-0 flex items-center gap-3 px-6 py-4 border-t border-sidebar-border bg-neutral-50 dark:bg-neutral-800/60">
+                            <button
+                                onClick={resetFilters}
+                                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-neutral-200 dark:border-neutral-700 text-sm font-semibold text-neutral-600 dark:text-neutral-400 hover:bg-red-50 hover:border-red-200 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:border-red-800 dark:hover:text-red-400 transition-colors"
+                            >
+                                <RotateCcw className="size-4" />
+                                Reset All
+                            </button>
+                            <button
+                                onClick={() => setShowFilters(false)}
+                                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors shadow-sm"
+                            >
+                                <Check className="size-4" />
+                                Done
+                            </button>
+                        </div>
+
+                    </div>
+                </>
+            )}
+
         </AppLayout>
     );
 }

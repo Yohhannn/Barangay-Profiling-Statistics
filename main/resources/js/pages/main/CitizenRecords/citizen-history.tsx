@@ -6,7 +6,7 @@ import {
     ArrowLeft, Search, Plus, Trash2,
     FileClock, User, Calendar, FileText,
     Download, Edit3, X, SlidersHorizontal, Activity, Tag, Info,
-    Handshake
+    Handshake, Check, RotateCcw
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import CitizenHistoryCreation from './popup/citizen-history-creation'; // IMPORTED
@@ -149,6 +149,12 @@ export default function CitizenHistory({ histories = [], filters = {} as any }: 
         });
     };
 
+    const activeFilterCount = filterType !== 'All' ? 1 : 0;
+
+    const resetFilters = () => {
+        setFilterType('All');
+    };
+
     const [archiveTarget, setArchiveTarget] = useState<{ id: number; label: string } | null>(null);
     const [archiveReason, setArchiveReason] = useState('');
     const [archiveError, setArchiveError] = useState('');
@@ -268,28 +274,18 @@ export default function CitizenHistory({ histories = [], filters = {} as any }: 
                                 </div>
                                 <button
                                     onClick={() => setShowFilters(!showFilters)}
-                                    className={`p-2 rounded-lg border border-sidebar-border transition-colors ${showFilters ? 'bg-purple-50 border-purple-200 text-purple-600' : 'bg-white hover:bg-neutral-50 text-neutral-500'}`}
+                                    className={`relative p-2 rounded-lg border transition-colors ${showFilters ? 'bg-purple-50 border-purple-200 text-purple-600 dark:bg-purple-900/20 dark:border-purple-800' : 'bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 border-sidebar-border text-neutral-500'}`}
+                                    title={showFilters ? 'Close Filters' : `Filters${activeFilterCount > 0 ? ` (${activeFilterCount} active)` : ''}`}
                                 >
                                     {showFilters ? <X className="size-4" /> : <SlidersHorizontal className="size-4" />}
+                                    {!showFilters && activeFilterCount > 0 && (
+                                        <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-purple-600 text-[9px] font-bold text-white leading-none">
+                                            {activeFilterCount}
+                                        </span>
+                                    )}
                                 </button>
                             </div>
 
-                            {/* Filter Dropdown */}
-                            {showFilters && (
-                                <div className="pt-2 border-t border-sidebar-border/50 animate-in slide-in-from-top-2">
-                                    <select
-                                        className="w-full text-xs p-2 rounded-lg border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-purple-500/20"
-                                        value={filterType}
-                                        onChange={(e) => setFilterType(e.target.value)}
-                                    >
-                                        <option value="All">All Types</option>
-                                        <option value="Violation">Violation</option>
-                                        <option value="Complaint">Complaint</option>
-                                        <option value="Commendation">Commendation</option>
-                                        <option value="Other">Other</option>
-                                    </select>
-                                </div>
-                            )}
                         </div>
 
                         {/* List Content */}
@@ -512,11 +508,87 @@ export default function CitizenHistory({ histories = [], filters = {} as any }: 
                 citizenId={quickViewCitizenId} 
             />
             {/* Settlement Quick View Modal */}
-            <SettlementQuickView 
-                isOpen={settlementQuickViewOpen} 
-                onClose={() => setSettlementQuickViewOpen(false)} 
-                settlementUuid={settlementUuid} 
+            <SettlementQuickView
+                isOpen={settlementQuickViewOpen}
+                onClose={() => setSettlementQuickViewOpen(false)}
+                settlementUuid={settlementUuid}
             />
+
+            {/* Filter Drawer */}
+            {showFilters && (
+                <>
+                    <div
+                        className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px]"
+                        onClick={() => setShowFilters(false)}
+                    />
+                    <div className="fixed right-0 top-0 bottom-0 z-50 flex flex-col w-[380px] bg-white dark:bg-neutral-900 border-l border-sidebar-border shadow-2xl animate-in slide-in-from-right duration-200">
+                        {/* Drawer Header */}
+                        <div className="flex items-center justify-between p-5 border-b border-sidebar-border bg-purple-50 dark:bg-purple-900/10">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                                    <SlidersHorizontal className="size-4 text-purple-600 dark:text-purple-400" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-neutral-900 dark:text-neutral-100 text-sm">Filter Records</h3>
+                                    {activeFilterCount > 0 && (
+                                        <p className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold">
+                                            {activeFilterCount} filter{activeFilterCount !== 1 ? 's' : ''} active
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowFilters(false)}
+                                className="p-2 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
+                            >
+                                <X className="size-4" />
+                            </button>
+                        </div>
+
+                        {/* Drawer Body */}
+                        <div className="flex-1 overflow-y-auto p-5 space-y-6">
+                            {/* Record Type Section */}
+                            <div className="space-y-3">
+                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 flex items-center gap-2">
+                                    <FileClock className="size-3" /> Record Type
+                                </h4>
+                                <div className="space-y-2">
+                                    {['All', 'Violation', 'Complaint', 'Commendation', 'Other'].map(opt => (
+                                        <button
+                                            key={opt}
+                                            onClick={() => setFilterType(opt)}
+                                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm border transition-all ${
+                                                filterType === opt
+                                                    ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 font-semibold'
+                                                    : 'bg-white dark:bg-neutral-800 border-sidebar-border text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700'
+                                            }`}
+                                        >
+                                            <span>{opt === 'All' ? 'All Types' : opt}</span>
+                                            {filterType === opt && <Check className="size-3.5 text-purple-600 dark:text-purple-400" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Drawer Footer */}
+                        <div className="p-5 border-t border-sidebar-border bg-neutral-50 dark:bg-neutral-900/50 flex gap-3">
+                            <button
+                                onClick={resetFilters}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-600 text-sm font-semibold text-neutral-600 dark:text-neutral-300 hover:bg-red-50 hover:border-red-200 hover:text-red-600 dark:hover:bg-red-900/10 dark:hover:border-red-800 dark:hover:text-red-400 transition-all"
+                            >
+                                <RotateCcw className="size-3.5" /> Reset All
+                            </button>
+                            <button
+                                onClick={() => setShowFilters(false)}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold transition-all shadow-sm hover:shadow-md"
+                            >
+                                <Check className="size-3.5" /> Done
+                            </button>
+                        </div>
+                    </div>
+                </>
+            )}
         </AppLayout>
     );
 }
