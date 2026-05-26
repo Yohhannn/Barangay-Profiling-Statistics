@@ -670,19 +670,25 @@ export default function HouseholdProfiles({ households = [], filters = {}, syste
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 flex flex-col items-center justify-center text-center overflow-hidden">
-                                            <div className="flex items-center gap-2 mb-3 text-neutral-500 w-full">
+                                        <div className="bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 flex flex-col gap-3 overflow-hidden">
+                                            <div className="flex items-center gap-2 pb-2 border-b border-sidebar-border/50 text-neutral-500">
                                                 <MapPin className="size-4 text-red-500" />
                                                 <span className="text-xs font-bold uppercase">Household Location</span>
                                             </div>
 
-                                            {selectedHousehold.coordinates && selectedHousehold.coordinates !== 'N/A' ? (
-                                                <div className="w-full flex flex-col gap-3">
+                                            {/* Map Preview from coordinates */}
+                                            {selectedHousehold.coordinates && selectedHousehold.coordinates !== 'N/A' && (
+                                                <div className="w-full flex flex-col gap-1.5">
+                                                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">Map Preview</span>
                                                     <MapPreview coordinates={selectedHousehold.coordinates} />
                                                 </div>
-                                            ) : selectedHousehold.homeLink && selectedHousehold.homeLink !== 'N/A' ? (
-                                                <div className="w-full flex flex-col gap-3">
-                                                    {selectedHousehold.homeLink.includes('<iframe') || selectedHousehold.homeLink.includes('/embed') ? (
+                                            )}
+
+                                            {/* Google Maps link */}
+                                            {selectedHousehold.homeLink && selectedHousehold.homeLink !== 'N/A' && (
+                                                <div className="w-full flex flex-col gap-1.5">
+                                                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">Google Maps Link</span>
+                                                    {(selectedHousehold.homeLink.includes('<iframe') || selectedHousehold.homeLink.includes('/embed')) && (
                                                         <div className="w-full h-32 rounded-lg overflow-hidden border border-sidebar-border bg-neutral-200">
                                                             {selectedHousehold.homeLink.startsWith('http') ? (
                                                                 <iframe
@@ -701,8 +707,7 @@ export default function HouseholdProfiles({ households = [], filters = {}, syste
                                                                 />
                                                             )}
                                                         </div>
-                                                    ) : null}
-
+                                                    )}
                                                     <a
                                                         href={selectedHousehold.homeLink}
                                                         target="_blank"
@@ -713,8 +718,12 @@ export default function HouseholdProfiles({ households = [], filters = {}, syste
                                                         Open in Google Maps
                                                     </a>
                                                 </div>
-                                            ) : (
-                                                <div className="bg-white dark:bg-neutral-800 px-4 py-3 rounded border border-sidebar-border font-mono text-xs text-neutral-400 w-full">
+                                            )}
+
+                                            {/* Fallback if neither is available */}
+                                            {(!selectedHousehold.coordinates || selectedHousehold.coordinates === 'N/A') &&
+                                             (!selectedHousehold.homeLink || selectedHousehold.homeLink === 'N/A') && (
+                                                <div className="bg-white dark:bg-neutral-800 px-4 py-3 rounded border border-sidebar-border font-mono text-xs text-neutral-400 w-full text-center">
                                                     No Location Data Provided
                                                 </div>
                                             )}

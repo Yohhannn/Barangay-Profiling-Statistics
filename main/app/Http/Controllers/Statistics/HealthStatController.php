@@ -115,9 +115,9 @@ class HealthStatController extends Controller
             if ($ageYears < 5) $riskGroupsCount['Under 5 y/o']++;
             
             if ($demo) {
-                // Blood Type
-                $bt = $demo->blood_type;
-                if (array_key_exists($bt, $bloodTypesRaw)) {
+                // Blood Type (stored on citizen_informations, not demographic)
+                $bt = $info->blood_type;
+                if ($bt && array_key_exists($bt, $bloodTypesRaw)) {
                     $bloodTypesRaw[$bt]++;
                 } else {
                     $bloodTypesRaw['Unknown']++;
@@ -156,7 +156,13 @@ class HealthStatController extends Controller
                     }
                 }
             } else {
-                $bloodTypesRaw['Unknown']++;
+                // No demographic — still check blood_type on CitizenInformation
+                $bt = $info->blood_type;
+                if ($bt && array_key_exists($bt, $bloodTypesRaw)) {
+                    $bloodTypesRaw[$bt]++;
+                } else {
+                    $bloodTypesRaw['Unknown']++;
+                }
                 $philhealthRaw['Unknown / None']++;
             }
         }

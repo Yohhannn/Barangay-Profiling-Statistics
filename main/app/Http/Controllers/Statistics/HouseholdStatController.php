@@ -57,67 +57,69 @@ class HouseholdStatController extends Controller
                 'totalMembers' => 0,
                 'totalMale' => 0,
                 'totalFemale' => 0,
-                // These will be computed below
-                'avgScale' => 0,
-                'avgMale' => 0,
-                'avgFemale' => 0,
             ];
         }
 
         $totalHouseholds = 0;
-        
+
+        // Keys match exact values stored by the household form
         $ownershipCount = [
             'Owned' => 0,
             'Rented' => 0,
-            'Rent Free' => 0,
-            'Caretaker' => 0,
+            'Leased' => 0,
+            'Informal Settler' => 0,
             'Unknown' => 0,
         ];
 
-        $utilitiesCount = [
-            'Level 1 (Point Source)' => 0,
-            'Level 2 (Communal Faucet)' => 0,
-            'Level 3 (Waterworks)' => 0,
+        $waterCount = [
+            'Level 1 - Point Source' => 0,
+            'Level 2 - Communal Faucet' => 0,
+            'Level 3 - Individual Connection' => 0,
+            'Unknown' => 0,
+        ];
+
+        $toiletCount = [
+            'A - Pour/flush type connected to septic tank' => 0,
+            'A - Pour/flush toilet connected to Sewerage System' => 0,
+            'C - Ventilated Pit (VIP) latrine' => 0,
+            'D - Water-sealed toilet' => 0,
+            'E - G - Without toilet' => 0,
+            'E - Overhung latrine' => 0,
+            'F - Open pit latrine' => 0,
             'Unknown' => 0,
         ];
 
         foreach ($households as $hh) {
-            // Count ownership
-            $ownStatus = $hh->ownership_status ?? 'Unknown';
-            $mappedOwn = false;
-            foreach (array_keys($ownershipCount) as $k) {
-                if (stripos($ownStatus, $k) !== false) {
-                    $ownershipCount[$k]++;
-                    $mappedOwn = true;
-                    break;
-                }
+            // Ownership — exact match
+            $own = $hh->ownership_status ?? null;
+            if ($own && isset($ownershipCount[$own])) {
+                $ownershipCount[$own]++;
+            } else {
+                $ownershipCount['Unknown']++;
             }
-            if (!$mappedOwn && $ownStatus === 'Unknown') $ownershipCount['Unknown']++;
-            else if (!$mappedOwn) $ownershipCount['Unknown']++;
 
-            // Count utilities (water_type)
-            $water = $hh->water_type ?? 'Unknown';
-            $mappedWater = false;
-            foreach (array_keys($utilitiesCount) as $k) {
-                if (stripos($water, $k) !== false || stripos($k, $water) !== false) {
-                    $utilitiesCount[$k]++;
-                    $mappedWater = true;
-                    break;
-                }
+            // Water source — exact match
+            $water = $hh->water_type ?? null;
+            if ($water && isset($waterCount[$water])) {
+                $waterCount[$water]++;
+            } else {
+                $waterCount['Unknown']++;
             }
-            if (!$mappedWater) $utilitiesCount['Unknown']++;
 
-            // Determine members per household
-            $members = $hh->citizen_informations->filter(function($info) {
-                return !$info->is_deceased;
-            });
+            // Toilet type — exact match
+            $toilet = $hh->toilet_type ?? null;
+            if ($toilet && isset($toiletCount[$toilet])) {
+                $toiletCount[$toilet]++;
+            } else {
+                $toiletCount['Unknown']++;
+            }
+
+            // Members per household
+            $members = $hh->citizen_informations->filter(fn($info) => !$info->is_deceased);
             $countMembers = $members->count();
-            $countMale = $members->where('sex', 'Male')->count();
-            // Note: some string could be 'male' or 'Female' etc, case insensitive comparison is safer
             $countMale = $members->filter(fn($c) => strtolower($c->sex) === 'male')->count();
             $countFemale = $members->filter(fn($c) => strtolower($c->sex) === 'female')->count();
 
-            // Store in sitio bucket
             $sid = $hh->sitio_id;
             if (isset($householdData[$sid])) {
                 $householdData[$sid]['totalHouseholds']++;
@@ -129,34 +131,29 @@ class HouseholdStatController extends Controller
             $totalHouseholds++;
         }
 
-        // Calculate averages per sitio
-        foreach ($householdData as &$d) {
-            if ($d['totalHouseholds'] > 0) {
-                $d['avgScale'] = round($d['totalMembers'] / $d['totalHouseholds'], 1);
-                $d['avgMale'] = round($d['totalMale'] / $d['totalHouseholds'], 1);
-                $d['avgFemale'] = round($d['totalFemale'] / $d['totalHouseholds'], 1);
-            }
-        }
-        unset($d);
-
-        // Map for frontend components
         $ownershipData = [
-            ['label' => 'Owned', 'count' => $ownershipCount['Owned'], 'color' => 'bg-indigo-500'],
-            ['label' => 'Rented', 'count' => $ownershipCount['Rented'], 'color' => 'bg-emerald-500'],
-            ['label' => 'Rent Free', 'count' => $ownershipCount['Rent Free'], 'color' => 'bg-rose-500'],
-            ['label' => 'Caretaker', 'count' => $ownershipCount['Caretaker'], 'color' => 'bg-amber-500'],
-            ['label' => 'Unknown', 'count' => $ownershipCount['Unknown'], 'color' => 'bg-neutral-500'],
+            ['label' => 'Owned',             'count' => $ownershipCount['Owned'],             'color' => 'bg-indigo-500'],
+            ['label' => 'Rented',            'count' => $ownershipCount['Rented'],            'color' => 'bg-emerald-500'],
+            ['label' => 'Leased',            'count' => $ownershipCount['Leased'],            'color' => 'bg-amber-500'],
+            ['label' => 'Informal Settler',  'count' => $ownershipCount['Informal Settler'],  'color' => 'bg-rose-500'],
+            ['label' => 'Unknown',           'count' => $ownershipCount['Unknown'],           'color' => 'bg-neutral-500'],
         ];
 
-        $utilitiesData = [];
-        foreach ($utilitiesCount as $label => $count) {
-            $utilitiesData[] = ['label' => $label, 'count' => $count];
+        $waterData = [];
+        foreach ($waterCount as $label => $count) {
+            $waterData[] = ['label' => $label, 'count' => $count];
+        }
+
+        $toiletData = [];
+        foreach ($toiletCount as $label => $count) {
+            $toiletData[] = ['label' => $label, 'count' => $count];
         }
 
         return [
             'householdData' => array_values($householdData),
             'ownershipData' => $ownershipData,
-            'utilitiesData' => $utilitiesData,
+            'waterData' => $waterData,
+            'toiletData' => $toiletData,
             'totalHouseholds' => $totalHouseholds,
         ];
     }

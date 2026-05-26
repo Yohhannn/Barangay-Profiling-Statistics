@@ -445,7 +445,7 @@ function HistoryBlock({ index, data, onChange, onRemove, canRemove, errors, isPr
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                 <div>
-                    <SelectGroup label="Select Medical Type" options={['Hypertension', 'Diabetes', 'Checkup', 'Prenatal', 'Vaccination', 'Surgery', 'Other']} required value={data.type} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onChange('type', e.target.value)} />
+                    <SelectGroup label="Select Medical Type" options={['Hypertension', 'Diabetes', 'Tuberculosis', 'Checkup', 'Prenatal', 'Vaccination', 'Surgery', 'Other']} required value={data.type} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onChange('type', e.target.value)} />
                     {errors[`histories.${index}.type`] && <p className="text-[10px] text-red-500 mt-1">{errors[`histories.${index}.type`]}</p>}
                 </div>
                 <div>
