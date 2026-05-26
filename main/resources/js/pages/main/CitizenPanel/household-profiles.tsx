@@ -11,6 +11,7 @@ import { useState, useEffect, useRef } from 'react';
 import HouseholdCreation from './popup/household-creation';
 import HouseholdEdit from './popup/household-edit';
 import CitizenQuickView from '../CitizenRecords/popup/citizen-quick-view';
+import MapPreview from './popup/map-preview';
 
 // --- Types ---
 interface HouseholdMember {
@@ -595,37 +596,39 @@ export default function HouseholdProfiles({ households = [], filters = {}, syste
                                             </div>
                                         </div>
                                         <div className="bg-neutral-50 dark:bg-neutral-900/20 border border-sidebar-border rounded-xl p-5 flex flex-col items-center justify-center text-center overflow-hidden">
-                                            <div className="flex items-center gap-2 mb-3 text-neutral-500">
+                                            <div className="flex items-center gap-2 mb-3 text-neutral-500 w-full">
                                                 <MapPin className="size-4 text-red-500" />
                                                 <span className="text-xs font-bold uppercase">Household Location</span>
                                             </div>
-                                            
-                                            {selectedHousehold.homeLink && selectedHousehold.homeLink !== 'N/A' ? (
+
+                                            {selectedHousehold.coordinates && selectedHousehold.coordinates !== 'N/A' ? (
+                                                <div className="w-full flex flex-col gap-3">
+                                                    <MapPreview coordinates={selectedHousehold.coordinates} />
+                                                </div>
+                                            ) : selectedHousehold.homeLink && selectedHousehold.homeLink !== 'N/A' ? (
                                                 <div className="w-full flex flex-col gap-3">
                                                     {selectedHousehold.homeLink.includes('<iframe') || selectedHousehold.homeLink.includes('/embed') ? (
                                                         <div className="w-full h-32 rounded-lg overflow-hidden border border-sidebar-border bg-neutral-200">
-                                                            {/* If they pasted a direct raw embed URL rather than the iframe code */}
                                                             {selectedHousehold.homeLink.startsWith('http') ? (
-                                                                <iframe 
+                                                                <iframe
                                                                     src={selectedHousehold.homeLink}
-                                                                    width="100%" 
-                                                                    height="100%" 
-                                                                    style={{ border: 0 }} 
-                                                                    allowFullScreen 
-                                                                    loading="lazy" 
+                                                                    width="100%"
+                                                                    height="100%"
+                                                                    style={{ border: 0 }}
+                                                                    allowFullScreen
+                                                                    loading="lazy"
                                                                     referrerPolicy="no-referrer-when-downgrade"
                                                                 />
                                                             ) : (
-                                                                /* If they pasted the HTML iframe tag */
-                                                                <div 
-                                                                    dangerouslySetInnerHTML={{ __html: selectedHousehold.homeLink }} 
+                                                                <div
+                                                                    dangerouslySetInnerHTML={{ __html: selectedHousehold.homeLink }}
                                                                     className="w-full h-full [&>iframe]:w-full [&>iframe]:h-full"
                                                                 />
                                                             )}
                                                         </div>
                                                     ) : null}
 
-                                                    <a 
+                                                    <a
                                                         href={selectedHousehold.homeLink}
                                                         target="_blank"
                                                         rel="noopener noreferrer"

@@ -8,7 +8,11 @@
       "Bash(Get-ChildItem -Path \"e:\\\\AntigravityFiles\\\\Side\\\\Barangay-Profiling-Statistics\\\\main\" -Directory)",
       "Bash(Select-Object -First 20)",
       "Bash(Get-ChildItem -Path \"e:\\\\AntigravityFiles\\\\Side\\\\Barangay-Profiling-Statistics\\\\main\\\\resources\\\\js\" -Recurse -File -Filter \"*.js\")",
-      "Bash(Select-Object -ExpandProperty FullName)"
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(git remote *)",
+      "Bash(git branch *)",
+      "Bash(git checkout *)",
+      "Bash(Remove-Item replacements.txt)"
     ]
   }
 }
