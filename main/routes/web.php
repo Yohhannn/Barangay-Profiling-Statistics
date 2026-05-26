@@ -29,7 +29,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // --- CITIZEN PANEL ---
     Route::get('citizen-panel', function () {
-        return Inertia::render('main/CitizenPanel/citizen-panel');
+        $citizenCount   = \App\Models\Citizen::where('is_deleted', false)->count();
+        $householdCount = \App\Models\HouseholdInfo::where('is_deleted', false)->count();
+        return Inertia::render('main/CitizenPanel/citizen-panel', [
+            'citizenCount'   => $citizenCount,
+            'householdCount' => $householdCount,
+        ]);
     })->middleware('permission:View Citizen Profile,View Household Profile')->name('citizen-panel');
 
     // Sub-modules
@@ -43,7 +48,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // --- CITIZEN RECORDS ---
     Route::get('citizen-records', function () {
-        return Inertia::render('main/CitizenRecords/citizen-records');
+        $citizenHistoryCount    = \App\Models\CitizenHistory::where('is_deleted', false)->count();
+        $medicalHistoryCount    = \App\Models\MedicalHistory::where('is_deleted', false)->count();
+        $settlementHistoryCount = \App\Models\SettlementLog::where('is_deleted', false)->count();
+        return Inertia::render('main/CitizenRecords/citizen-records', [
+            'citizenHistoryCount'    => $citizenHistoryCount,
+            'medicalHistoryCount'    => $medicalHistoryCount,
+            'settlementHistoryCount' => $settlementHistoryCount,
+        ]);
     })->middleware('permission:View Citizen History,View Medical History,View Settlement History')->name('citizen-records');
 
     // Sub-modules
@@ -85,7 +97,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // --- INSTITUTIONS ---
     Route::get('institutions', function () {
-        return Inertia::render('main/Institutions/institutions');
+        $businessCount       = \App\Models\businessInfo::where('is_deleted', false)->count();
+        $infrastructureCount = \App\Models\Infrastructure::where('is_deleted', false)->count();
+        return Inertia::render('main/Institutions/institutions', [
+            'businessCount'       => $businessCount,
+            'infrastructureCount' => $infrastructureCount,
+        ]);
     })->middleware('permission:View Business,View Infrastructure')->name('institutions');
 
     // Sub-modules
@@ -101,7 +118,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // --- TRANSACTIONS ---
     Route::get('transactions', function () {
-        return Inertia::render('main/Transactions/transactions');
+        $pendingCount = \App\Models\TransactionLog::where('is_deleted', false)
+            ->where('status', 'Pending')
+            ->count();
+        return Inertia::render('main/Transactions/transactions', [
+            'pendingCount' => $pendingCount,
+        ]);
     })->middleware('permission:View Services')->name('transactions');
 
     // Sub-modules

@@ -18,7 +18,13 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function CitizenRecords() {
+interface CitizenRecordsProps {
+    citizenHistoryCount?: number;
+    medicalHistoryCount?: number;
+    settlementHistoryCount?: number;
+}
+
+export default function CitizenRecords({ citizenHistoryCount = 0, medicalHistoryCount = 0, settlementHistoryCount = 0 }: CitizenRecordsProps) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Citizen Records" />
@@ -60,6 +66,18 @@ export default function CitizenRecords() {
                     >
                         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-blue-50/30 dark:to-blue-900/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-3xl" />
 
+                        {/* Counter Pill */}
+                        <div className="absolute top-6 right-6 z-10">
+                            <div className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full bg-white/80 dark:bg-black/20 backdrop-blur-sm border border-neutral-200/50 dark:border-neutral-700/50 shadow-sm transition-transform group-hover:scale-105">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                                </span>
+                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Total</span>
+                                <span className="text-sm font-mono font-bold text-neutral-700 dark:text-neutral-200">{String(citizenHistoryCount).padStart(2, '0')}</span>
+                            </div>
+                        </div>
+
                         {/* Icon */}
                         <div className="relative z-10 mb-6 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 p-5 shadow-inner dark:from-blue-900/20 dark:to-blue-900/10 group-hover:scale-110 transition-transform duration-300 ease-out">
                             <FileClock className="size-12 text-blue-600 dark:text-blue-400" strokeWidth={1.5} />
@@ -90,6 +108,18 @@ export default function CitizenRecords() {
                     >
                         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-rose-50/30 dark:to-rose-900/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-3xl" />
 
+                        {/* Counter Pill */}
+                        <div className="absolute top-6 right-6 z-10">
+                            <div className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full bg-white/80 dark:bg-black/20 backdrop-blur-sm border border-neutral-200/50 dark:border-neutral-700/50 shadow-sm transition-transform group-hover:scale-105">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                                </span>
+                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Total</span>
+                                <span className="text-sm font-mono font-bold text-neutral-700 dark:text-neutral-200">{String(medicalHistoryCount).padStart(2, '0')}</span>
+                            </div>
+                        </div>
+
                         {/* Icon */}
                         <div className="relative z-10 mb-6 rounded-2xl bg-gradient-to-br from-rose-50 to-rose-100 p-5 shadow-inner dark:from-rose-900/20 dark:to-rose-900/10 group-hover:scale-110 transition-transform duration-300 ease-out">
                             <Stethoscope className="size-12 text-rose-600 dark:text-rose-400" strokeWidth={1.5} />
@@ -119,6 +149,18 @@ export default function CitizenRecords() {
                         className="group relative flex flex-col items-center justify-center rounded-3xl border border-sidebar-border/60 bg-white dark:bg-sidebar p-8 py-12 text-center shadow-sm transition-all duration-300 hover:border-amber-500/30 hover:shadow-xl hover:shadow-amber-500/5 hover:-translate-y-1"
                     >
                         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-amber-50/30 dark:to-amber-900/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-3xl" />
+
+                        {/* Counter Pill */}
+                        <div className="absolute top-6 right-6 z-10">
+                            <div className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full bg-white/80 dark:bg-black/20 backdrop-blur-sm border border-neutral-200/50 dark:border-neutral-700/50 shadow-sm transition-transform group-hover:scale-105">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                                </span>
+                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Total</span>
+                                <span className="text-sm font-mono font-bold text-neutral-700 dark:text-neutral-200">{String(settlementHistoryCount).padStart(2, '0')}</span>
+                            </div>
+                        </div>
 
                         {/* Icon */}
                         <div className="relative z-10 mb-6 rounded-2xl bg-gradient-to-br from-amber-50 to-amber-100 p-5 shadow-inner dark:from-amber-900/20 dark:to-amber-900/10 group-hover:scale-110 transition-transform duration-300 ease-out">
