@@ -193,6 +193,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('/citizens/store', [CitizenController::class, 'store']);
     Route::post('/citizens/register-face', [CitizenController::class, 'registerFace']);
+    Route::post('/citizens/search-face', [CitizenController::class, 'searchFace']);
     Route::put('/citizens/{id}', [CitizenController::class, 'update']);
     Route::delete('/citizens/{id}', [CitizenController::class, 'destroy']);
 

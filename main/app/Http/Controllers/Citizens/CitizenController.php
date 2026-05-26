@@ -289,6 +289,10 @@ class CitizenController extends Controller
                     ];
                 })->values()->all(),
 
+                // Media
+                'photoUrl' => $citizen->photo_uuid ? Storage::disk('public')->url($citizen->photo_uuid) : null,
+                'faceRecogUuid' => $citizen->face_recog_uuid,
+
                 // Audit
                 'dateEncoded' => Carbon::parse($citizen->date_encoded)->format('M d, Y | h:i A'),
                 'encodedBy' => $getSystemName($citizen->encodedBy),
@@ -467,7 +471,7 @@ class CitizenController extends Controller
                 'date_of_birth' => $validated['date_of_birth'],
                 'place_of_birth' => $validated['place_of_birth'] ?? null,
                 'sex' => $validated['sex'],
-                'civil_status' => $validated['civil_status'] ?? 'Single',
+                'civil_status' => $validated['civil_status'] ?: 'Single',
                 'blood_type' => $validated['blood_type'],
                 'religion' => $validated['religion'],
                 'personal_address' => $validated['personal_address'] ?? null,
@@ -476,7 +480,7 @@ class CitizenController extends Controller
                 'cause_of_death' => $validated['cause_of_death'] ?? null,
                 'is_registered_voter' => $request->boolean('is_voter'),
                 'is_indigenous' => $request->boolean('is_ip'),
-                'relationship_type' => $validated['relationship_to_head'] ?? null,
+                'relationship_type' => $validated['relationship_to_head'] ?: null,
 
                 'hh_id' => $hhId,
                 'sitio_id' => $sitioId,
@@ -564,6 +568,10 @@ class CitizenController extends Controller
             'fp_status' => 'nullable|string',
             'fp_start_date' => 'nullable|date',
             'fp_end_date' => 'nullable|date',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
+            'face_recog_uuid' => 'nullable|string|max:255',
+            'remove_photo' => 'nullable|boolean',
+            'remove_face' => 'nullable|boolean',
         ]);
 
         try {
@@ -678,7 +686,7 @@ class CitizenController extends Controller
                 'date_of_birth' => $validated['date_of_birth'],
                 'place_of_birth' => $validated['place_of_birth'] ?? null,
                 'sex' => $validated['sex'],
-                'civil_status' => $validated['civil_status'] ?? 'Single',
+                'civil_status' => $validated['civil_status'] ?: 'Single',
                 'blood_type' => $validated['blood_type'],
                 'religion' => $validated['religion'],
                 'personal_address' => $validated['personal_address'] ?? null,
@@ -687,16 +695,55 @@ class CitizenController extends Controller
                 'cause_of_death' => $validated['cause_of_death'] ?? null,
                 'is_registered_voter' => $request->boolean('is_voter'),
                 'is_indigenous' => $request->boolean('is_ip'),
-                'relationship_type' => $validated['relationship_to_head'] ?? null,
+                'relationship_type' => $validated['relationship_to_head'] ?: null,
                 'hh_id' => $hhId,
                 'sitio_id' => $sitioId,
             ]);
 
-            // Update Citizen aggregate record meta
-            $citizen->update([
+            // Update Citizen aggregate record meta + optional photo / face
+            $citizenUpdates = [
                 'date_updated' => now(),
-                'updated_by' => Auth::id() ?? 1,
-            ]);
+                'updated_by'   => Auth::id() ?? 1,
+            ];
+
+            if ($request->boolean('remove_photo')) {
+                $citizenUpdates['photo_uuid'] = null;
+            } elseif ($request->hasFile('photo') && $request->file('photo')->isValid()) {
+                $citizenUpdates['photo_uuid'] = $request->file('photo')->store('citizen-photos', 'public');
+            }
+
+            // Sync face_recog_uuid and delete from AWS collection when face is explicitly removed
+            if ($request->has('face_recog_uuid')) {
+                $oldFaceUuid = $citizen->face_recog_uuid;
+                $newFaceUuid = $request->filled('face_recog_uuid') ? $request->input('face_recog_uuid') : null;
+                $citizenUpdates['face_recog_uuid'] = $newFaceUuid;
+
+                if ($oldFaceUuid && $newFaceUuid === null) {
+                    try {
+                        $awsKey    = env('AWS_ACCESS_KEY_ID');
+                        $awsSecret = env('AWS_SECRET_ACCESS_KEY');
+                        if ($awsKey && $awsSecret) {
+                            $rek = new \Aws\Rekognition\RekognitionClient([
+                                'version'     => 'latest',
+                                'region'      => env('AWS_DEFAULT_REGION', 'us-east-1'),
+                                'credentials' => ['key' => $awsKey, 'secret' => $awsSecret],
+                                'http'        => ['verify' => false],
+                            ]);
+                            $rek->deleteFaces([
+                                'CollectionId' => env('AWS_REKOGNITION_COLLECTION_ID', 'barangay-citizens'),
+                                'FaceIds'      => [$oldFaceUuid],
+                            ]);
+                        }
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning('Failed to delete face from AWS on citizen update', [
+                            'face_id' => $oldFaceUuid,
+                            'error'   => $e->getMessage(),
+                        ]);
+                    }
+                }
+            }
+
+            $citizen->update($citizenUpdates);
 
             DB::commit();
 
@@ -750,6 +797,9 @@ class CitizenController extends Controller
                     'key'    => $awsKey,
                     'secret' => $awsSecret,
                 ],
+                // Windows dev: PHP lacks a CA bundle; disable SSL verify locally.
+                // Remove this block (or set verify to true) in production.
+                'http' => ['verify' => false],
             ]);
 
             $collectionId = env('AWS_REKOGNITION_COLLECTION_ID', 'barangay-citizens');
@@ -762,6 +812,16 @@ class CitizenController extends Controller
                     $rekognition->createCollection(['CollectionId' => $collectionId]);
                 } else {
                     throw $e;
+                }
+            }
+
+            // Delete the previous face record to avoid collection bloat when retaking
+            $oldFaceId = $request->input('old_face_id');
+            if ($oldFaceId) {
+                try {
+                    $rekognition->deleteFaces(['CollectionId' => $collectionId, 'FaceIds' => [$oldFaceId]]);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Failed to delete old face', ['face_id' => $oldFaceId, 'error' => $e->getMessage()]);
                 }
             }
 
@@ -793,13 +853,86 @@ class CitizenController extends Controller
                 'code'       => $e->getAwsErrorCode(),
                 'message'    => $e->getAwsErrorMessage(),
                 'statusCode' => $e->getStatusCode(),
+                'exception'  => $e->getMessage(),
             ]);
+            $displayCode = $e->getAwsErrorCode() ?? 'AwsException';
+            $displayMsg  = $e->getAwsErrorMessage() ?? $e->getMessage();
             return response()->json([
-                'error' => '[' . $e->getAwsErrorCode() . '] ' . $e->getAwsErrorMessage(),
+                'error' => '[' . $displayCode . '] ' . $displayMsg,
             ], 500);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Rekognition Throwable', ['message' => $e->getMessage()]);
             return response()->json(['error' => 'Face registration failed: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function searchFace(Request $request)
+    {
+        $request->validate(['face_image' => 'required|image|max:4096']);
+
+        $awsKey    = env('AWS_ACCESS_KEY_ID');
+        $awsSecret = env('AWS_SECRET_ACCESS_KEY');
+        $awsRegion = env('AWS_DEFAULT_REGION', 'us-east-1');
+
+        if (empty($awsKey) || empty($awsSecret)) {
+            return response()->json(['error' => 'AWS credentials are not configured.'], 500);
+        }
+
+        try {
+            $rekognition = new \Aws\Rekognition\RekognitionClient([
+                'version'     => 'latest',
+                'region'      => $awsRegion,
+                'credentials' => ['key' => $awsKey, 'secret' => $awsSecret],
+                'http'        => ['verify' => false],
+            ]);
+
+            $collectionId = env('AWS_REKOGNITION_COLLECTION_ID', 'barangay-citizens');
+            $imageBytes   = file_get_contents($request->file('face_image')->getRealPath());
+
+            $result = $rekognition->searchFacesByImage([
+                'CollectionId'       => $collectionId,
+                'Image'              => ['Bytes' => $imageBytes],
+                'MaxFaces'           => 1,
+                'FaceMatchThreshold' => 80.0,
+            ]);
+
+            if (empty($result['FaceMatches'])) {
+                return response()->json(['found' => false]);
+            }
+
+            $match      = $result['FaceMatches'][0];
+            $faceId     = $match['Face']['FaceId'];
+            $similarity = $match['Similarity'];
+
+            $citizen = Citizen::with('info.sitio')
+                ->where('face_recog_uuid', $faceId)
+                ->where('is_deleted', false)
+                ->first();
+
+            if (!$citizen) {
+                return response()->json(['found' => false]);
+            }
+
+            return response()->json([
+                'found'      => true,
+                'confidence' => round($similarity, 1),
+                'citizen'    => [
+                    'id'        => $citizen->ctz_id,
+                    'name'      => trim(($citizen->info->first_name ?? '') . ' ' . ($citizen->info->last_name ?? '')),
+                    'citizenId' => $citizen->ctz_uuid,
+                    'sitio'     => $citizen->info->sitio->sitio_name ?? 'Unknown',
+                    'sex'       => $citizen->info->sex ?? 'N/A',
+                    'age'       => $citizen->info->date_of_birth ? Carbon::parse($citizen->info->date_of_birth)->age : null,
+                    'photoUrl'  => $citizen->photo_uuid ? Storage::disk('public')->url($citizen->photo_uuid) : null,
+                ],
+            ]);
+
+        } catch (\Aws\Exception\AwsException $e) {
+            $displayCode = $e->getAwsErrorCode() ?? 'AwsException';
+            $displayMsg  = $e->getAwsErrorMessage() ?? $e->getMessage();
+            return response()->json(['error' => '[' . $displayCode . '] ' . $displayMsg], 500);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'Face search failed: ' . $e->getMessage()], 500);
         }
     }
 

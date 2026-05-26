@@ -1,11 +1,12 @@
 import {
     X, Camera, Plus, Trash2, ScanFace,
     User, MapPin, Briefcase, GraduationCap, Activity, Home,
-    CreditCard, Heart, CheckCircle, Search, Loader2
+    CreditCard, Heart, CheckCircle, Search, Loader2, RefreshCcw
 } from 'lucide-react';
-import { useState, useEffect, FormEvent } from 'react';
-import { useForm, router } from '@inertiajs/react';
+import { useState, useEffect, useRef, FormEvent } from 'react';
+import { useForm } from '@inertiajs/react';
 import RegisterFace from './register-face';
+import PhotoCapture from './photo-capture';
 import Swal from 'sweetalert2';
 
 // Ensure the Citizen type here perfectly matches the backend data being sent
@@ -55,6 +56,8 @@ interface Citizen {
     fpStatus?: string;
     fpDateStarted?: string;
     fpDateEnded?: string;
+    faceRecogUuid?: string;
+    photoUrl?: string;
 }
 
 interface CitizenEditProps {
@@ -92,7 +95,7 @@ export default function CitizenEdit({ isOpen, onClose, citizen, onSuccess }: Cit
         return d.toISOString().split('T')[0];
     }
 
-    const { data, setData, put, processing, reset, errors } = useForm({
+    const { data, setData, put, processing, reset, errors, transform } = useForm({
         // Personal
         first_name: '',
         middle_name: '',
@@ -149,6 +152,9 @@ export default function CitizenEdit({ isOpen, onClose, citizen, onSuccess }: Cit
         fp_status: '',
         fp_start_date: '',
         fp_end_date: '',
+
+        // Media
+        face_recog_uuid: '',
     });
 
     // Populate data when citizen changes
@@ -203,15 +209,29 @@ export default function CitizenEdit({ isOpen, onClose, citizen, onSuccess }: Cit
                 fp_status: citizen.fpStatus && citizen.fpStatus !== 'N/A' ? citizen.fpStatus : '',
                 fp_start_date: formatDateForInput(citizen.fpDateStarted),
                 fp_end_date: formatDateForInput(citizen.fpDateEnded),
+                face_recog_uuid: citizen.faceRecogUuid || '',
             });
+            setPhotoPreview(citizen.photoUrl || null);
+            setRemovePhoto(false);
+            setFaceScannedThisSession(false);
+            photoFileRef.current = null;
             setSearchHHQuery(citizen.householdId && citizen.householdId !== 'N/A' ? citizen.householdId : '');
         } else {
             reset();
             setSearchHHQuery('');
+            setPhotoPreview(null);
+            setRemovePhoto(false);
+            photoFileRef.current = null;
         }
     }, [citizen, isOpen]);
 
     const [isFaceScanOpen, setIsFaceScanOpen] = useState(false);
+    const [isPhotoCaptureOpen, setIsPhotoCaptureOpen] = useState(false);
+    const [faceScannedThisSession, setFaceScannedThisSession] = useState(false);
+    const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+    const [removePhoto, setRemovePhoto] = useState(false);
+    const photoInputRef = useRef<HTMLInputElement>(null);
+    const photoFileRef = useRef<File | null>(null);
     const [searchHHQuery, setSearchHHQuery] = useState('');
     const [householdInfo, setHouseholdInfo] = useState<{ members: { name: string; relationship: string; address: string }[], status: string } | null>(null);
     const [isSearchingHH, setIsSearchingHH] = useState(false);
@@ -271,19 +291,16 @@ export default function CitizenEdit({ isOpen, onClose, citizen, onSuccess }: Cit
             return;
         }
 
-        const finalData = {
-            ...data,
-            relationship_to_head: data.relationship_to_head || 'None'
-        };
+        transform((d) => ({
+            ...d,
+            remove_photo: removePhoto ? '1' : '',
+            ...(photoFileRef.current ? { photo: photoFileRef.current } : {}),
+        }));
 
-        // For inertia's form helper, the data is already bound, just pass the URL and options
-        // put(url, options). If sending custom payload with Inertia.put, form helper is slightly different.
-        // Assuming your backend expects the root of the request to contain fields directly,
-        // or grouped into a `data` array as defined in creation initially.
         put(`/citizens/${citizen.id}`, {
+            forceFormData: true,
             onSuccess: () => {
                 Swal.fire({ icon: 'success', title: 'Success', text: 'Citizen Record Updated!' });
-                
                 if (onSuccess) {
                     onSuccess();
                 } else {
@@ -312,8 +329,28 @@ export default function CitizenEdit({ isOpen, onClose, citizen, onSuccess }: Cit
 
     return (
         <>
-            <RegisterFace isOpen={isFaceScanOpen} onClose={() => setIsFaceScanOpen(false)} />
-
+            {isFaceScanOpen && (
+                <RegisterFace
+                    isOpen={true}
+                    onClose={() => setIsFaceScanOpen(false)}
+                    onCapture={(faceId) => {
+                        setData('face_recog_uuid', faceId);
+                        setFaceScannedThisSession(true);
+                    }}
+                    existingFaceId={data.face_recog_uuid || undefined}
+                />
+            )}
+            {isPhotoCaptureOpen && (
+                <PhotoCapture
+                    isOpen={true}
+                    onClose={() => setIsPhotoCaptureOpen(false)}
+                    onCapture={(file, previewUrl) => {
+                        photoFileRef.current = file;
+                        setPhotoPreview(previewUrl);
+                        setRemovePhoto(false);
+                    }}
+                />
+            )}
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
                 <div className="bg-[#F8F9FC] dark:bg-[#0f172a] w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] border border-white/20">
 
@@ -345,13 +382,70 @@ export default function CitizenEdit({ isOpen, onClose, citizen, onSuccess }: Cit
                                 <SectionLabel icon={<User className="size-4" />} label="Personal Identity" />
                                 <div className="bg-white dark:bg-[#1e293b] p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm flex flex-col sm:flex-row gap-6">
                                     <div className="flex flex-col gap-3 w-full sm:w-40 shrink-0">
-                                        <div className="w-full aspect-[3/4] bg-neutral-100 dark:bg-black/20 rounded-lg border-2 border-dashed border-neutral-300 dark:border-neutral-600 flex flex-col items-center justify-center text-neutral-400 gap-2 hover:border-indigo-400 transition-colors cursor-pointer group">
-                                            <Camera className="size-8 group-hover:text-indigo-500 transition-colors" />
-                                            <span className="text-[10px] font-medium uppercase tracking-wide">Update Photo</span>
+                                        <div
+                                            onClick={() => photoInputRef.current?.click()}
+                                            className="w-full aspect-[3/4] bg-neutral-100 dark:bg-black/20 rounded-lg border-2 border-dashed border-neutral-300 dark:border-neutral-600 flex flex-col items-center justify-center text-neutral-400 gap-2 hover:border-indigo-400 transition-colors cursor-pointer group overflow-hidden relative"
+                                        >
+                                            {photoPreview && !removePhoto ? (
+                                                <>
+                                                    <img src={photoPreview} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
+                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                        <Camera className="size-6 text-white" />
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Camera className="size-8 group-hover:text-indigo-500 transition-colors" />
+                                                    <span className="text-[10px] font-medium uppercase tracking-wide">Update Photo</span>
+                                                </>
+                                            )}
                                         </div>
-                                        <button type="button" onClick={() => setIsFaceScanOpen(true)} className="w-full flex items-center justify-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 dark:border-indigo-800 p-2.5 rounded-lg transition-all text-[10px] font-bold uppercase tracking-wide shadow-sm mt-1">
-                                            <ScanFace className="size-4" /> Register Face Data
+                                        <input
+                                            ref={photoInputRef}
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/gif,image/jpg"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+                                                photoFileRef.current = file;
+                                                setPhotoPreview(URL.createObjectURL(file));
+                                                setRemovePhoto(false);
+                                            }}
+                                        />
+                                        <button type="button" onClick={() => setIsPhotoCaptureOpen(true)} className="w-full flex items-center justify-center gap-1.5 bg-neutral-50 hover:bg-neutral-100 text-neutral-600 border border-neutral-200 dark:border-neutral-600 dark:bg-neutral-800/50 dark:text-neutral-400 dark:hover:bg-neutral-700/50 p-2 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-all">
+                                            <Camera className="size-3.5" /> Take Photo
                                         </button>
+                                        {(photoPreview && !removePhoto) && (
+                                            <button type="button" onClick={() => { setRemovePhoto(true); setPhotoPreview(null); photoFileRef.current = null; if (photoInputRef.current) photoInputRef.current.value = ''; }} className="w-full flex items-center justify-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 dark:border-red-800 dark:bg-red-900/20 p-2 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-all">
+                                                <X className="size-3" /> Remove Photo
+                                            </button>
+                                        )}
+
+                                        {data.face_recog_uuid ? (
+                                            <div className="flex flex-col gap-1.5">
+                                                <div className={`flex items-center justify-center gap-1.5 p-2 rounded-lg text-[10px] font-bold uppercase tracking-wide border ${
+                                                    faceScannedThisSession
+                                                        ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800'
+                                                        : 'bg-neutral-50 text-neutral-500 border-neutral-200 dark:bg-neutral-800/50 dark:text-neutral-400 dark:border-neutral-700'
+                                                }`}>
+                                                    <ScanFace className="size-3.5" />
+                                                    {faceScannedThisSession ? 'Face Registered' : 'Face on File'}
+                                                </div>
+                                                <div className="flex gap-1.5">
+                                                    <button type="button" onClick={() => setIsFaceScanOpen(true)} className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 dark:border-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400 p-2 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-all">
+                                                        <RefreshCcw className="size-3.5" /> Retake
+                                                    </button>
+                                                    <button type="button" onClick={() => { setData('face_recog_uuid', ''); setFaceScannedThisSession(false); }} className="p-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 dark:border-red-800 dark:bg-red-900/20 rounded-lg transition-all" title="Remove face">
+                                                        <X className="size-3.5" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <button type="button" onClick={() => setIsFaceScanOpen(true)} className="w-full flex items-center justify-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 dark:border-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400 p-2.5 rounded-lg transition-all text-[10px] font-bold uppercase tracking-wide shadow-sm">
+                                                <ScanFace className="size-4" /> Register Face Data
+                                            </button>
+                                        )}
                                     </div>
 
                                     <div className="flex-1 grid grid-cols-2 gap-4">
@@ -443,7 +537,7 @@ export default function CitizenEdit({ isOpen, onClose, citizen, onSuccess }: Cit
                                             label="Civil Status"
                                             value={data.civil_status}
                                             onChange={e => setData('civil_status', e.target.value)}
-                                            options={['Single', 'Married', 'Widowed', 'Separated', 'Common Law']}
+                                            options={['Single', 'Married', 'Widowed', 'Separated', 'Divorced']}
                                             error={errors.civil_status}
                                         />
                                     </div>

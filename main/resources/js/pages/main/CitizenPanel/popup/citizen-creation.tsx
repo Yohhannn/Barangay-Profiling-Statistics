@@ -6,6 +6,7 @@ import {
 import { useState, useEffect, useRef, FormEvent } from 'react';
 import { useForm } from '@inertiajs/react';
 import RegisterFace from './register-face';
+import PhotoCapture from './photo-capture';
 import Swal from 'sweetalert2';
 
 interface CitizenCreationProps {
@@ -99,6 +100,7 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
 
     // --- Local UI State ---
     const [isFaceScanOpen, setIsFaceScanOpen] = useState(false);
+    const [isPhotoCaptureOpen, setIsPhotoCaptureOpen] = useState(false);
     const [photoPreview, setPhotoPreview] = useState<string | null>(null);
     const photoInputRef = useRef<HTMLInputElement>(null);
     // Use ref so Lodash cloneDeep (called by useForm on every setData) never touches the File object
@@ -168,19 +170,7 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
             return;
         }
 
-        const finalData = {
-            ...data,
-            relationship_to_head: data.relationship_to_head || 'None'
-        };
-
-        // Note: Inertia's post method directly sends the useForm data state.
-        // We override the data right before submit using transform() if needed,
-        // or just rely on the pre-filled state. Since we need to ensure relationship_to_head,
-        // a better pattern for Inertia is to set the data first or use transform.
-        setData('relationship_to_head', data.relationship_to_head || 'None');
-
-        // Inject the photo (File) at submit time via transform so it never goes through
-        // Lodash cloneDeep (which destroys File objects and would silently corrupt the upload)
+        // Inject photo at submit time (bypasses Lodash cloneDeep which destroys File objects)
         transform((d) => ({
             ...d,
             ...(photoFileRef.current ? { photo: photoFileRef.current } : {}),
@@ -224,7 +214,18 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
                 isOpen={isFaceScanOpen}
                 onClose={() => setIsFaceScanOpen(false)}
                 onCapture={(faceId) => setData('face_recog_uuid', faceId)}
+                existingFaceId={data.face_recog_uuid || undefined}
             />
+            {isPhotoCaptureOpen && (
+                <PhotoCapture
+                    isOpen={true}
+                    onClose={() => setIsPhotoCaptureOpen(false)}
+                    onCapture={(file, previewUrl) => {
+                        photoFileRef.current = file;
+                        setPhotoPreview(previewUrl);
+                    }}
+                />
+            )}
 
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
                 <div className="bg-[#F8F9FC] dark:bg-[#0f172a] w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] border border-white/20">
@@ -288,17 +289,23 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
                                                 setPhotoPreview(URL.createObjectURL(file));
                                             }}
                                         />
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsFaceScanOpen(true)}
-                                            className={`w-full flex items-center justify-center gap-2 border p-2.5 rounded-lg transition-all text-[10px] font-bold uppercase tracking-wide shadow-sm mt-1 ${data.face_recog_uuid ? 'bg-green-50 hover:bg-green-100 text-green-700 border-green-200 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400' : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 dark:border-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400'}`}
-                                        >
-                                            {data.face_recog_uuid ? (
-                                                <><CheckCircle className="size-4" /> Face Registered</>
-                                            ) : (
-                                                <><ScanFace className="size-4" /> Register Face Data</>
-                                            )}
+                                        <button type="button" onClick={() => setIsPhotoCaptureOpen(true)} className="w-full flex items-center justify-center gap-1.5 bg-neutral-50 hover:bg-neutral-100 text-neutral-600 border border-neutral-200 dark:border-neutral-600 dark:bg-neutral-800/50 dark:text-neutral-400 dark:hover:bg-neutral-700/50 p-2 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-all">
+                                            <Camera className="size-3.5" /> Take Photo
                                         </button>
+                                        {data.face_recog_uuid ? (
+                                            <div className="flex gap-1.5 mt-1">
+                                                <button type="button" onClick={() => setIsFaceScanOpen(true)} className="flex-1 flex items-center justify-center gap-1.5 bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400 p-2.5 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-all">
+                                                    <CheckCircle className="size-3.5" /> Retake
+                                                </button>
+                                                <button type="button" onClick={() => setData('face_recog_uuid', '')} className="p-2.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 dark:border-red-800 dark:bg-red-900/20 rounded-lg transition-all" title="Remove face">
+                                                    <X className="size-3.5" />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <button type="button" onClick={() => setIsFaceScanOpen(true)} className="w-full flex items-center justify-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 dark:border-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400 p-2.5 rounded-lg transition-all text-[10px] font-bold uppercase tracking-wide shadow-sm mt-1">
+                                                <ScanFace className="size-4" /> Register Face Data
+                                            </button>
+                                        )}
                                     </div>
 
                                     <div className="flex-1 grid grid-cols-2 gap-4">
@@ -391,7 +398,7 @@ export default function CitizenCreation({ isOpen, onClose }: CitizenCreationProp
                                             label="Civil Status"
                                             value={data.civil_status}
                                             onChange={e => setData('civil_status', e.target.value)}
-                                            options={['Single', 'Married', 'Widowed', 'Separated', 'Common Law']}
+                                            options={['Single', 'Married', 'Widowed', 'Separated', 'Divorced']}
                                             error={errors.civil_status}
                                         />
                                     </div>

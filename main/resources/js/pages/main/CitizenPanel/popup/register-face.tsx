@@ -5,11 +5,12 @@ interface RegisterFaceProps {
     isOpen: boolean;
     onClose: () => void;
     onCapture?: (faceId: string) => void;
+    existingFaceId?: string;
 }
 
 type Status = 'idle' | 'camera' | 'uploading' | 'success' | 'error';
 
-export default function RegisterFace({ isOpen, onClose, onCapture }: RegisterFaceProps) {
+export default function RegisterFace({ isOpen, onClose, onCapture, existingFaceId }: RegisterFaceProps) {
     const [status, setStatus] = useState<Status>('idle');
     const [faceId, setFaceId] = useState<string | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -66,6 +67,7 @@ export default function RegisterFace({ isOpen, onClose, onCapture }: RegisterFac
 
             const fd = new FormData();
             fd.append('face_image', blob, 'face.jpg');
+            if (existingFaceId) fd.append('old_face_id', existingFaceId);
 
             // Read XSRF-TOKEN cookie — same mechanism Inertia/Axios use
             const xsrfRaw = document.cookie.split('; ')
@@ -120,7 +122,7 @@ export default function RegisterFace({ isOpen, onClose, onCapture }: RegisterFac
                     <h3 className="text-sm font-bold uppercase tracking-widest text-neutral-900 dark:text-white flex items-center gap-2">
                         <ScanFace className="size-4 text-indigo-500" /> Face Biometrics
                     </h3>
-                    <button onClick={handleClose} className="p-1 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+                    <button type="button" onClick={handleClose} className="p-1 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
                         <X className="size-5 text-neutral-500" />
                     </button>
                 </div>
@@ -190,27 +192,27 @@ export default function RegisterFace({ isOpen, onClose, onCapture }: RegisterFac
 
                 {/* Controls */}
                 <div className="p-4 bg-neutral-50 dark:bg-[#1e293b] border-t border-neutral-200 dark:border-neutral-800 flex justify-between items-center">
-                    <button onClick={handleClose} className="px-4 py-2 text-xs font-bold uppercase text-neutral-500 hover:text-neutral-700 dark:text-neutral-400">
+                    <button type="button" onClick={handleClose} className="px-4 py-2 text-xs font-bold uppercase text-neutral-500 hover:text-neutral-700 dark:text-neutral-400">
                         {status === 'success' ? 'Done' : 'Cancel'}
                     </button>
 
                     {(status === 'idle' || status === 'error') && (
-                        <button onClick={startCamera} className="flex items-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold uppercase tracking-wider shadow-lg active:scale-95 transition-all">
+                        <button type="button" onClick={startCamera} className="flex items-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold uppercase tracking-wider shadow-lg active:scale-95 transition-all">
                             <Camera className="size-3.5" /> Start Camera
                         </button>
                     )}
                     {status === 'camera' && (
-                        <button onClick={captureAndSend} className="flex items-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold uppercase tracking-wider shadow-lg active:scale-95 transition-all">
+                        <button type="button" onClick={captureAndSend} className="flex items-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold uppercase tracking-wider shadow-lg active:scale-95 transition-all">
                             <ScanFace className="size-3.5" /> Capture Face
                         </button>
                     )}
                     {status === 'uploading' && (
-                        <button disabled className="px-5 py-2 bg-neutral-200 dark:bg-neutral-700 text-neutral-400 rounded-lg text-xs font-bold uppercase tracking-wider">
+                        <button type="button" disabled className="px-5 py-2 bg-neutral-200 dark:bg-neutral-700 text-neutral-400 rounded-lg text-xs font-bold uppercase tracking-wider">
                             Processing…
                         </button>
                     )}
                     {status === 'success' && (
-                        <button onClick={handleRetake} className="flex items-center gap-2 px-5 py-2 bg-neutral-200 hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-600 text-neutral-700 dark:text-neutral-200 rounded-lg text-xs font-bold uppercase tracking-wider transition-all">
+                        <button type="button" onClick={handleRetake} className="flex items-center gap-2 px-5 py-2 bg-neutral-200 hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-600 text-neutral-700 dark:text-neutral-200 rounded-lg text-xs font-bold uppercase tracking-wider transition-all">
                             <RefreshCcw className="size-3.5" /> Retake
                         </button>
                     )}

@@ -7,11 +7,12 @@ import {
     User, MapPin, Briefcase, UserX, GraduationCap,
     HeartPulse, Baby, Phone, Hash, Home,
     Filter, X, SlidersHorizontal, Edit3, ScanFace, Check, RotateCcw,
-    Activity, FileText, Info, Store, Building
+    Activity, FileText, Info, Store, Building, Lock
 } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import CitizenCreation from './popup/citizen-creation';
 import CitizenEdit from './popup/citizen-edit';
+import FaceSearch from './popup/face-search';
 
 import MedicalQuickView from '../CitizenRecords/popup/medical-quick-view';
 import SettlementQuickView from '../CitizenRecords/popup/settlement-quick-view';
@@ -147,6 +148,9 @@ interface Citizen {
     encodedBy: string;
     dateUpdated: string;
     updatedBy: string;
+
+    photoUrl?: string;
+    faceRecogUuid?: string;
 }
 
 // --- 2. 20 Example Data Entries ---
@@ -164,6 +168,10 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
     const [showFilters, setShowFilters] = useState(false);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
+    const [isFaceSearchOpen, setIsFaceSearchOpen] = useState(false);
+    const [pendingSelectId, setPendingSelectId] = useState<number | null>(null);
+    const [photoLightboxOpen, setPhotoLightboxOpen] = useState(false);
+    const [photoRevealed, setPhotoRevealed] = useState(false);
 
     // --- Quick View State ---
     const [medicalQuickViewOpen, setMedicalQuickViewOpen] = useState(false);
@@ -315,6 +323,30 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
         setFilterState(prev => ({ ...prev, [key]: value }));
     };
 
+    // Reset photo state when switching citizens
+    useEffect(() => {
+        setPhotoLightboxOpen(false);
+        setPhotoRevealed(false);
+    }, [selectedCitizen?.id]);
+
+    // Close lightbox on Escape key
+    useEffect(() => {
+        if (!photoLightboxOpen) return;
+        const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setPhotoLightboxOpen(false); };
+        document.addEventListener('keydown', handleKey);
+        return () => document.removeEventListener('keydown', handleKey);
+    }, [photoLightboxOpen]);
+
+    // Auto-select citizen after face search redirects the list
+    useEffect(() => {
+        if (pendingSelectId === null) return;
+        const found = citizens.find(c => c.id === pendingSelectId);
+        if (found) {
+            setSelectedCitizen(found);
+            setPendingSelectId(null);
+        }
+    }, [citizens, pendingSelectId]);
+
     const resetFilters = () => {
         setFilterState({
             search: '',
@@ -373,6 +405,20 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
             <Head title="Citizen Profiles" />
 
             {/* --- MOUNT THE MODAL HERE --- */}
+            <FaceSearch
+                isOpen={isFaceSearchOpen}
+                onClose={() => setIsFaceSearchOpen(false)}
+                onFound={(citizenId, citizenUuid) => {
+                    const found = citizens.find(c => c.id === citizenId);
+                    if (found) {
+                        setSelectedCitizen(found);
+                    } else {
+                        // Citizen exists but is filtered out — search by UUID to surface it
+                        setPendingSelectId(citizenId);
+                        handleFilterChange('search', citizenUuid);
+                    }
+                }}
+            />
             <CitizenCreation isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
             <CitizenEdit 
                 isOpen={isEditOpen} 
@@ -423,6 +469,31 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                 </div>
             )}
 
+            {/* Photo Lightbox */}
+            {photoLightboxOpen && selectedCitizen?.photoUrl && (
+                <div
+                    className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-150"
+                    onClick={() => setPhotoLightboxOpen(false)}
+                >
+                    <div className="relative flex flex-col items-center" onClick={e => e.stopPropagation()}>
+                        <button
+                            onClick={() => setPhotoLightboxOpen(false)}
+                            className="absolute -top-10 right-0 p-1.5 text-white/60 hover:text-white transition-colors"
+                        >
+                            <X className="size-6" />
+                        </button>
+                        <img
+                            src={selectedCitizen.photoUrl}
+                            alt={`${selectedCitizen.firstName} ${selectedCitizen.lastName}`}
+                            className="max-w-[90vw] max-h-[85vh] object-contain rounded-xl shadow-2xl border border-white/10"
+                        />
+                        <p className="text-white/40 text-[10px] font-mono mt-3 uppercase tracking-widest">
+                            {selectedCitizen.firstName} {selectedCitizen.lastName} · {selectedCitizen.citizenId}
+                        </p>
+                    </div>
+                </div>
+            )}
+
             <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-6 gap-6 overflow-hidden max-w-[1920px] mx-auto w-full">
 
                 {/* --- Header Bar --- */}
@@ -450,13 +521,19 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                                     <h2 className="text-xs font-bold text-white bg-neutral-900 dark:bg-blue-600 py-1 px-3 rounded-md uppercase tracking-wider">
                                         Registered List
                                     </h2>
-                                    {/* REGISTER BUTTON ADDED HERE */}
                                     <button
                                         onClick={() => setIsCreateOpen(true)}
                                         className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white p-1 rounded-md transition-colors shadow-sm"
                                         title="Register New Citizen"
                                     >
                                         <Plus className="size-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => setIsFaceSearchOpen(true)}
+                                        className="flex items-center justify-center gap-1 bg-blue-600 hover:bg-blue-700 text-white p-1 rounded-md transition-colors shadow-sm"
+                                        title="Search by Face"
+                                    >
+                                        <ScanFace className="size-4" />
                                     </button>
                                 </div>
                                 <span className="text-[10px] text-neutral-400 font-mono">
@@ -747,8 +824,41 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                                 <div className="p-6 border-b border-sidebar-border/60 bg-neutral-50/50 dark:bg-neutral-900/30">
                                     <div className="flex items-start gap-5">
                                         {/* Photo */}
-                                        <div className="w-24 h-24 shrink-0 bg-white dark:bg-neutral-800 rounded-xl border border-sidebar-border flex items-center justify-center shadow-sm">
-                                            <User className="size-10 text-neutral-300" />
+                                        <div
+                                            onClick={() => { if (photoRevealed && selectedCitizen.photoUrl) setPhotoLightboxOpen(true); }}
+                                            onDoubleClick={() => { if (!photoRevealed && selectedCitizen.photoUrl) setPhotoRevealed(true); }}
+                                            className={`w-24 h-24 shrink-0 bg-white dark:bg-neutral-800 rounded-xl border border-sidebar-border overflow-hidden flex items-center justify-center shadow-sm relative group select-none ${selectedCitizen.photoUrl ? (photoRevealed ? 'cursor-zoom-in' : 'cursor-pointer') : ''}`}
+                                        >
+                                            {selectedCitizen.photoUrl ? (
+                                                <>
+                                                    <img
+                                                        src={selectedCitizen.photoUrl}
+                                                        alt={selectedCitizen.firstName}
+                                                        className={`w-full h-full object-cover transition-all duration-500 ${photoRevealed ? '' : 'blur scale-110'}`}
+                                                    />
+                                                    {/* Blurred state overlay */}
+                                                    {!photoRevealed && (
+                                                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 pointer-events-none">
+                                                            <div className="bg-black/40 rounded-full p-1.5">
+                                                                <Lock className="size-3.5 text-white/80" />
+                                                            </div>
+                                                            <span className="text-white text-[8px] font-bold uppercase tracking-wide text-center leading-snug px-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                Double-click<br/>to reveal
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    {/* Revealed state hover hint */}
+                                                    {photoRevealed && (
+                                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                                            <span className="text-white text-[9px] font-bold uppercase tracking-wide text-center leading-snug px-1">
+                                                                Click to<br/>maximize
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <User className="size-10 text-neutral-300" />
+                                            )}
                                         </div>
 
                                         {/* Name Block */}
@@ -758,12 +868,20 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                                                     <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
                                                         {selectedCitizen.firstName} {selectedCitizen.middleName} {selectedCitizen.lastName} <span className="text-neutral-400 text-lg">{selectedCitizen.suffix}</span>
                                                     </h1>
-                                                    <div className="flex items-center gap-3 mt-1">
+                                                    <div className="flex flex-wrap items-center gap-2 mt-1">
                                                         <span className="font-mono text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded">
                                                             {selectedCitizen.citizenId}
                                                         </span>
                                                         <span className={`text-xs font-bold px-2 py-0.5 rounded border ${selectedCitizen.status === 'Deceased' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-green-50 text-green-600 border-green-100'}`}>
                                                             {selectedCitizen.status.toUpperCase()}
+                                                        </span>
+                                                        <span className={`flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded border ${
+                                                            selectedCitizen.faceRecogUuid
+                                                                ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800'
+                                                                : 'bg-neutral-50 text-neutral-400 border-neutral-200 dark:bg-neutral-800 dark:text-neutral-500 dark:border-neutral-700'
+                                                        }`}>
+                                                            <ScanFace className="size-3" />
+                                                            {selectedCitizen.faceRecogUuid ? 'Biometrics' : 'No Biometrics'}
                                                         </span>
                                                     </div>
                                                 </div>
