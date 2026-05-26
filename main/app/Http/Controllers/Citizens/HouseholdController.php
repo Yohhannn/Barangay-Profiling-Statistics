@@ -8,6 +8,7 @@ use App\Models\Sitio;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class HouseholdController extends Controller
 {
@@ -96,6 +97,7 @@ class HouseholdController extends Controller
                 'homeAddress' => $hh->address,
                 'homeLink' => $hh->home_link ?? 'N/A',
                 'coordinates' => $hh->coordinates ?? 'N/A',
+                'photoUrl' => $hh->home_photo ? Storage::disk('public')->url($hh->home_photo) : null,
                 'members' => $hh->citizen_informations->filter(function($info) {
                     return $info->citizens->where('is_deleted', false)->isNotEmpty();
                 })->map(function($info) {
@@ -156,7 +158,7 @@ class HouseholdController extends Controller
             'home_address' => 'required|string|max:500',
             'sitio' => 'required|exists:sitios,sitio_name',
             'ownership_status' => 'required|string',
-            'home_link' => 'nullable|url|max:1000',
+            'home_link' => 'nullable|string|max:1000',
             'water_type' => 'required|string',
             'toilet_type' => 'required|string',
             'date_visited' => 'nullable|date',
@@ -165,12 +167,18 @@ class HouseholdController extends Controller
             'coordinates' => 'nullable|string|max:255',
             'members' => 'nullable|array',
             'members.*' => 'integer|exists:citizens,ctz_id',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
         ]);
 
         try {
             DB::beginTransaction();
 
             $sitioObj = Sitio::where('sitio_name', $validated['sitio'])->first();
+
+            $photoPath = null;
+            if ($request->hasFile('photo') && $request->file('photo')->isValid()) {
+                $photoPath = $request->file('photo')->store('household-photos', 'public');
+            }
 
             $household = HouseholdInfo::create([
                 // hh_uuid is auto-generated in the model's booted event
@@ -185,6 +193,7 @@ class HouseholdController extends Controller
                 'date_visited' => $validated['date_visited'] ?? null,
                 'interviewer_name' => $validated['interviewer_name'] ?? null,
                 'reviewer_name' => $validated['reviewer_name'] ?? null,
+                'home_photo' => $photoPath,
                 'date_encoded' => now(),
                 'encoded_by' => Auth::id() ?? 1,
             ]);
@@ -244,6 +253,8 @@ class HouseholdController extends Controller
             'coordinates' => 'nullable|string|max:255',
             'members' => 'nullable|array',
             'members.*' => 'integer|exists:citizens,ctz_id',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
+            'remove_photo' => 'nullable',
         ]);
 
         try {
@@ -252,7 +263,7 @@ class HouseholdController extends Controller
             $household = HouseholdInfo::where('hh_id', $id)->firstOrFail();
             $sitioObj = Sitio::where('sitio_name', $validated['sitio'])->first();
 
-            $household->update([
+            $updateData = [
                 'house_number' => $validated['house_number'] ?? null,
                 'address' => $validated['home_address'],
                 'sitio_id' => $sitioObj->sitio_id,
@@ -266,7 +277,21 @@ class HouseholdController extends Controller
                 'reviewer_name' => $validated['reviewer_name'] ?? null,
                 'date_updated' => now(),
                 'updated_by' => Auth::id() ?? 1,
-            ]);
+            ];
+
+            if ($request->boolean('remove_photo')) {
+                if ($household->home_photo) {
+                    Storage::disk('public')->delete($household->home_photo);
+                }
+                $updateData['home_photo'] = null;
+            } elseif ($request->hasFile('photo') && $request->file('photo')->isValid()) {
+                if ($household->home_photo) {
+                    Storage::disk('public')->delete($household->home_photo);
+                }
+                $updateData['home_photo'] = $request->file('photo')->store('household-photos', 'public');
+            }
+
+            $household->update($updateData);
 
             // Handle members
             $currentMembers = $household->citizen_informations()

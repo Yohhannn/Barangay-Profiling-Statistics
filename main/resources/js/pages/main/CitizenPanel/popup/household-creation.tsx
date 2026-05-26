@@ -3,9 +3,10 @@ import {
     FileText, Link as LinkIcon, Camera, Upload, Image as ImageIcon,
     Crosshair, Search, Users, Trash2, Plus
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm, router } from '@inertiajs/react';
 import Swal from 'sweetalert2';
+import PhotoCapture from './photo-capture';
 
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -31,9 +32,13 @@ interface HouseholdCreationProps {
 export default function HouseholdCreation({ isOpen, onClose }: HouseholdCreationProps) {
     const [showMap, setShowMap] = useState(false);
     const [sitioOptions, setSitioOptions] = useState<string[]>([]);
+    const [isPhotoCaptureOpen, setIsPhotoCaptureOpen] = useState(false);
+    const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+    const photoInputRef = useRef<HTMLInputElement>(null);
+    const photoFileRef = useRef<File | null>(null);
 
     // Inertia form handler
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const { data, setData, post, processing, errors, reset, transform } = useForm({
         house_number: '',
         home_address: '',
         sitio: '',
@@ -98,6 +103,8 @@ export default function HouseholdCreation({ isOpen, onClose }: HouseholdCreation
             setSearchQuery('');
             setSearchResults([]);
             setSelectedMembers([]);
+            setPhotoPreview(null);
+            photoFileRef.current = null;
             reset();
         }
     }, [isOpen]);
@@ -106,17 +113,18 @@ export default function HouseholdCreation({ isOpen, onClose }: HouseholdCreation
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
-        const payload = {
-            ...data,
-            members: selectedMembers.map(m => m.id)
-        };
-        
-        router.post('/households/store', payload, {
+
+        transform((d) => ({
+            ...d,
+            members: selectedMembers.map(m => m.id),
+            ...(photoFileRef.current ? { photo: photoFileRef.current } : {}),
+        }));
+
+        post('/households/store', {
+            forceFormData: true,
             preserveScroll: true,
             onSuccess: (page) => {
-                // The backend flashes 'success' with the Household Code
-                const flash = page.props.flash as Record<string, any>;
+                const flash = (page.props as any).flash as Record<string, any>;
                 const msg = flash?.success || 'Household Record Created!';
                 Swal.fire({
                     icon: 'success',
@@ -124,14 +132,7 @@ export default function HouseholdCreation({ isOpen, onClose }: HouseholdCreation
                     text: msg as string,
                 });
                 reset();
-                
-                // Force an Inertia reload on the current page to retrieve fresh database records
-                router.reload({
-                    only: ['households', 'citizens'], // Reloading relevant props
-                    onFinish: () => {
-                        onClose();
-                    }
-                });
+                onClose();
             },
             onError: (err) => {
                 console.error(err);
@@ -156,6 +157,16 @@ export default function HouseholdCreation({ isOpen, onClose }: HouseholdCreation
                 <LocationPicker
                     onClose={() => setShowMap(false)}
                     onSelect={handleLocationSelect}
+                />
+            )}
+            {isPhotoCaptureOpen && (
+                <PhotoCapture
+                    isOpen={true}
+                    onClose={() => setIsPhotoCaptureOpen(false)}
+                    onCapture={(file, previewUrl) => {
+                        photoFileRef.current = file;
+                        setPhotoPreview(previewUrl);
+                    }}
                 />
             )}
 
@@ -239,22 +250,51 @@ export default function HouseholdCreation({ isOpen, onClose }: HouseholdCreation
                             <div className="space-y-6">
                                 <SectionLabel icon={<ImageIcon className="size-4" />} label="Household Image & Location" color="text-orange-600" />
 
-                                <div className="bg-white dark:bg-[#1e293b] p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm space-y-4 opacity-60">
-                                    <p className="text-xs text-orange-600 dark:text-orange-400 font-bold mb-2">Note: Photo & GPS Upload currently disabled.</p>
-                                    
+                                <div className="bg-white dark:bg-[#1e293b] p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-sm space-y-4">
                                     {/* Photo Upload Area */}
-                                    <div className="w-full aspect-video bg-neutral-100 dark:bg-black/20 rounded-lg border-2 border-dashed border-neutral-300 dark:border-neutral-600 flex flex-col items-center justify-center text-neutral-400 gap-2 cursor-not-allowed group">
-                                        <Camera className="size-8 transition-colors" />
-                                        <span className="text-[10px] font-medium uppercase tracking-wide">Add Household Photo</span>
+                                    <div
+                                        onClick={() => photoInputRef.current?.click()}
+                                        className="w-full aspect-video bg-neutral-100 dark:bg-black/20 rounded-lg border-2 border-dashed border-neutral-300 dark:border-neutral-600 flex flex-col items-center justify-center text-neutral-400 gap-2 hover:border-orange-400 transition-colors cursor-pointer group overflow-hidden relative"
+                                    >
+                                        {photoPreview ? (
+                                            <>
+                                                <img src={photoPreview} alt="Household Preview" className="absolute inset-0 w-full h-full object-cover" />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <Camera className="size-6 text-white" />
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Camera className="size-8 group-hover:text-orange-500 transition-colors" />
+                                                <span className="text-[10px] font-medium uppercase tracking-wide">Add Household Photo</span>
+                                            </>
+                                        )}
                                     </div>
+                                    <input
+                                        ref={photoInputRef}
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/gif,image/jpg"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+                                            photoFileRef.current = file;
+                                            setPhotoPreview(URL.createObjectURL(file));
+                                        }}
+                                    />
                                     <div className="grid grid-cols-2 gap-3">
-                                        <button disabled className="cursor-not-allowed flex items-center justify-center gap-2 bg-orange-600/50 text-white p-2.5 rounded-lg shadow-sm text-xs font-bold uppercase tracking-wide">
+                                        <button type="button" onClick={() => setIsPhotoCaptureOpen(true)} className="flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white p-2.5 rounded-lg shadow-sm text-xs font-bold uppercase tracking-wide transition-all">
                                             <Camera className="size-3.5" /> Take Photo
                                         </button>
-                                        <button disabled className="cursor-not-allowed flex items-center justify-center gap-2 bg-white/50 border border-neutral-300 dark:bg-neutral-800/50 dark:border-neutral-600 dark:text-white p-2.5 rounded-lg shadow-sm text-xs font-bold uppercase tracking-wide">
+                                        <button type="button" onClick={() => photoInputRef.current?.click()} className="flex items-center justify-center gap-2 bg-white border border-neutral-300 dark:bg-neutral-800 dark:border-neutral-600 dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-700 p-2.5 rounded-lg shadow-sm text-xs font-bold uppercase tracking-wide transition-all">
                                             <Upload className="size-3.5" /> Upload
                                         </button>
                                     </div>
+                                    {photoPreview && (
+                                        <button type="button" onClick={() => { setPhotoPreview(null); photoFileRef.current = null; if (photoInputRef.current) photoInputRef.current.value = ''; }} className="w-full flex items-center justify-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 dark:border-red-800 dark:bg-red-900/20 p-2 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-all">
+                                            <X className="size-3" /> Remove Photo
+                                        </button>
+                                    )}
 
                                     {/* Location Fields */}
                                     <div className="pt-4 border-t border-dashed border-neutral-200 dark:border-neutral-700 space-y-4">

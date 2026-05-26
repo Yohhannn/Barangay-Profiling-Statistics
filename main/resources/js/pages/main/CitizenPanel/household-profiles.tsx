@@ -5,7 +5,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft, Search, Plus, Trash2,
     Home, MapPin, Droplets, Link as LinkIcon,
-    UserCheck, FileText, Edit3, X, SlidersHorizontal, Hash, Check, RotateCcw, Info
+    UserCheck, FileText, Edit3, X, SlidersHorizontal, Hash, Check, RotateCcw, Info, Lock
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import HouseholdCreation from './popup/household-creation';
@@ -53,6 +53,8 @@ interface Household {
     encodedBy: string;
     dateUpdated: string;
     updatedBy: string;
+
+    photoUrl?: string | null;
 }
 
 // --- Mock Data --- (Removed)
@@ -77,7 +79,7 @@ export default function HouseholdProfiles({ households = [], filters = {}, syste
             setSelectedHousehold(households[0]);
         }
     }, [households]);
-    
+
     // --- Filters State ---
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
     const [showFilters, setShowFilters] = useState(false);
@@ -85,7 +87,7 @@ export default function HouseholdProfiles({ households = [], filters = {}, syste
     const [filterWater, setFilterWater] = useState(filters.water_type || 'All');
     const [filterToilet, setFilterToilet] = useState(filters.toilet_type || 'All');
     const [filterOwnership, setFilterOwnership] = useState(filters.ownership_status || 'All');
-    
+
     // --- Advanced Audit Filters State ---
     const [dateEncodedStart, setDateEncodedStart] = useState(filters.dateEncodedRange?.split(' to ')[0] || '');
     const [dateEncodedEnd, setDateEncodedEnd] = useState(filters.dateEncodedRange?.split(' to ')[1] || '');
@@ -96,7 +98,23 @@ export default function HouseholdProfiles({ households = [], filters = {}, syste
 
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
+    const [photoLightboxOpen, setPhotoLightboxOpen] = useState(false);
+    const [photoRevealed, setPhotoRevealed] = useState(false);
     const [citizenQuickViewOpen, setCitizenQuickViewOpen] = useState(false);
+
+    // Reset photo state when switching households
+    useEffect(() => {
+        setPhotoLightboxOpen(false);
+        setPhotoRevealed(false);
+    }, [selectedHousehold?.id]);
+
+    // Close lightbox on Escape key
+    useEffect(() => {
+        if (!photoLightboxOpen) return;
+        const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setPhotoLightboxOpen(false); };
+        document.addEventListener('keydown', handleKey);
+        return () => document.removeEventListener('keydown', handleKey);
+    }, [photoLightboxOpen]);
     const [selectedCitizenId, setSelectedCitizenId] = useState<number | null>(null);
 
     const handleOpenCitizenQuickView = (e: React.MouseEvent, id: number) => {
@@ -229,6 +247,31 @@ export default function HouseholdProfiles({ households = [], filters = {}, syste
                                 <button onClick={handleArchiveSubmit} disabled={archiveLoading} className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold uppercase tracking-wider disabled:opacity-50 transition-all">{archiveLoading ? 'Archiving...' : 'Archive'}</button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Photo Lightbox */}
+            {photoLightboxOpen && selectedHousehold?.photoUrl && (
+                <div
+                    className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-150"
+                    onClick={() => setPhotoLightboxOpen(false)}
+                >
+                    <div className="relative flex flex-col items-center" onClick={e => e.stopPropagation()}>
+                        <button
+                            onClick={() => setPhotoLightboxOpen(false)}
+                            className="absolute -top-10 right-0 p-1.5 text-white/60 hover:text-white transition-colors"
+                        >
+                            <X className="size-6" />
+                        </button>
+                        <img
+                            src={selectedHousehold.photoUrl}
+                            alt={selectedHousehold.householdId}
+                            className="max-w-[90vw] max-h-[85vh] object-contain rounded-xl shadow-2xl border border-white/10"
+                        />
+                        <p className="text-white/40 text-[10px] font-mono mt-3 uppercase tracking-widest">
+                            {selectedHousehold.householdId} · {selectedHousehold.sitio}
+                        </p>
                     </div>
                 </div>
             )}
@@ -520,8 +563,40 @@ export default function HouseholdProfiles({ households = [], filters = {}, syste
                                 <div className="p-6 border-b border-sidebar-border/60 bg-neutral-50/50 dark:bg-neutral-900/30">
                                     <div className="flex justify-between items-start">
                                         <div className="flex items-start gap-4">
-                                            <div className="p-3 bg-orange-100 dark:bg-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-800">
-                                                <Home className="size-8 text-orange-600 dark:text-orange-400" />
+                                            {/* Household Photo */}
+                                            <div
+                                                onClick={() => { if (photoRevealed && selectedHousehold.photoUrl) setPhotoLightboxOpen(true); }}
+                                                onDoubleClick={() => { if (!photoRevealed && selectedHousehold.photoUrl) setPhotoRevealed(true); }}
+                                                className={`w-20 h-20 shrink-0 bg-orange-100 dark:bg-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-800 overflow-hidden flex items-center justify-center shadow-sm relative group select-none ${selectedHousehold.photoUrl ? (photoRevealed ? 'cursor-zoom-in' : 'cursor-pointer') : ''}`}
+                                            >
+                                                {selectedHousehold.photoUrl ? (
+                                                    <>
+                                                        <img
+                                                            src={selectedHousehold.photoUrl}
+                                                            alt={selectedHousehold.householdId}
+                                                            className={`w-full h-full object-cover transition-all duration-500 ${photoRevealed ? '' : 'blur scale-110'}`}
+                                                        />
+                                                        {!photoRevealed && (
+                                                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 pointer-events-none">
+                                                                <div className="bg-black/40 rounded-full p-1.5">
+                                                                    <Lock className="size-3.5 text-white/80" />
+                                                                </div>
+                                                                <span className="text-white text-[8px] font-bold uppercase tracking-wide text-center leading-snug px-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    Double-click<br/>to reveal
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        {photoRevealed && (
+                                                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                                                <span className="text-white text-[9px] font-bold uppercase tracking-wide text-center leading-snug px-1">
+                                                                    Click to<br/>maximize
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <Home className="size-8 text-orange-600 dark:text-orange-400" />
+                                                )}
                                             </div>
                                             <div>
                                                 <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
