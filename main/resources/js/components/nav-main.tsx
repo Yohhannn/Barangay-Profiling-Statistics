@@ -14,7 +14,7 @@ export function NavMain({ items = [], label }: { items: NavItem[]; label: string
     const page = usePage();
     return (
         <SidebarGroup className="px-2 py-0">
-            <SidebarGroupLabel className="px-2 py-2 mt-4 text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/40">
+            <SidebarGroupLabel className="px-2 py-2 mt-4 text-xs font-bold uppercase tracking-widest text-sidebar-foreground/40">
                 {label}
             </SidebarGroupLabel>
             <SidebarMenu>
