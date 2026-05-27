@@ -8,6 +8,7 @@ use App\Models\SystemPermission;
 use App\Models\RolePermission;
 use App\Models\Permission;
 use App\Models\Role;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -110,6 +111,15 @@ class SystemAccountController extends Controller
             ]);
         }
 
+        $fullName = trim($account->sys_fname . ' ' . $account->sys_lname);
+        NotificationService::notifyByPermission(
+            'View Account',
+            'account',
+            'New Staff Account Created',
+            "{$fullName} has been added as a staff member.",
+            '/admin-panel/manage-accounts'
+        );
+
         return redirect()->back()->with('success', "Account created. ID: {$account->sys_account_id}");
     }
 
@@ -180,6 +190,15 @@ class SystemAccountController extends Controller
             'delete_reason' => $request->delete_reason,
         ]);
 
+        $fullName = trim($account->sys_fname . ' ' . $account->sys_lname);
+        NotificationService::notifyByPermission(
+            'View Account',
+            'account',
+            'Staff Account Deactivated',
+            "{$fullName}'s account has been deactivated.",
+            '/admin-panel/manage-accounts'
+        );
+
         return redirect()->back()->with('success', 'Account deactivated successfully.');
     }
 
@@ -202,6 +221,15 @@ class SystemAccountController extends Controller
                 'created_at'  => now(),
             ]);
         }
+
+        $fullName = trim($account->sys_fname . ' ' . $account->sys_lname);
+        NotificationService::notifyByPermission(
+            'View Account',
+            'account',
+            'Staff Account Reactivated',
+            "{$fullName}'s account has been reactivated.",
+            '/admin-panel/manage-accounts'
+        );
 
         return redirect()->back()->with('success', 'Account restored successfully.');
     }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SettlementLog;
 use App\Models\Complainant;
 use App\Models\CitizenHistory;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
@@ -171,6 +172,16 @@ class SettlementController extends Controller
             }
 
             DB::commit();
+
+            $firstComp = $validated['complainants'][0] ?? null;
+            $compName = $firstComp ? trim($firstComp['first_name'] . ' ' . $firstComp['last_name']) : 'Unknown';
+            NotificationService::notifyByPermission(
+                'View Settlement History',
+                'settlement',
+                'New Settlement Case Filed',
+                "A settlement case has been filed by {$compName}.",
+                '/citizen-records/settlement-history'
+            );
 
             return redirect()->back()->with('success', 'Settlement history added successfully.');
         } catch (\Exception $e) {

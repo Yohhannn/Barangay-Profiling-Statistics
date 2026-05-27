@@ -22,11 +22,22 @@ export interface NavItem {
     isActive?: boolean;
 }
 
+export interface Notification {
+    id: number;
+    type: string;
+    title: string;
+    message: string;
+    link: string | null;
+    read: boolean;
+    createdAt: string;
+}
+
 export interface SharedData {
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
     sidebarOpen: boolean;
+    unreadNotifications: number;
     [key: string]: unknown;
 }
 

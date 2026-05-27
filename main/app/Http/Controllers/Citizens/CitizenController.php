@@ -26,6 +26,7 @@ use App\Models\EducationStatus;
 use App\Models\Philhealth;
 use App\Models\Sitio;
 use App\Models\HouseholdInfo;
+use App\Services\NotificationService;
 
 
 class CitizenController extends Controller
@@ -513,10 +514,17 @@ class CitizenController extends Controller
 
             DB::commit();
 
+            $fullName = trim($validated['first_name'] . ' ' . ($validated['middle_name'] ?? '') . ' ' . $validated['last_name']);
+            NotificationService::notifyByPermission(
+                'View Citizen Profile',
+                'citizen',
+                'New Citizen Registered',
+                "{$fullName} has been added to the citizen registry.",
+                '/citizen-panel/citizen-profile'
+            );
+
             return redirect()->back()->with('success', 'Citizen Record Created Successfully!');
 
-
-            /// MINOR LOGS
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->withErrors(['error' => 'Error creating record: ' . $e->getMessage()]);

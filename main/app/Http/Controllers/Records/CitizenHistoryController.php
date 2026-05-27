@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Records;
 
 use App\Http\Controllers\Controller;
 use App\Models\CitizenHistory;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 
 class CitizenHistoryController extends Controller
@@ -107,6 +108,17 @@ class CitizenHistoryController extends Controller
             }
 
             \Illuminate\Support\Facades\DB::commit();
+
+            $firstCitizen = $validated['citizens'][0];
+            $citizenName = trim($firstCitizen['first_name'] . ' ' . ($firstCitizen['middle_name'] ?? '') . ' ' . $firstCitizen['last_name']);
+            $firstTitle = $validated['histories'][0]['title'] ?? 'Record';
+            NotificationService::notifyByPermission(
+                'View Citizen History',
+                'citizen',
+                'New Citizen History Record',
+                "\"{$firstTitle}\" has been recorded for {$citizenName}.",
+                '/citizen-records/citizen-history'
+            );
 
             return redirect()->back()->with('success', 'Citizen history added successfully.');
         } catch (\Exception $e) {

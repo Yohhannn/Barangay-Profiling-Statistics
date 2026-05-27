@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Records;
 
 use App\Http\Controllers\Controller;
 use App\Models\MedicalHistory;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 
 class MedicalHistoryController extends Controller
@@ -97,6 +98,17 @@ class MedicalHistoryController extends Controller
             }
 
             \Illuminate\Support\Facades\DB::commit();
+
+            $firstCitizen = $validated['citizens'][0];
+            $patientName = trim($firstCitizen['first_name'] . ' ' . ($firstCitizen['middle_name'] ?? '') . ' ' . $firstCitizen['last_name']);
+            $firstType = $validated['histories'][0]['type'] ?? 'Unknown';
+            NotificationService::notifyByPermission(
+                'View Medical History',
+                'medical',
+                'New Medical Record Added',
+                "{$patientName} has a new {$firstType} medical record.",
+                '/citizen-records/medical-history'
+            );
 
             return redirect()->back()->with('success', 'Medical history added successfully.');
         } catch (\Exception $e) {

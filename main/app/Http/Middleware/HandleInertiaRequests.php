@@ -66,6 +66,16 @@ class HandleInertiaRequests extends Middleware
 
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
 
+        $unreadCount = 0;
+        if ($user) {
+            $unreadKey = 'notif_unread_' . $user->sys_id;
+            $unreadCount = Cache::remember($unreadKey, 30, function () use ($user) {
+                return \App\Models\SystemNotification::where('sys_id', $user->sys_id)
+                    ->whereNull('read_at')
+                    ->count();
+            });
+        }
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -81,7 +91,8 @@ class HandleInertiaRequests extends Middleware
                     'permissions'    => $request->user()->permissionNames(),
                 ] : null,
             ],
-            'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'sidebarOpen'          => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'unreadNotifications'  => $unreadCount,
         ];
     }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\TransactionLog;
 use App\Models\Citizen;
 use App\Models\ExportLog;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -99,6 +100,15 @@ class TransactionLogController extends Controller
                 'updated_by' => Auth::id() ?? 1,
             ]);
 
+            $fullName = trim($validated['first_name'] . ' ' . ($validated['middle_name'] ?? '') . ' ' . $validated['last_name']);
+            NotificationService::notifyByPermission(
+                'View Services',
+                'transaction',
+                'New Transaction Request',
+                "{$fullName} submitted a {$validated['type']} request.",
+                '/transactions/services-profile'
+            );
+
             return redirect()->back()->with('success', 'Transaction registered successfully!');
         } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => 'Error registering transaction: ' . $e->getMessage()]);
@@ -134,6 +144,15 @@ class TransactionLogController extends Controller
                 'date_updated' => now(),
                 'updated_by' => Auth::id() ?? 1,
             ]);
+
+            $fullName = trim($validated['first_name'] . ' ' . ($validated['middle_name'] ?? '') . ' ' . $validated['last_name']);
+            NotificationService::notifyByPermission(
+                'View Services',
+                'transaction',
+                'Transaction Status Updated',
+                "{$fullName}'s {$validated['type']} has been updated to {$validated['status']}.",
+                '/transactions/services-profile'
+            );
 
             return redirect()->back()->with('success', 'Transaction updated successfully!');
         } catch (\Exception $e) {

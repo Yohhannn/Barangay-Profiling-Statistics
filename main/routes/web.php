@@ -240,6 +240,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/api/infrastructure-detail/{id}', [\App\Http\Controllers\Institutions_Transactions\InfrastructureController::class, 'getQuickViewData']);
     Route::get('/api/transaction-detail/{id}', [TransactionLogController::class, 'getQuickViewData']);
     Route::get('/api/citizen/{id}', [CitizenController::class, 'getQuickViewData']);
+
+    // --- NOTIFICATIONS ---
+    Route::prefix('api/notifications')->group(function () {
+        Route::get('/', [\App\Http\Controllers\NotificationController::class, 'index']);
+        Route::get('/unread-count', [\App\Http\Controllers\NotificationController::class, 'unreadCount']);
+        Route::post('/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markRead']);
+        Route::post('/mark-all-read', [\App\Http\Controllers\NotificationController::class, 'markAllRead']);
+        Route::delete('/{id}', [\App\Http\Controllers\NotificationController::class, 'destroy']);
+        Route::delete('/clear-read', [\App\Http\Controllers\NotificationController::class, 'clearRead']);
+    });
 });
 
 require __DIR__.'/settings.php';

@@ -12,6 +12,7 @@ use App\Models\MedicalHistory;
 use App\Models\SettlementLog;
 use App\Models\CitizenHistory;
 use App\Models\SystemAccount;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -190,6 +191,13 @@ class ArchiveController extends Controller
     {
         $citizen = Citizen::findOrFail($id);
         $citizen->update(['is_deleted' => false, 'deleted_reason' => null]);
+        NotificationService::notifyByPermission(
+            'View Citizen Profile',
+            'archive',
+            'Citizen Record Restored',
+            "Citizen #{$citizen->ctz_uuid} has been restored from archives.",
+            '/citizen-panel/citizen-profile'
+        );
         return redirect()->back()->with('success', 'Citizen restored successfully.');
     }
 
@@ -248,6 +256,13 @@ class ArchiveController extends Controller
     {
         $hh = HouseholdInfo::findOrFail($id);
         $hh->update(['is_deleted' => false, 'delete_reason' => null]);
+        NotificationService::notifyByPermission(
+            'View Household Profile',
+            'archive',
+            'Household Record Restored',
+            "Household #{$hh->hh_uuid} has been restored from archives.",
+            '/citizen-panel/household-profile'
+        );
         return redirect()->back()->with('success', 'Household restored successfully.');
     }
 
@@ -306,6 +321,13 @@ class ArchiveController extends Controller
     {
         $b = businessInfo::findOrFail($id);
         $b->update(['is_deleted' => false, 'delete_reason' => null]);
+        NotificationService::notifyByPermission(
+            'View Business',
+            'archive',
+            'Business Record Restored',
+            "Business record has been restored from archives.",
+            '/institutions/business-profile'
+        );
         return redirect()->back()->with('success', 'Business restored successfully.');
     }
 
@@ -356,6 +378,13 @@ class ArchiveController extends Controller
     {
         $inf = Infrastructure::findOrFail($id);
         $inf->update(['is_deleted' => false, 'delete_reason' => null]);
+        NotificationService::notifyByPermission(
+            'View Infrastructure',
+            'archive',
+            'Infrastructure Record Restored',
+            "Infrastructure record has been restored from archives.",
+            '/institutions/infrastructures-profile'
+        );
         return redirect()->back()->with('success', 'Infrastructure restored successfully.');
     }
 
@@ -412,6 +441,13 @@ class ArchiveController extends Controller
     {
         $t = TransactionLog::findOrFail($id);
         $t->update(['is_deleted' => false, 'delete_reason' => null]);
+        NotificationService::notifyByPermission(
+            'View Services',
+            'archive',
+            'Transaction Record Restored',
+            "Transaction #{$t->tl_uuid} has been restored from archives.",
+            '/transactions/services-profile'
+        );
         return redirect()->back()->with('success', 'Transaction restored successfully.');
     }
 
@@ -461,6 +497,13 @@ class ArchiveController extends Controller
     {
         $h = MedicalHistory::findOrFail($id);
         $h->update(['is_deleted' => false, 'delete_reason' => null]);
+        NotificationService::notifyByPermission(
+            'View Medical History',
+            'medical',
+            'Medical Record Restored',
+            "Medical record #{$h->mh_uuid} has been restored from archives.",
+            '/citizen-records/medical-history'
+        );
         return redirect()->back()->with('success', 'Medical history record restored successfully.');
     }
 
@@ -533,6 +576,13 @@ class ArchiveController extends Controller
     {
         $s = SettlementLog::findOrFail($id);
         $s->update(['is_deleted' => false, 'delete_reason' => null]);
+        NotificationService::notifyByPermission(
+            'View Settlement History',
+            'settlement',
+            'Settlement Record Restored',
+            "Settlement record has been restored from archives.",
+            '/citizen-records/settlement-history'
+        );
         return redirect()->back()->with('success', 'Settlement record restored successfully.');
     }
 
@@ -586,6 +636,13 @@ class ArchiveController extends Controller
     {
         $h = CitizenHistory::findOrFail($id);
         $h->update(['is_deleted' => false, 'delete_reason' => null]);
+        NotificationService::notifyByPermission(
+            'View Citizen History',
+            'citizen',
+            'Citizen History Record Restored',
+            "Citizen history record has been restored from archives.",
+            '/citizen-records/citizen-history'
+        );
         return redirect()->back()->with('success', 'Citizen history record restored successfully.');
     }
 }

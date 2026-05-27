@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Citizens;
 use App\Http\Controllers\Controller;
 use App\Models\HouseholdInfo;
 use App\Models\Sitio;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -212,6 +213,14 @@ class HouseholdController extends Controller
             }
 
             DB::commit();
+
+            NotificationService::notifyByPermission(
+                'View Household Profile',
+                'household',
+                'New Household Registered',
+                "A new household at {$validated['home_address']} has been registered.",
+                '/citizen-panel/household-profile'
+            );
 
             return redirect()->back()->with('success', 'Household Created Successfully! Code: ' . $household->hh_uuid);
 
