@@ -202,6 +202,22 @@ class MedicalHistoryController extends Controller
 
             \Illuminate\Support\Facades\DB::commit();
 
+            // Alert on mass medical record archiving: 5+ within 10 minutes
+            $actorId = \Illuminate\Support\Facades\Auth::id() ?? 1;
+            $actor   = \App\Models\SystemAccount::find($actorId);
+            NotificationService::trackAndAlert(
+                "mass_archive_medical_{$actorId}",
+                5, 600,
+                function () use ($actor) {
+                    $name = $actor ? "{$actor->sys_fname} {$actor->sys_lname}" : 'A staff member';
+                    NotificationService::sendAlert(
+                        'Suspicious Mass Medical Record Archiving',
+                        "{$name} archived 5 or more medical records within 10 minutes.",
+                        '/citizen-records/medical-history'
+                    );
+                }
+            );
+
             return redirect()->back()->with('success', 'Medical record successfully moved to archive.');
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\DB::rollBack();

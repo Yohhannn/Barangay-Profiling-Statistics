@@ -777,6 +777,22 @@ class CitizenController extends Controller
             $citizen->updated_by = Auth::id() ?? 1;
             $citizen->save();
 
+            // Alert on mass archiving: 5+ citizen archives within 10 minutes
+            $actorId = Auth::id() ?? 1;
+            $actor   = \App\Models\SystemAccount::find($actorId);
+            NotificationService::trackAndAlert(
+                "mass_archive_citizen_{$actorId}",
+                5, 600,
+                function () use ($actor) {
+                    $name = $actor ? "{$actor->sys_fname} {$actor->sys_lname}" : 'A staff member';
+                    NotificationService::sendAlert(
+                        'Suspicious Mass Archiving Detected',
+                        "{$name} archived 5 or more citizen records within 10 minutes.",
+                        '/citizen-panel/citizen-profile'
+                    );
+                }
+            );
+
             return redirect()->back()->with('success', 'Citizen moved to archives successfully!');
         } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => 'Error archiving citizen: ' . $e->getMessage()]);

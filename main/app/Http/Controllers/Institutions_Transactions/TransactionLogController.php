@@ -175,6 +175,22 @@ class TransactionLogController extends Controller
                 'updated_by' => Auth::id() ?? 1,
             ]);
 
+            // Alert on mass transaction archiving: 5+ within 10 minutes
+            $actorId = Auth::id() ?? 1;
+            $actor   = \App\Models\SystemAccount::find($actorId);
+            NotificationService::trackAndAlert(
+                "mass_archive_trx_{$actorId}",
+                5, 600,
+                function () use ($actor) {
+                    $name = $actor ? "{$actor->sys_fname} {$actor->sys_lname}" : 'A staff member';
+                    NotificationService::sendAlert(
+                        'Suspicious Mass Transaction Archiving',
+                        "{$name} archived 5 or more transaction records within 10 minutes.",
+                        '/transactions/services-profile'
+                    );
+                }
+            );
+
             return redirect()->back()->with('success', 'Transaction moved to archives.');
         } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => 'Failed to archive transaction: ' . $e->getMessage()]);
@@ -231,11 +247,29 @@ class TransactionLogController extends Controller
     {
         try {
             $trx = TransactionLog::findOrFail($id);
+            $actorId = Auth::id() ?? 1;
             ExportLog::create([
                 'tl_id' => $trx->tl_id,
-                'exported_by' => Auth::id() ?? 1,
+                'exported_by' => $actorId,
                 'date_time_exported' => now(),
             ]);
+
+            // Alert on mass exports: 3+ exports within 5 minutes by the same user
+            $actor = \App\Models\SystemAccount::find($actorId);
+            NotificationService::trackAndAlert(
+                "mass_export_{$actorId}",
+                3,   // threshold
+                300, // 5-minute window
+                function () use ($actor) {
+                    $name = $actor ? "{$actor->sys_fname} {$actor->sys_lname}" : "User #{$actor?->sys_account_id}";
+                    NotificationService::sendAlert(
+                        'Suspicious Mass Export Detected',
+                        "{$name} has exported 3 or more transaction records within 5 minutes. This may indicate unauthorized data extraction.",
+                        '/transactions/services-profile'
+                    );
+                }
+            );
+
             return response()->json(['success' => true, 'message' => 'Export logged successfully.']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => 'Failed to log export: ' . $e->getMessage()], 500);

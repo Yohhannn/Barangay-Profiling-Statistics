@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Services\NotificationService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -44,9 +46,10 @@ class FortifyServiceProvider extends ServiceProvider
         // Custom authentication: use sys_account_id as login identifier,
         // check sys_password, and block deactivated accounts.
         Fortify::authenticateUsing(function (\Illuminate\Http\Request $request) {
-            $user = \App\Models\SystemAccount::where(
-                'sys_account_id', $request->input(Fortify::username())
-            )->first();
+            $accountId = $request->input(Fortify::username());
+            $ip        = $request->ip();
+
+            $user = \App\Models\SystemAccount::where('sys_account_id', $accountId)->first();
 
             if (!$user) {
                 return null;
@@ -60,7 +63,39 @@ class FortifyServiceProvider extends ServiceProvider
             // Validate password against sys_password column
             if (\Illuminate\Support\Facades\Hash::check($request->password, $user->sys_password)) {
                 $user->update(['last_login' => now()]);
+
+                // Reset failed-login counter on success
+                Cache::forget("failed_login_{$user->sys_id}");
+
+                // ── ALERT: After-hours login (before 06:00 or after 22:00) ──
+                $hour = now()->hour;
+                if ($hour < 6 || $hour >= 22) {
+                    $timeStr = now()->format('h:i A');
+                    NotificationService::sendAlert(
+                        'After-Hours Login Detected',
+                        "Account #{$user->sys_account_id} ({$user->sys_fname} {$user->sys_lname}) logged in at {$timeStr} from IP {$ip}.",
+                        '/activity-logs',
+                        $user->sys_id
+                    );
+                }
+
                 return $user;
+            }
+
+            // ── ALERT: Repeated failed login attempts ──
+            if ($user) {
+                NotificationService::trackAndAlert(
+                    "failed_login_{$user->sys_id}",
+                    3,    // alert after 3rd failure
+                    900,  // 15-minute window
+                    function () use ($user, $ip) {
+                        NotificationService::sendAlert(
+                            'Multiple Failed Login Attempts',
+                            "Account #{$user->sys_account_id} ({$user->sys_fname} {$user->sys_lname}) has had 3 consecutive failed login attempts from IP {$ip}.",
+                            '/activity-logs'
+                        );
+                    }
+                );
             }
 
             return null;

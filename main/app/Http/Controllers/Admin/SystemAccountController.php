@@ -161,6 +161,11 @@ class SystemAccountController extends Controller
 
         $account->update($updateData);
 
+        // Capture old permission IDs before wiping
+        $oldPermIds = SystemPermission::where('sys_id', $account->sys_id)
+            ->pluck('perm_id')->toArray();
+        $newPermIds = array_map('intval', $request->permissions);
+
         // Sync permissions: wipe old, insert new
         SystemPermission::where('sys_id', $account->sys_id)->delete();
         foreach ($request->permissions as $permId) {
@@ -168,6 +173,27 @@ class SystemAccountController extends Controller
                 'sys_id'  => $account->sys_id,
                 'perm_id' => $permId,
             ]);
+        }
+
+        // Alert if permissions were escalated (newly added high-privilege perms)
+        $addedPermIds = array_diff($newPermIds, $oldPermIds);
+        if (!empty($addedPermIds)) {
+            $addedNames = Permission::whereIn('perm_id', $addedPermIds)->pluck('name')->toArray();
+            $highPriv   = array_filter($addedNames, fn($n) =>
+                stripos($n, 'Delete') !== false ||
+                stripos($n, 'Account') !== false ||
+                stripos($n, 'Archive') !== false ||
+                stripos($n, 'Export') !== false
+            );
+            if (!empty($highPriv)) {
+                $fullName  = trim($account->sys_fname . ' ' . $account->sys_lname);
+                $permList  = implode(', ', array_values($highPriv));
+                NotificationService::sendAlert(
+                    'Permission Escalation Detected',
+                    "High-privilege permissions were granted to {$fullName} (Account #{$account->sys_account_id}): {$permList}.",
+                    '/admin-panel/manage-accounts'
+                );
+            }
         }
 
         return redirect()->back()->with('success', 'Account updated successfully.');
