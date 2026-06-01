@@ -8,12 +8,13 @@ import {
     HeartPulse, Baby, Phone, Hash, Home,
     Filter, X, SlidersHorizontal, Edit3, ScanFace, Check, RotateCcw,
     Activity, FileText, Info, Store, Building, Lock,
-    BarChart2, TrendingUp,
+    BarChart2, TrendingUp, Layers,
 } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import CitizenCreation from './popup/citizen-creation';
 import CitizenEdit from './popup/citizen-edit';
 import FaceSearch from './popup/face-search';
+import CombinedRegistration from './popup/combined-registration';
 
 import MedicalQuickView from '../CitizenRecords/popup/medical-quick-view';
 import SettlementQuickView from '../CitizenRecords/popup/settlement-quick-view';
@@ -170,6 +171,7 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isFaceSearchOpen, setIsFaceSearchOpen] = useState(false);
+    const [isCombinedOpen, setIsCombinedOpen] = useState(false);
     const [pendingSelectId, setPendingSelectId] = useState<number | null>(null);
     const [photoLightboxOpen, setPhotoLightboxOpen] = useState(false);
     const [photoRevealed, setPhotoRevealed] = useState(false);
@@ -448,6 +450,7 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                     }
                 }}
             />
+            <CombinedRegistration isOpen={isCombinedOpen} onClose={() => setIsCombinedOpen(false)} />
             <CitizenCreation isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
             <CitizenEdit 
                 isOpen={isEditOpen} 
@@ -566,6 +569,13 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                                         title="Search by Face"
                                     >
                                         <ScanFace className="size-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => setIsCombinedOpen(true)}
+                                        className="flex items-center justify-center gap-1 bg-violet-600 hover:bg-violet-700 text-white p-1 rounded-md transition-colors shadow-sm"
+                                        title="Combined Registration (Citizen + Household)"
+                                    >
+                                        <Layers className="size-4" />
                                     </button>
                                 </div>
                                 <span className="text-[10px] text-neutral-400 font-mono">
