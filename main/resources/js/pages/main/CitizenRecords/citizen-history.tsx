@@ -9,7 +9,7 @@ import {
     Handshake, Check, RotateCcw,
     BarChart2, TrendingUp,
 } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import CitizenHistoryCreation from './popup/citizen-history-creation'; // IMPORTED
 import CitizenHistoryEdit from './popup/citizen-history-edit'; // IMPORTED
 import CitizenQuickView from './popup/citizen-quick-view';
@@ -49,11 +49,38 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Citizen History', href: '/citizen-records/citizen-history' },
 ];
 
-export default function CitizenHistory({ histories = [], filters = {} as any }: { histories?: HistoryRecord[], filters?: any }) {
+export default function CitizenHistory({ histories = [], filters = {} as any, systemAccounts = [] }: { histories?: HistoryRecord[], filters?: any, systemAccounts?: {id: number, name: string}[] }) {
     const [selectedHistory, setSelectedHistory] = useState<HistoryRecord | null>(histories.length > 0 ? histories[0] : null);
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
     const [showFilters, setShowFilters] = useState(false);
     const [filterType, setFilterType] = useState('All');
+
+    const [dateEncodedStart, setDateEncodedStart] = useState('');
+    const [dateEncodedEnd, setDateEncodedEnd] = useState('');
+    const [dateUpdatedStart, setDateUpdatedStart] = useState('');
+    const [dateUpdatedEnd, setDateUpdatedEnd] = useState('');
+    const [encodedByFilter, setEncodedByFilter] = useState<string[]>([]);
+    const [updatedByFilter, setUpdatedByFilter] = useState<string[]>([]);
+    const [showEncodedByDropdown, setShowEncodedByDropdown] = useState(false);
+    const [showUpdatedByDropdown, setShowUpdatedByDropdown] = useState(false);
+    const [encodedBySearch, setEncodedBySearch] = useState('');
+    const [updatedBySearch, setUpdatedBySearch] = useState('');
+
+    const encodedByRef = useRef<HTMLDivElement>(null);
+    const updatedByRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (encodedByRef.current && !encodedByRef.current.contains(event.target as Node)) {
+                setShowEncodedByDropdown(false);
+            }
+            if (updatedByRef.current && !updatedByRef.current.contains(event.target as Node)) {
+                setShowUpdatedByDropdown(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     // --- NEW: Modal State ---
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -95,9 +122,23 @@ export default function CitizenHistory({ histories = [], filters = {} as any }: 
 
             const matchesType = filterType === 'All' || record.type === filterType;
 
-            return matchesSearch && matchesType;
+            const encodedDate = record.dateEncoded ? new Date(record.dateEncoded) : null;
+            const matchesEncodedStart = !dateEncodedStart || (encodedDate && encodedDate >= new Date(dateEncodedStart));
+            const matchesEncodedEnd   = !dateEncodedEnd   || (encodedDate && encodedDate <= new Date(dateEncodedEnd));
+
+            const updatedDate = record.dateUpdated ? new Date(record.dateUpdated) : null;
+            const matchesUpdatedStart = !dateUpdatedStart || (updatedDate && updatedDate >= new Date(dateUpdatedStart));
+            const matchesUpdatedEnd   = !dateUpdatedEnd   || (updatedDate && updatedDate <= new Date(dateUpdatedEnd));
+
+            const matchesEncodedBy = encodedByFilter.length === 0 || encodedByFilter.includes(record.encodedBy);
+            const matchesUpdatedBy = updatedByFilter.length === 0 || updatedByFilter.includes(record.updatedBy);
+
+            return matchesSearch && matchesType
+                && matchesEncodedStart && matchesEncodedEnd
+                && matchesUpdatedStart && matchesUpdatedEnd
+                && matchesEncodedBy && matchesUpdatedBy;
         });
-    }, [searchQuery, filterType, histories]);
+    }, [searchQuery, filterType, histories, dateEncodedStart, dateEncodedEnd, dateUpdatedStart, dateUpdatedEnd, encodedByFilter, updatedByFilter]);
 
     // Grouping Logic
     const groupedHistory = useMemo(() => {
@@ -150,10 +191,24 @@ export default function CitizenHistory({ histories = [], filters = {} as any }: 
         });
     };
 
-    const activeFilterCount = filterType !== 'All' ? 1 : 0;
+    const activeFilterCount = useMemo(() => {
+        let count = 0;
+        if (filterType !== 'All') count++;
+        if (dateEncodedStart || dateEncodedEnd) count++;
+        if (dateUpdatedStart || dateUpdatedEnd) count++;
+        if (encodedByFilter.length > 0) count++;
+        if (updatedByFilter.length > 0) count++;
+        return count;
+    }, [filterType, dateEncodedStart, dateEncodedEnd, dateUpdatedStart, dateUpdatedEnd, encodedByFilter, updatedByFilter]);
 
     const resetFilters = () => {
         setFilterType('All');
+        setDateEncodedStart('');
+        setDateEncodedEnd('');
+        setDateUpdatedStart('');
+        setDateUpdatedEnd('');
+        setEncodedByFilter([]);
+        setUpdatedByFilter([]);
     };
 
     const [archiveTarget, setArchiveTarget] = useState<{ id: number; label: string } | null>(null);
@@ -571,6 +626,104 @@ export default function CitizenHistory({ histories = [], filters = {} as any }: 
                                             {filterType === opt && <Check className="size-3.5 text-purple-600 dark:text-purple-400" />}
                                         </button>
                                     ))}
+                                </div>
+                            </div>
+
+                            {/* Date Filters */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 shrink-0">Date Filters</span>
+                                    <div className="flex-1 h-px bg-sidebar-border/60" />
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="space-y-1.5">
+                                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">Date Encoded</label>
+                                        <div className="flex items-center gap-2">
+                                            <input type="date" className="flex-1 text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400 min-w-0 transition-colors" value={dateEncodedStart} onChange={e => setDateEncodedStart(e.target.value)} />
+                                            <span className="text-sm text-neutral-400 font-medium shrink-0">→</span>
+                                            <input type="date" className="flex-1 text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400 min-w-0 transition-colors" value={dateEncodedEnd} onChange={e => setDateEncodedEnd(e.target.value)} />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">Date Updated</label>
+                                        <div className="flex items-center gap-2">
+                                            <input type="date" className="flex-1 text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400 min-w-0 transition-colors" value={dateUpdatedStart} onChange={e => setDateUpdatedStart(e.target.value)} />
+                                            <span className="text-sm text-neutral-400 font-medium shrink-0">→</span>
+                                            <input type="date" className="flex-1 text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-400 min-w-0 transition-colors" value={dateUpdatedEnd} onChange={e => setDateUpdatedEnd(e.target.value)} />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Audit Trail */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 shrink-0">Audit Trail</span>
+                                    <div className="flex-1 h-px bg-sidebar-border/60" />
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="space-y-1.5" ref={encodedByRef}>
+                                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">Encoded By</label>
+                                        <div className="relative">
+                                            <button onClick={() => setShowEncodedByDropdown(!showEncodedByDropdown)} className="w-full text-left text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 flex justify-between items-center gap-2 hover:border-purple-400 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500/20">
+                                                <span className="truncate">{encodedByFilter.length === 0 ? 'All Users' : `${encodedByFilter.length} user${encodedByFilter.length > 1 ? 's' : ''} selected`}</span>
+                                                <Search className="size-4 text-neutral-400 shrink-0" />
+                                            </button>
+                                            {showEncodedByDropdown && (
+                                                <div className="absolute z-[60] top-full mt-1 left-0 right-0 bg-white dark:bg-neutral-800 border border-sidebar-border rounded-xl shadow-2xl py-1 max-h-56 flex flex-col">
+                                                    <div className="px-3 py-2 border-b border-sidebar-border/50">
+                                                        <input type="text" className="w-full text-sm p-2 bg-neutral-50 dark:bg-neutral-900 border border-sidebar-border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/20" placeholder="Search users..." value={encodedBySearch} onChange={e => setEncodedBySearch(e.target.value)} onClick={e => e.stopPropagation()} />
+                                                    </div>
+                                                    <div className="overflow-y-auto flex-1 p-1.5">
+                                                        <div className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer rounded-lg" onClick={() => setEncodedByFilter([])}>
+                                                            <div className={`size-4 rounded border shrink-0 flex items-center justify-center ${encodedByFilter.length === 0 ? 'bg-purple-600 border-purple-600' : 'border-neutral-300 dark:border-neutral-600'}`}>{encodedByFilter.length === 0 && <Check className="size-3 text-white" />}</div>
+                                                            <span className="font-medium">All Users</span>
+                                                        </div>
+                                                        {systemAccounts.filter(acc => acc.name.toLowerCase().includes(encodedBySearch.toLowerCase())).map(acc => {
+                                                            const isSelected = encodedByFilter.includes(acc.name);
+                                                            return (
+                                                                <div key={acc.id} className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer rounded-lg" onClick={() => setEncodedByFilter(isSelected ? encodedByFilter.filter(n => n !== acc.name) : [...encodedByFilter, acc.name])}>
+                                                                    <div className={`size-4 rounded border shrink-0 flex items-center justify-center ${isSelected ? 'bg-purple-600 border-purple-600' : 'border-neutral-300 dark:border-neutral-600'}`}>{isSelected && <Check className="size-3 text-white" />}</div>
+                                                                    <span className="truncate">{acc.name}</span>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1.5" ref={updatedByRef}>
+                                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">Updated By</label>
+                                        <div className="relative">
+                                            <button onClick={() => setShowUpdatedByDropdown(!showUpdatedByDropdown)} className="w-full text-left text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 flex justify-between items-center gap-2 hover:border-purple-400 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500/20">
+                                                <span className="truncate">{updatedByFilter.length === 0 ? 'All Users' : `${updatedByFilter.length} user${updatedByFilter.length > 1 ? 's' : ''} selected`}</span>
+                                                <Search className="size-4 text-neutral-400 shrink-0" />
+                                            </button>
+                                            {showUpdatedByDropdown && (
+                                                <div className="absolute z-[60] top-full mt-1 left-0 right-0 bg-white dark:bg-neutral-800 border border-sidebar-border rounded-xl shadow-2xl py-1 max-h-56 flex flex-col">
+                                                    <div className="px-3 py-2 border-b border-sidebar-border/50">
+                                                        <input type="text" className="w-full text-sm p-2 bg-neutral-50 dark:bg-neutral-900 border border-sidebar-border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/20" placeholder="Search users..." value={updatedBySearch} onChange={e => setUpdatedBySearch(e.target.value)} onClick={e => e.stopPropagation()} />
+                                                    </div>
+                                                    <div className="overflow-y-auto flex-1 p-1.5">
+                                                        <div className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer rounded-lg" onClick={() => setUpdatedByFilter([])}>
+                                                            <div className={`size-4 rounded border shrink-0 flex items-center justify-center ${updatedByFilter.length === 0 ? 'bg-purple-600 border-purple-600' : 'border-neutral-300 dark:border-neutral-600'}`}>{updatedByFilter.length === 0 && <Check className="size-3 text-white" />}</div>
+                                                            <span className="font-medium">All Users</span>
+                                                        </div>
+                                                        {systemAccounts.filter(acc => acc.name.toLowerCase().includes(updatedBySearch.toLowerCase())).map(acc => {
+                                                            const isSelected = updatedByFilter.includes(acc.name);
+                                                            return (
+                                                                <div key={acc.id} className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer rounded-lg" onClick={() => setUpdatedByFilter(isSelected ? updatedByFilter.filter(n => n !== acc.name) : [...updatedByFilter, acc.name])}>
+                                                                    <div className={`size-4 rounded border shrink-0 flex items-center justify-center ${isSelected ? 'bg-purple-600 border-purple-600' : 'border-neutral-300 dark:border-neutral-600'}`}>{isSelected && <Check className="size-3 text-white" />}</div>
+                                                                    <span className="truncate">{acc.name}</span>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

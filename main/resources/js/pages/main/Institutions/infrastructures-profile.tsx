@@ -5,9 +5,9 @@ import {
     ArrowLeft, Search, Plus, Trash2,
     Building, User, MapPin, FileText, Users, Info, BadgeCheck,
     Edit3, X, SlidersHorizontal, Construction,
-    BarChart2, TrendingUp,
+    BarChart2, TrendingUp, RotateCcw, Check,
 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import InfrastructureCreation from './popup/infrastructures-creation';
 import InfrastructureEdit from './popup/infrastructures-edit';
 import CitizenQuickView from '../CitizenRecords/popup/citizen-quick-view';
@@ -47,12 +47,53 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function InfrastructureProfile() {
-    const { infrastructures, sitios } = usePage<{ infrastructures: Infrastructure[]; sitios: Sitio[] }>().props;
+    const { infrastructures, sitios, systemAccounts = [] } = usePage<{ infrastructures: Infrastructure[]; sitios: Sitio[]; systemAccounts?: {id: number, name: string}[] }>().props;
 
     const [selectedInfra, setSelectedInfra] = useState<Infrastructure | null>(infrastructures[0] ?? null);
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilters, setShowFilters] = useState(false);
     const [filterType, setFilterType] = useState('All');
+
+    const [dateEncodedStart, setDateEncodedStart] = useState('');
+    const [dateEncodedEnd, setDateEncodedEnd] = useState('');
+    const [dateUpdatedStart, setDateUpdatedStart] = useState('');
+    const [dateUpdatedEnd, setDateUpdatedEnd] = useState('');
+    const [encodedByFilter, setEncodedByFilter] = useState<string[]>([]);
+    const [updatedByFilter, setUpdatedByFilter] = useState<string[]>([]);
+    const [showEncodedByDropdown, setShowEncodedByDropdown] = useState(false);
+    const [showUpdatedByDropdown, setShowUpdatedByDropdown] = useState(false);
+    const [encodedBySearch, setEncodedBySearch] = useState('');
+    const [updatedBySearch, setUpdatedBySearch] = useState('');
+
+    const encodedByRef = useRef<HTMLDivElement>(null);
+    const updatedByRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (encodedByRef.current && !encodedByRef.current.contains(event.target as Node)) setShowEncodedByDropdown(false);
+            if (updatedByRef.current && !updatedByRef.current.contains(event.target as Node)) setShowUpdatedByDropdown(false);
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const activeFilterCount = useMemo(() => {
+        let count = 0;
+        if (filterType !== 'All') count++;
+        if (dateEncodedStart || dateEncodedEnd) count++;
+        if (dateUpdatedStart || dateUpdatedEnd) count++;
+        if (encodedByFilter.length > 0) count++;
+        if (updatedByFilter.length > 0) count++;
+        return count;
+    }, [filterType, dateEncodedStart, dateEncodedEnd, dateUpdatedStart, dateUpdatedEnd, encodedByFilter, updatedByFilter]);
+
+    const resetFilters = () => {
+        setFilterType('All');
+        setDateEncodedStart(''); setDateEncodedEnd('');
+        setDateUpdatedStart(''); setDateUpdatedEnd('');
+        setEncodedByFilter([]); setUpdatedByFilter([]);
+    };
+
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     
@@ -77,9 +118,24 @@ export default function InfrastructureProfile() {
                 item.owner.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 item.infraId.toLowerCase().includes(searchQuery.toLowerCase());
             const matchesType = filterType === 'All' || item.type === filterType;
-            return matchesSearch && matchesType;
+
+            const encodedDate = item.dateEncoded ? new Date(item.dateEncoded) : null;
+            const matchesEncodedStart = !dateEncodedStart || (encodedDate && encodedDate >= new Date(dateEncodedStart));
+            const matchesEncodedEnd   = !dateEncodedEnd   || (encodedDate && encodedDate <= new Date(dateEncodedEnd));
+
+            const updatedDate = item.dateUpdated ? new Date(item.dateUpdated) : null;
+            const matchesUpdatedStart = !dateUpdatedStart || (updatedDate && updatedDate >= new Date(dateUpdatedStart));
+            const matchesUpdatedEnd   = !dateUpdatedEnd   || (updatedDate && updatedDate <= new Date(dateUpdatedEnd));
+
+            const matchesEncodedBy = encodedByFilter.length === 0 || encodedByFilter.includes(item.encodedBy);
+            const matchesUpdatedBy = updatedByFilter.length === 0 || updatedByFilter.includes(item.updatedBy);
+
+            return matchesSearch && matchesType
+                && matchesEncodedStart && matchesEncodedEnd
+                && matchesUpdatedStart && matchesUpdatedEnd
+                && matchesEncodedBy && matchesUpdatedBy;
         });
-    }, [infrastructures, searchQuery, filterType]);
+    }, [infrastructures, searchQuery, filterType, dateEncodedStart, dateEncodedEnd, dateUpdatedStart, dateUpdatedEnd, encodedByFilter, updatedByFilter]);
 
     const [archiveTarget, setArchiveTarget] = useState<{ id: number; label: string } | null>(null);
     const [archiveReason, setArchiveReason] = useState('');
@@ -205,24 +261,15 @@ export default function InfrastructureProfile() {
                                 </div>
                                 <button
                                     onClick={() => setShowFilters(!showFilters)}
-                                    className={`p-2 rounded-lg border border-sidebar-border transition-colors ${showFilters ? 'bg-sky-50 border-sky-200 text-sky-600' : 'bg-white hover:bg-neutral-50 text-neutral-500'}`}
+                                    className={`relative p-2 rounded-lg border transition-colors ${showFilters || activeFilterCount > 0 ? 'bg-sky-50 border-sky-200 text-sky-600 dark:bg-sky-900/20 dark:border-sky-800' : 'bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 border-sidebar-border text-neutral-500'}`}
+                                    title={activeFilterCount > 0 ? `${activeFilterCount} filter${activeFilterCount > 1 ? 's' : ''} active` : 'Filters'}
                                 >
                                     {showFilters ? <X className="size-4" /> : <SlidersHorizontal className="size-4" />}
+                                    {!showFilters && activeFilterCount > 0 && (
+                                        <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-sky-600 text-[9px] font-bold text-white leading-none">{activeFilterCount}</span>
+                                    )}
                                 </button>
                             </div>
-
-                            {showFilters && (
-                                <div className="pt-2 border-t border-sidebar-border/50 animate-in slide-in-from-top-2">
-                                    <select
-                                        className="w-full text-xs p-2 rounded-lg border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-sky-500/20"
-                                        value={filterType}
-                                        onChange={(e) => setFilterType(e.target.value)}
-                                    >
-                                        <option value="All">All Types</option>
-                                        {infraTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                                    </select>
-                                </div>
-                            )}
                         </div>
 
                         <div className="flex-1 overflow-auto">
@@ -387,6 +434,144 @@ export default function InfrastructureProfile() {
                     </div>
                 </div>
             </div>
+            {/* Filter Drawer */}
+            {showFilters && (
+                <>
+                    <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px]" onClick={() => setShowFilters(false)} />
+                    <div className="fixed right-0 top-0 bottom-0 z-50 flex flex-col w-[380px] bg-white dark:bg-neutral-900 border-l border-sidebar-border shadow-2xl animate-in slide-in-from-right duration-200">
+                        <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-sidebar-border bg-sky-50 dark:bg-sky-900/10">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-sky-100 dark:bg-sky-900/40"><SlidersHorizontal className="size-4 text-sky-600 dark:text-sky-400" /></div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">Filter Infrastructures</h3>
+                                    <p className="text-xs text-neutral-500 mt-0.5">{activeFilterCount > 0 ? `${activeFilterCount} filter${activeFilterCount > 1 ? 's' : ''} active` : 'No filters applied'}</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowFilters(false)} className="p-2 rounded-lg hover:bg-sky-100 dark:hover:bg-sky-900/30 text-neutral-500 transition-colors"><X className="size-5" /></button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-7">
+                            {/* Type */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 shrink-0">Infrastructure</span>
+                                    <div className="flex-1 h-px bg-sidebar-border/60" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">Type</label>
+                                    <select className="w-full text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 focus:ring-2 focus:ring-sky-500/20 focus:border-sky-400 focus:outline-none transition-colors" value={filterType} onChange={e => setFilterType(e.target.value)}>
+                                        <option value="All">All Types</option>
+                                        {infraTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Date Filters */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 shrink-0">Date Filters</span>
+                                    <div className="flex-1 h-px bg-sidebar-border/60" />
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="space-y-1.5">
+                                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">Date Encoded</label>
+                                        <div className="flex items-center gap-2">
+                                            <input type="date" className="flex-1 text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-400 min-w-0 transition-colors" value={dateEncodedStart} onChange={e => setDateEncodedStart(e.target.value)} />
+                                            <span className="text-sm text-neutral-400 font-medium shrink-0">→</span>
+                                            <input type="date" className="flex-1 text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-400 min-w-0 transition-colors" value={dateEncodedEnd} onChange={e => setDateEncodedEnd(e.target.value)} />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">Date Updated</label>
+                                        <div className="flex items-center gap-2">
+                                            <input type="date" className="flex-1 text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-400 min-w-0 transition-colors" value={dateUpdatedStart} onChange={e => setDateUpdatedStart(e.target.value)} />
+                                            <span className="text-sm text-neutral-400 font-medium shrink-0">→</span>
+                                            <input type="date" className="flex-1 text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-400 min-w-0 transition-colors" value={dateUpdatedEnd} onChange={e => setDateUpdatedEnd(e.target.value)} />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Audit Trail */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 shrink-0">Audit Trail</span>
+                                    <div className="flex-1 h-px bg-sidebar-border/60" />
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="space-y-1.5" ref={encodedByRef}>
+                                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">Encoded By</label>
+                                        <div className="relative">
+                                            <button onClick={() => setShowEncodedByDropdown(!showEncodedByDropdown)} className="w-full text-left text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 flex justify-between items-center gap-2 hover:border-sky-400 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500/20">
+                                                <span className="truncate">{encodedByFilter.length === 0 ? 'All Users' : `${encodedByFilter.length} user${encodedByFilter.length > 1 ? 's' : ''} selected`}</span>
+                                                <Search className="size-4 text-neutral-400 shrink-0" />
+                                            </button>
+                                            {showEncodedByDropdown && (
+                                                <div className="absolute z-[60] top-full mt-1 left-0 right-0 bg-white dark:bg-neutral-800 border border-sidebar-border rounded-xl shadow-2xl py-1 max-h-56 flex flex-col">
+                                                    <div className="px-3 py-2 border-b border-sidebar-border/50"><input type="text" className="w-full text-sm p-2 bg-neutral-50 dark:bg-neutral-900 border border-sidebar-border rounded-lg focus:outline-none" placeholder="Search users..." value={encodedBySearch} onChange={e => setEncodedBySearch(e.target.value)} onClick={e => e.stopPropagation()} /></div>
+                                                    <div className="overflow-y-auto flex-1 p-1.5">
+                                                        <div className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer rounded-lg" onClick={() => setEncodedByFilter([])}>
+                                                            <div className={`size-4 rounded border shrink-0 flex items-center justify-center ${encodedByFilter.length === 0 ? 'bg-sky-600 border-sky-600' : 'border-neutral-300 dark:border-neutral-600'}`}>{encodedByFilter.length === 0 && <Check className="size-3 text-white" />}</div>
+                                                            <span className="font-medium">All Users</span>
+                                                        </div>
+                                                        {systemAccounts.filter(acc => acc.name.toLowerCase().includes(encodedBySearch.toLowerCase())).map(acc => {
+                                                            const isSel = encodedByFilter.includes(acc.name);
+                                                            return (
+                                                                <div key={acc.id} className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer rounded-lg" onClick={() => setEncodedByFilter(isSel ? encodedByFilter.filter(n => n !== acc.name) : [...encodedByFilter, acc.name])}>
+                                                                    <div className={`size-4 rounded border shrink-0 flex items-center justify-center ${isSel ? 'bg-sky-600 border-sky-600' : 'border-neutral-300 dark:border-neutral-600'}`}>{isSel && <Check className="size-3 text-white" />}</div>
+                                                                    <span className="truncate">{acc.name}</span>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1.5" ref={updatedByRef}>
+                                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">Updated By</label>
+                                        <div className="relative">
+                                            <button onClick={() => setShowUpdatedByDropdown(!showUpdatedByDropdown)} className="w-full text-left text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 flex justify-between items-center gap-2 hover:border-sky-400 transition-colors focus:outline-none focus:ring-2 focus:ring-sky-500/20">
+                                                <span className="truncate">{updatedByFilter.length === 0 ? 'All Users' : `${updatedByFilter.length} user${updatedByFilter.length > 1 ? 's' : ''} selected`}</span>
+                                                <Search className="size-4 text-neutral-400 shrink-0" />
+                                            </button>
+                                            {showUpdatedByDropdown && (
+                                                <div className="absolute z-[60] top-full mt-1 left-0 right-0 bg-white dark:bg-neutral-800 border border-sidebar-border rounded-xl shadow-2xl py-1 max-h-56 flex flex-col">
+                                                    <div className="px-3 py-2 border-b border-sidebar-border/50"><input type="text" className="w-full text-sm p-2 bg-neutral-50 dark:bg-neutral-900 border border-sidebar-border rounded-lg focus:outline-none" placeholder="Search users..." value={updatedBySearch} onChange={e => setUpdatedBySearch(e.target.value)} onClick={e => e.stopPropagation()} /></div>
+                                                    <div className="overflow-y-auto flex-1 p-1.5">
+                                                        <div className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer rounded-lg" onClick={() => setUpdatedByFilter([])}>
+                                                            <div className={`size-4 rounded border shrink-0 flex items-center justify-center ${updatedByFilter.length === 0 ? 'bg-sky-600 border-sky-600' : 'border-neutral-300 dark:border-neutral-600'}`}>{updatedByFilter.length === 0 && <Check className="size-3 text-white" />}</div>
+                                                            <span className="font-medium">All Users</span>
+                                                        </div>
+                                                        {systemAccounts.filter(acc => acc.name.toLowerCase().includes(updatedBySearch.toLowerCase())).map(acc => {
+                                                            const isSel = updatedByFilter.includes(acc.name);
+                                                            return (
+                                                                <div key={acc.id} className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer rounded-lg" onClick={() => setUpdatedByFilter(isSel ? updatedByFilter.filter(n => n !== acc.name) : [...updatedByFilter, acc.name])}>
+                                                                    <div className={`size-4 rounded border shrink-0 flex items-center justify-center ${isSel ? 'bg-sky-600 border-sky-600' : 'border-neutral-300 dark:border-neutral-600'}`}>{isSel && <Check className="size-3 text-white" />}</div>
+                                                                    <span className="truncate">{acc.name}</span>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="shrink-0 flex items-center gap-3 px-6 py-4 border-t border-sidebar-border bg-neutral-50 dark:bg-neutral-800/60">
+                            <button onClick={resetFilters} className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-neutral-200 dark:border-neutral-700 text-sm font-semibold text-neutral-600 dark:text-neutral-400 hover:bg-red-50 hover:border-red-200 hover:text-red-600 dark:hover:bg-red-900/20 transition-colors">
+                                <RotateCcw className="size-4" /> Reset All
+                            </button>
+                            <button onClick={() => setShowFilters(false)} className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold transition-colors shadow-sm">
+                                <Check className="size-4" /> Done
+                            </button>
+                        </div>
+                    </div>
+                </>
+            )}
         </AppLayout>
     );
 }

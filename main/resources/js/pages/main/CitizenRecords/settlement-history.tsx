@@ -6,10 +6,10 @@ import {
     Scale, User, Calendar, FileText,
     Edit3, X, SlidersHorizontal, Activity, ShieldAlert, Handshake,
     Filter, ChevronDown, CheckCircle, Info, UserCheck, AlertCircle, AlertTriangle,
-    Landmark, LayoutGrid, List, Users, Clock, FileClock,
+    Landmark, LayoutGrid, List, Users, Clock, FileClock, RotateCcw,
     BarChart2, TrendingUp,
 } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import SettlementHistoryCreation from './popup/settlement-history-creation';
 import SettlementHistoryEdit from './popup/settlement-history-edit'; 
 import CitizenQuickView from './popup/citizen-quick-view';
@@ -68,11 +68,42 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Settlement History', href: '/citizen-records/settlement-history' },
 ];
 
-export default function SettlementHistory({ histories = [], filters = {} as any }: { histories?: SettlementRecord[], filters?: any }) {
+export default function SettlementHistory({ histories = [], filters = {} as any, systemAccounts = [] }: { histories?: SettlementRecord[], filters?: any, systemAccounts?: {id: number, name: string}[] }) {
     const [selectedRecord, setSelectedRecord] = useState<SettlementRecord | null>(histories.length > 0 ? histories[0] : null);
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
     const [showFilters, setShowFilters] = useState(false);
-    
+    const [filterMediator, setFilterMediator] = useState('');
+    const [filterDateStart, setFilterDateStart] = useState('');
+    const [filterDateEnd, setFilterDateEnd] = useState('');
+
+    const [dateEncodedStart, setDateEncodedStart] = useState('');
+    const [dateEncodedEnd, setDateEncodedEnd] = useState('');
+    const [dateUpdatedStart, setDateUpdatedStart] = useState('');
+    const [dateUpdatedEnd, setDateUpdatedEnd] = useState('');
+    const [encodedByFilter, setEncodedByFilter] = useState<string[]>([]);
+    const [updatedByFilter, setUpdatedByFilter] = useState<string[]>([]);
+    const [showEncodedByDropdown, setShowEncodedByDropdown] = useState(false);
+    const [showUpdatedByDropdown, setShowUpdatedByDropdown] = useState(false);
+    const [encodedBySearch, setEncodedBySearch] = useState('');
+    const [updatedBySearch, setUpdatedBySearch] = useState('');
+
+    const encodedByRef = useRef<HTMLDivElement>(null);
+    const updatedByRef = useRef<HTMLDivElement>(null);
+
+    // Close dropdowns on outside click
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (encodedByRef.current && !encodedByRef.current.contains(event.target as Node)) {
+                setShowEncodedByDropdown(false);
+            }
+            if (updatedByRef.current && !updatedByRef.current.contains(event.target as Node)) {
+                setShowUpdatedByDropdown(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     // Quick View State
     const [quickViewOpen, setQuickViewOpen] = useState(false);
     const [quickViewCitizenId, setQuickViewCitizenId] = useState<number | null>(null);
@@ -95,9 +126,6 @@ export default function SettlementHistory({ histories = [], filters = {} as any 
         setHistoryQuickViewOpen(true);
     };
     
-    // We can filter by subject or complainant by text, but we don't have strictly categorized fixed string types like medical yet.
-    // For now we'll just implement simple string search over names.
-
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -123,17 +151,67 @@ export default function SettlementHistory({ histories = [], filters = {} as any 
         }
     }, [filters.search]);
 
+    // Unique mediator list derived from all records
+    const mediatorOptions = useMemo(() => {
+        const set = new Set(histories.map(h => h.mediator?.trim()).filter(Boolean) as string[]);
+        return Array.from(set).sort();
+    }, [histories]);
+
+    const activeFilterCount = useMemo(() => {
+        let count = 0;
+        if (filterMediator) count++;
+        if (filterDateStart || filterDateEnd) count++;
+        if (dateEncodedStart || dateEncodedEnd) count++;
+        if (dateUpdatedStart || dateUpdatedEnd) count++;
+        if (encodedByFilter.length > 0) count++;
+        if (updatedByFilter.length > 0) count++;
+        return count;
+    }, [filterMediator, filterDateStart, filterDateEnd, dateEncodedStart, dateEncodedEnd, dateUpdatedStart, dateUpdatedEnd, encodedByFilter, updatedByFilter]);
+
+    const resetFilters = () => {
+        setFilterMediator('');
+        setFilterDateStart('');
+        setFilterDateEnd('');
+        setDateEncodedStart('');
+        setDateEncodedEnd('');
+        setDateUpdatedStart('');
+        setDateUpdatedEnd('');
+        setEncodedByFilter([]);
+        setUpdatedByFilter([]);
+    };
+
     // Filtering
     const filteredHistory = useMemo(() => {
         return histories.filter(record => {
             const query = searchQuery.toLowerCase();
-            const matchesUuid = (record.sett_uuid || '').toLowerCase().includes(query);
-            const matchesSubject = (record.subjectFirstName || '').toLowerCase().includes(query) || (record.subjectLastName || '').toLowerCase().includes(query);
+            const matchesUuid        = (record.sett_uuid || '').toLowerCase().includes(query);
+            const matchesSubject     = (record.subjectFirstName || '').toLowerCase().includes(query) || (record.subjectLastName || '').toLowerCase().includes(query);
             const matchesComplainant = (record.complainantFirstName || '').toLowerCase().includes(query) || (record.complainantLastName || '').toLowerCase().includes(query);
-            
-            return matchesUuid || matchesSubject || matchesComplainant;
+            const matchesSearch      = matchesUuid || matchesSubject || matchesComplainant;
+
+            const matchesMediator = !filterMediator || (record.mediator?.trim() === filterMediator);
+
+            const settlementDate = record.dateOfSettlement ? new Date(record.dateOfSettlement) : null;
+            const matchesDateStart = !filterDateStart || (settlementDate && settlementDate >= new Date(filterDateStart));
+            const matchesDateEnd   = !filterDateEnd   || (settlementDate && settlementDate <= new Date(filterDateEnd));
+
+            const encodedDate = record.dateEncoded ? new Date(record.dateEncoded) : null;
+            const matchesEncodedStart = !dateEncodedStart || (encodedDate && encodedDate >= new Date(dateEncodedStart));
+            const matchesEncodedEnd   = !dateEncodedEnd   || (encodedDate && encodedDate <= new Date(dateEncodedEnd));
+
+            const updatedDate = record.dateUpdated ? new Date(record.dateUpdated) : null;
+            const matchesUpdatedStart = !dateUpdatedStart || (updatedDate && updatedDate >= new Date(dateUpdatedStart));
+            const matchesUpdatedEnd   = !dateUpdatedEnd   || (updatedDate && updatedDate <= new Date(dateUpdatedEnd));
+
+            const matchesEncodedBy = encodedByFilter.length === 0 || encodedByFilter.includes(record.encodedBy);
+            const matchesUpdatedBy = updatedByFilter.length === 0 || updatedByFilter.includes(record.updatedBy);
+
+            return matchesSearch && matchesMediator && matchesDateStart && matchesDateEnd
+                && matchesEncodedStart && matchesEncodedEnd
+                && matchesUpdatedStart && matchesUpdatedEnd
+                && matchesEncodedBy && matchesUpdatedBy;
         });
-    }, [searchQuery, histories]);
+    }, [searchQuery, histories, filterMediator, filterDateStart, filterDateEnd, dateEncodedStart, dateEncodedEnd, dateUpdatedStart, dateUpdatedEnd, encodedByFilter, updatedByFilter]);
 
     // Flat sorting by SETT-UUID
     const sortedHistory = useMemo(() => {
@@ -259,6 +337,18 @@ export default function SettlementHistory({ histories = [], filters = {} as any 
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                     />
                                 </div>
+                                <button
+                                    onClick={() => setShowFilters(!showFilters)}
+                                    className={`relative p-2 rounded-lg border transition-colors ${showFilters || activeFilterCount > 0 ? 'bg-amber-50 border-amber-200 text-amber-600 dark:bg-amber-900/20 dark:border-amber-800' : 'bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 border-sidebar-border text-neutral-500'}`}
+                                    title={activeFilterCount > 0 ? `${activeFilterCount} filter${activeFilterCount > 1 ? 's' : ''} active` : 'Filters'}
+                                >
+                                    {showFilters ? <X className="size-4" /> : <SlidersHorizontal className="size-4" />}
+                                    {!showFilters && activeFilterCount > 0 && (
+                                        <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-white leading-none">
+                                            {activeFilterCount}
+                                        </span>
+                                    )}
+                                </button>
                             </div>
                         </div>
 
@@ -551,6 +641,251 @@ export default function SettlementHistory({ histories = [], filters = {} as any 
                 historyUuid={historyQuickViewUuid}
                 rawHistory={rawHistoryData}
             />
+
+            {/* Filter Drawer */}
+            {showFilters && (
+                <>
+                    <div
+                        className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px]"
+                        onClick={() => setShowFilters(false)}
+                    />
+                    <div className="fixed right-0 top-0 bottom-0 z-50 flex flex-col w-[380px] bg-white dark:bg-neutral-900 border-l border-sidebar-border shadow-2xl animate-in slide-in-from-right duration-200">
+
+                        {/* Drawer Header */}
+                        <div className="flex items-center justify-between p-5 border-b border-sidebar-border bg-amber-50 dark:bg-amber-900/10">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                                    <SlidersHorizontal className="size-4 text-amber-600 dark:text-amber-400" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-neutral-900 dark:text-neutral-100 text-sm">Filter Settlements</h3>
+                                    {activeFilterCount > 0 ? (
+                                        <p className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
+                                            {activeFilterCount} filter{activeFilterCount !== 1 ? 's' : ''} active
+                                        </p>
+                                    ) : (
+                                        <p className="text-[10px] text-neutral-500">No filters applied</p>
+                                    )}
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowFilters(false)}
+                                className="p-2 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/30 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
+                            >
+                                <X className="size-4" />
+                            </button>
+                        </div>
+
+                        {/* Drawer Body */}
+                        <div className="flex-1 overflow-y-auto p-5 space-y-7">
+
+                            {/* ---- Mediator ---- */}
+                            <div className="space-y-3">
+                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 flex items-center gap-2">
+                                    <Handshake className="size-3" /> Mediator / Lupon
+                                </h4>
+                                <div className="space-y-1.5">
+                                    {/* All option */}
+                                    <button
+                                        onClick={() => setFilterMediator('')}
+                                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm border transition-all ${
+                                            !filterMediator
+                                                ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 font-semibold'
+                                                : 'bg-white dark:bg-neutral-800 border-sidebar-border text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700'
+                                        }`}
+                                    >
+                                        <span>All Mediators</span>
+                                        {!filterMediator && <CheckCircle className="size-3.5 text-amber-600 dark:text-amber-400" />}
+                                    </button>
+                                    {mediatorOptions.map(m => (
+                                        <button
+                                            key={m}
+                                            onClick={() => setFilterMediator(m)}
+                                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm border transition-all ${
+                                                filterMediator === m
+                                                    ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 font-semibold'
+                                                    : 'bg-white dark:bg-neutral-800 border-sidebar-border text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700'
+                                            }`}
+                                        >
+                                            <span className="truncate text-left">{m}</span>
+                                            {filterMediator === m && <CheckCircle className="size-3.5 text-amber-600 dark:text-amber-400 shrink-0 ml-2" />}
+                                        </button>
+                                    ))}
+                                    {mediatorOptions.length === 0 && (
+                                        <p className="text-xs text-neutral-400 italic px-1">No mediators recorded yet.</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* ---- Date of Settlement ---- */}
+                            <div className="space-y-3">
+                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 flex items-center gap-2">
+                                    <Calendar className="size-3" /> Date of Settlement
+                                </h4>
+                                <div className="space-y-2">
+                                    <div className="space-y-1.5">
+                                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">From</label>
+                                        <input
+                                            type="date"
+                                            className="w-full text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400 transition-colors"
+                                            value={filterDateStart}
+                                            onChange={e => setFilterDateStart(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">To</label>
+                                        <input
+                                            type="date"
+                                            className="w-full text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400 transition-colors"
+                                            value={filterDateEnd}
+                                            onChange={e => setFilterDateEnd(e.target.value)}
+                                        />
+                                    </div>
+                                    {(filterDateStart || filterDateEnd) && (
+                                        <button
+                                            onClick={() => { setFilterDateStart(''); setFilterDateEnd(''); }}
+                                            className="text-[10px] text-amber-600 hover:text-amber-700 font-semibold underline"
+                                        >
+                                            Clear date range
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* ---- Date Filters ---- */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 shrink-0">Date Filters</span>
+                                    <div className="flex-1 h-px bg-sidebar-border/60" />
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="space-y-1.5">
+                                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">Date Encoded</label>
+                                        <div className="flex items-center gap-2">
+                                            <input type="date" className="flex-1 text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400 min-w-0 transition-colors" value={dateEncodedStart} onChange={e => setDateEncodedStart(e.target.value)} />
+                                            <span className="text-sm text-neutral-400 font-medium shrink-0">→</span>
+                                            <input type="date" className="flex-1 text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400 min-w-0 transition-colors" value={dateEncodedEnd} onChange={e => setDateEncodedEnd(e.target.value)} />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">Date Updated</label>
+                                        <div className="flex items-center gap-2">
+                                            <input type="date" className="flex-1 text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400 min-w-0 transition-colors" value={dateUpdatedStart} onChange={e => setDateUpdatedStart(e.target.value)} />
+                                            <span className="text-sm text-neutral-400 font-medium shrink-0">→</span>
+                                            <input type="date" className="flex-1 text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400 min-w-0 transition-colors" value={dateUpdatedEnd} onChange={e => setDateUpdatedEnd(e.target.value)} />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ---- Audit Trail ---- */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 shrink-0">Audit Trail</span>
+                                    <div className="flex-1 h-px bg-sidebar-border/60" />
+                                </div>
+                                <div className="space-y-4">
+                                    {/* Encoded By */}
+                                    <div className="space-y-1.5" ref={encodedByRef}>
+                                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">Encoded By</label>
+                                        <div className="relative">
+                                            <button
+                                                onClick={() => setShowEncodedByDropdown(!showEncodedByDropdown)}
+                                                className="w-full text-left text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 flex justify-between items-center gap-2 hover:border-amber-400 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                                            >
+                                                <span className="truncate">{encodedByFilter.length === 0 ? 'All Users' : `${encodedByFilter.length} user${encodedByFilter.length > 1 ? 's' : ''} selected`}</span>
+                                                <Search className="size-4 text-neutral-400 shrink-0" />
+                                            </button>
+                                            {showEncodedByDropdown && (
+                                                <div className="absolute z-[60] top-full mt-1 left-0 right-0 bg-white dark:bg-neutral-800 border border-sidebar-border rounded-xl shadow-2xl py-1 max-h-56 flex flex-col">
+                                                    <div className="px-3 py-2 border-b border-sidebar-border/50">
+                                                        <input type="text" className="w-full text-sm p-2 bg-neutral-50 dark:bg-neutral-900 border border-sidebar-border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20" placeholder="Search users..." value={encodedBySearch} onChange={e => setEncodedBySearch(e.target.value)} onClick={e => e.stopPropagation()} />
+                                                    </div>
+                                                    <div className="overflow-y-auto flex-1 p-1.5">
+                                                        <div className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer rounded-lg" onClick={() => setEncodedByFilter([])}>
+                                                            <div className={`size-4 rounded border shrink-0 flex items-center justify-center ${encodedByFilter.length === 0 ? 'bg-amber-500 border-amber-500' : 'border-neutral-300 dark:border-neutral-600'}`}>
+                                                                {encodedByFilter.length === 0 && <CheckCircle className="size-3 text-white" />}
+                                                            </div>
+                                                            <span className="font-medium">All Users</span>
+                                                        </div>
+                                                        {systemAccounts.filter(acc => acc.name.toLowerCase().includes(encodedBySearch.toLowerCase())).map(acc => {
+                                                            const isSelected = encodedByFilter.includes(acc.name);
+                                                            return (
+                                                                <div key={acc.id} className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer rounded-lg" onClick={() => setEncodedByFilter(isSelected ? encodedByFilter.filter(n => n !== acc.name) : [...encodedByFilter, acc.name])}>
+                                                                    <div className={`size-4 rounded border shrink-0 flex items-center justify-center ${isSelected ? 'bg-amber-500 border-amber-500' : 'border-neutral-300 dark:border-neutral-600'}`}>
+                                                                        {isSelected && <CheckCircle className="size-3 text-white" />}
+                                                                    </div>
+                                                                    <span className="truncate">{acc.name}</span>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    {/* Updated By */}
+                                    <div className="space-y-1.5" ref={updatedByRef}>
+                                        <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400">Updated By</label>
+                                        <div className="relative">
+                                            <button
+                                                onClick={() => setShowUpdatedByDropdown(!showUpdatedByDropdown)}
+                                                className="w-full text-left text-sm p-2.5 rounded-xl border border-sidebar-border bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 flex justify-between items-center gap-2 hover:border-amber-400 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                                            >
+                                                <span className="truncate">{updatedByFilter.length === 0 ? 'All Users' : `${updatedByFilter.length} user${updatedByFilter.length > 1 ? 's' : ''} selected`}</span>
+                                                <Search className="size-4 text-neutral-400 shrink-0" />
+                                            </button>
+                                            {showUpdatedByDropdown && (
+                                                <div className="absolute z-[60] top-full mt-1 left-0 right-0 bg-white dark:bg-neutral-800 border border-sidebar-border rounded-xl shadow-2xl py-1 max-h-56 flex flex-col">
+                                                    <div className="px-3 py-2 border-b border-sidebar-border/50">
+                                                        <input type="text" className="w-full text-sm p-2 bg-neutral-50 dark:bg-neutral-900 border border-sidebar-border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20" placeholder="Search users..." value={updatedBySearch} onChange={e => setUpdatedBySearch(e.target.value)} onClick={e => e.stopPropagation()} />
+                                                    </div>
+                                                    <div className="overflow-y-auto flex-1 p-1.5">
+                                                        <div className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer rounded-lg" onClick={() => setUpdatedByFilter([])}>
+                                                            <div className={`size-4 rounded border shrink-0 flex items-center justify-center ${updatedByFilter.length === 0 ? 'bg-amber-500 border-amber-500' : 'border-neutral-300 dark:border-neutral-600'}`}>
+                                                                {updatedByFilter.length === 0 && <CheckCircle className="size-3 text-white" />}
+                                                            </div>
+                                                            <span className="font-medium">All Users</span>
+                                                        </div>
+                                                        {systemAccounts.filter(acc => acc.name.toLowerCase().includes(updatedBySearch.toLowerCase())).map(acc => {
+                                                            const isSelected = updatedByFilter.includes(acc.name);
+                                                            return (
+                                                                <div key={acc.id} className="flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer rounded-lg" onClick={() => setUpdatedByFilter(isSelected ? updatedByFilter.filter(n => n !== acc.name) : [...updatedByFilter, acc.name])}>
+                                                                    <div className={`size-4 rounded border shrink-0 flex items-center justify-center ${isSelected ? 'bg-amber-500 border-amber-500' : 'border-neutral-300 dark:border-neutral-600'}`}>
+                                                                        {isSelected && <CheckCircle className="size-3 text-white" />}
+                                                                    </div>
+                                                                    <span className="truncate">{acc.name}</span>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        {/* Drawer Footer */}
+                        <div className="p-5 border-t border-sidebar-border bg-neutral-50 dark:bg-neutral-900/50 flex gap-3">
+                            <button
+                                onClick={resetFilters}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-neutral-300 dark:border-neutral-600 text-sm font-semibold text-neutral-600 dark:text-neutral-300 hover:bg-red-50 hover:border-red-200 hover:text-red-600 dark:hover:bg-red-900/10 dark:hover:border-red-800 dark:hover:text-red-400 transition-all"
+                            >
+                                <RotateCcw className="size-3.5" /> Reset All
+                            </button>
+                            <button
+                                onClick={() => setShowFilters(false)}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold transition-all shadow-sm hover:shadow-md"
+                            >
+                                <CheckCircle className="size-3.5" /> Done
+                            </button>
+                        </div>
+                    </div>
+                </>
+            )}
         </AppLayout>
     );
 }
