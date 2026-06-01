@@ -14,6 +14,7 @@ use App\Models\CitizenHistory;
 use App\Models\SystemAccount;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Carbon\Carbon;
@@ -26,6 +27,21 @@ class ArchiveController extends Controller
             ->get()
             ->map(fn($a) => ['id' => $a->sys_id, 'name' => trim($a->sys_fname . ' ' . $a->sys_lname)])
             ->values();
+    }
+
+    /** Sanitize a search string: cap length and escape LIKE special characters. */
+    private function safeLike(string $raw): string
+    {
+        $trimmed = substr(trim($raw), 0, 100);
+        return str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $trimmed);
+    }
+
+    /** Abort with 403 if the authenticated SystemAccount lacks the given permission. */
+    private function requirePermission(string $permission): void
+    {
+        /** @var \App\Models\SystemAccount $user */
+        $user = Auth::user();
+        abort_if(!$user->hasPermission($permission), 403);
     }
 
     public function index()
@@ -49,6 +65,8 @@ class ArchiveController extends Controller
     // ─────────────── CITIZENS ───────────────
     public function citizens(Request $request)
     {
+        $this->requirePermission('View Archive');
+
         $query = Citizen::with([
             'info.sitio',
             'info.householdInfo.citizen_informations.citizens',
@@ -70,11 +88,11 @@ class ArchiveController extends Controller
             ->where('is_deleted', true);
 
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->whereHas('info', function ($sq) use ($search) {
-                    $sq->whereRaw("LOWER(CONCAT(first_name,' ',last_name)) LIKE ?", ['%' . strtolower($search) . '%']);
-                })->orWhere('ctz_uuid', 'like', "%{$search}%");
+            $safe = $this->safeLike($request->search);
+            $query->where(function ($q) use ($safe) {
+                $q->whereHas('info', function ($sq) use ($safe) {
+                    $sq->whereRaw("LOWER(CONCAT(first_name,' ',last_name)) LIKE ?", ['%' . strtolower($safe) . '%']);
+                })->orWhere('ctz_uuid', 'like', "%{$safe}%");
             });
         }
 
@@ -189,6 +207,8 @@ class ArchiveController extends Controller
 
     public function restoreCitizen($id)
     {
+        $this->requirePermission('Restore Archive');
+
         $citizen = Citizen::findOrFail($id);
         $citizen->update(['is_deleted' => false, 'deleted_reason' => null]);
         NotificationService::notifyByPermission(
@@ -204,14 +224,16 @@ class ArchiveController extends Controller
     // ─────────────── HOUSEHOLD ───────────────
     public function household(Request $request)
     {
+        $this->requirePermission('View Archive');
+
         $query = HouseholdInfo::with(['sitio', 'encodedByAccount', 'updatedByAccount', 'citizen_informations.citizens'])
             ->where('is_deleted', true);
 
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('hh_uuid', 'like', "%{$search}%")
-                  ->orWhere('house_number', 'like', "%{$search}%");
+            $safe = $this->safeLike($request->search);
+            $query->where(function ($q) use ($safe) {
+                $q->where('hh_uuid', 'like', "%{$safe}%")
+                  ->orWhere('house_number', 'like', "%{$safe}%");
             });
         }
 
@@ -254,6 +276,8 @@ class ArchiveController extends Controller
 
     public function restoreHousehold($id)
     {
+        $this->requirePermission('Restore Archive');
+
         $hh = HouseholdInfo::findOrFail($id);
         $hh->update(['is_deleted' => false, 'delete_reason' => null]);
         NotificationService::notifyByPermission(
@@ -269,14 +293,16 @@ class ArchiveController extends Controller
     // ─────────────── BUSINESS ───────────────
     public function business(Request $request)
     {
+        $this->requirePermission('View Archive');
+
         $query = businessInfo::with(['sitio', 'owners.citizen.info', 'encodedByAccount', 'updatedByAccount'])
             ->where('is_deleted', true);
 
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('bs_uuid', 'like', "%{$search}%");
+            $safe = $this->safeLike($request->search);
+            $query->where(function ($q) use ($safe) {
+                $q->where('name', 'like', "%{$safe}%")
+                  ->orWhere('bs_uuid', 'like', "%{$safe}%");
             });
         }
 
@@ -319,6 +345,8 @@ class ArchiveController extends Controller
 
     public function restoreBusiness($id)
     {
+        $this->requirePermission('Restore Archive');
+
         $b = businessInfo::findOrFail($id);
         $b->update(['is_deleted' => false, 'delete_reason' => null]);
         NotificationService::notifyByPermission(
@@ -334,14 +362,16 @@ class ArchiveController extends Controller
     // ─────────────── INFRASTRUCTURES ───────────────
     public function infrastructures(Request $request)
     {
+        $this->requirePermission('View Archive');
+
         $query = Infrastructure::with(['sitio', 'citizen', 'encodedByAccount', 'updatedByAccount'])
             ->where('is_deleted', true);
 
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('inf_uuid', 'like', "%{$search}%");
+            $safe = $this->safeLike($request->search);
+            $query->where(function ($q) use ($safe) {
+                $q->where('name', 'like', "%{$safe}%")
+                  ->orWhere('inf_uuid', 'like', "%{$safe}%");
             });
         }
 
@@ -376,6 +406,8 @@ class ArchiveController extends Controller
 
     public function restoreInfrastructure($id)
     {
+        $this->requirePermission('Restore Archive');
+
         $inf = Infrastructure::findOrFail($id);
         $inf->update(['is_deleted' => false, 'delete_reason' => null]);
         NotificationService::notifyByPermission(
@@ -391,16 +423,18 @@ class ArchiveController extends Controller
     // ─────────────── SERVICES (Transactions) ───────────────
     public function services(Request $request)
     {
+        $this->requirePermission('View Archive');
+
         $query = TransactionLog::with(['citizen.info', 'encodedByAccount', 'updatedByAccount'])
             ->where('is_deleted', true);
 
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('tl_uuid', 'like', "%{$search}%")
-                  ->orWhere('type', 'like', "%{$search}%")
-                  ->orWhere('first_name', 'like', "%{$search}%")
-                  ->orWhere('last_name', 'like', "%{$search}%");
+            $safe = $this->safeLike($request->search);
+            $query->where(function ($q) use ($safe) {
+                $q->where('tl_uuid', 'like', "%{$safe}%")
+                  ->orWhere('type', 'like', "%{$safe}%")
+                  ->orWhere('first_name', 'like', "%{$safe}%")
+                  ->orWhere('last_name', 'like', "%{$safe}%");
             });
         }
 
@@ -439,6 +473,8 @@ class ArchiveController extends Controller
 
     public function restoreService($id)
     {
+        $this->requirePermission('Restore Archive');
+
         $t = TransactionLog::findOrFail($id);
         $t->update(['is_deleted' => false, 'delete_reason' => null]);
         NotificationService::notifyByPermission(
@@ -454,14 +490,16 @@ class ArchiveController extends Controller
     // ─────────────── MEDICAL HISTORY ───────────────
     public function medicalHistory(Request $request)
     {
+        $this->requirePermission('View Archive');
+
         $query = MedicalHistory::with(['citizen.info', 'encodedByAccount', 'updatedByAccount'])
             ->where('is_deleted', true);
 
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->whereRaw("LOWER(CONCAT(first_name,' ',last_name)) LIKE ?", ['%' . strtolower($search) . '%'])
-                  ->orWhere('mh_uuid', 'like', "%{$search}%");
+            $safe = $this->safeLike($request->search);
+            $query->where(function ($q) use ($safe) {
+                $q->whereRaw("LOWER(CONCAT(first_name,' ',last_name)) LIKE ?", ['%' . strtolower($safe) . '%'])
+                  ->orWhere('mh_uuid', 'like', "%{$safe}%");
             });
         }
 
@@ -495,6 +533,8 @@ class ArchiveController extends Controller
 
     public function restoreMedicalHistory($id)
     {
+        $this->requirePermission('Restore Archive');
+
         $h = MedicalHistory::findOrFail($id);
         $h->update(['is_deleted' => false, 'delete_reason' => null]);
         NotificationService::notifyByPermission(
@@ -510,14 +550,16 @@ class ArchiveController extends Controller
     // ─────────────── SETTLEMENT HISTORY ───────────────
     public function settlementHistory(Request $request)
     {
+        $this->requirePermission('View Archive');
+
         $query = SettlementLog::with(['complainants.citizen', 'citizenHistories.citizen', 'encodedByAccount', 'updatedByAccount'])
             ->where('is_deleted', true);
 
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('sett_uuid', 'like', "%{$search}%")
-                  ->orWhereHas('complainants', fn($sub) => $sub->where('first_name', 'like', "%{$search}%")->orWhere('last_name', 'like', "%{$search}%"));
+            $safe = $this->safeLike($request->search);
+            $query->where(function ($q) use ($safe) {
+                $q->where('sett_uuid', 'like', "%{$safe}%")
+                  ->orWhereHas('complainants', fn($sub) => $sub->where('first_name', 'like', "%{$safe}%")->orWhere('last_name', 'like', "%{$safe}%"));
             });
         }
 
@@ -574,6 +616,8 @@ class ArchiveController extends Controller
 
     public function restoreSettlementHistory($id)
     {
+        $this->requirePermission('Restore Archive');
+
         $s = SettlementLog::findOrFail($id);
         $s->update(['is_deleted' => false, 'delete_reason' => null]);
         NotificationService::notifyByPermission(
@@ -589,13 +633,15 @@ class ArchiveController extends Controller
     // ─────────────── CITIZEN HISTORY ───────────────
     public function citizenHistory(Request $request)
     {
+        $this->requirePermission('View Archive');
+
         $query = CitizenHistory::with(['citizen.info', 'settlementLog', 'encodedByAccount', 'updatedByAccount'])
             ->where('is_deleted', true);
 
         if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->whereRaw("LOWER(CONCAT(first_name,' ',last_name)) LIKE ?", ['%' . strtolower($search) . '%']);
+            $safe = $this->safeLike($request->search);
+            $query->where(function ($q) use ($safe) {
+                $q->whereRaw("LOWER(CONCAT(first_name,' ',last_name)) LIKE ?", ['%' . strtolower($safe) . '%']);
             });
         }
 
@@ -634,6 +680,8 @@ class ArchiveController extends Controller
 
     public function restoreCitizenHistory($id)
     {
+        $this->requirePermission('Restore Archive');
+
         $h = CitizenHistory::findOrFail($id);
         $h->update(['is_deleted' => false, 'delete_reason' => null]);
         NotificationService::notifyByPermission(
