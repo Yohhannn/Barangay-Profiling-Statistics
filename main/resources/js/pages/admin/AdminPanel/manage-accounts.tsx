@@ -83,8 +83,8 @@ export default function ManageAccounts({
     const [selectedRole, setSelectedRole]         = useState<RoleItem | null>(null);
 
     /* ── form state ── */
-    const blankCreate = { sys_fname: '', sys_mname: '', sys_lname: '', email: '', sys_password: '', permissions: [] as number[] };
-    const blankUpdate = { sys_fname: '', sys_mname: '', sys_lname: '', email: '', sys_password: '', permissions: [] as number[] };
+    const blankCreate = { sys_fname: '', sys_mname: '', sys_lname: '', email: '', sys_password: '', permissions: [] as number[], role_id: null as number | null };
+    const blankUpdate = { sys_fname: '', sys_mname: '', sys_lname: '', email: '', sys_password: '', permissions: [] as number[], role_id: null as number | null };
     const blankRole   = { name: '', description: '', permissions: [] as number[] };
     const blankDeact  = { delete_reason: '' };
 
@@ -134,7 +134,11 @@ export default function ManageAccounts({
 
     const applyRole = useCallback((roleId: string, setter: (fn: (prev: any) => any) => void) => {
         const role = roles.find(r => r.role_id === Number(roleId));
-        setter(prev => ({ ...prev, permissions: role ? [...role.permission_ids] : [] }));
+        setter(prev => ({
+            ...prev,
+            permissions: role ? [...role.permission_ids] : prev.permissions,
+            role_id: roleId ? Number(roleId) : null,
+        }));
     }, [roles]);
 
     /* ═══════════════════════════════════════════════ HANDLERS ═══════ */
@@ -173,6 +177,7 @@ export default function ManageAccounts({
             email: selectedUser.email ?? '',
             sys_password: '',
             permissions: [...selectedUser.permissions],
+            role_id: selectedUser.roleId ?? null,
         });
         setUpdateErrors({}); setIsUpdateOpen(true);
     };
@@ -824,21 +829,29 @@ function PermissionsSelector({
     allPermissions,
     selected,
     onChange,
+    locked = [],
 }: {
     allPermissions: PermissionGroup[];
     selected: number[];
     onChange: (ids: number[]) => void;
+    locked?: number[];
 }) {
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
     const toggle = (permId: number) => {
+        if (locked.includes(permId)) return;
         onChange(selected.includes(permId) ? selected.filter(id => id !== permId) : [...selected, permId]);
     };
 
     const toggleCategory = (group: PermissionGroup) => {
         const catIds = group.permissions.map(p => p.perm_id);
-        const allSel = catIds.every(id => selected.includes(id));
-        onChange(allSel ? selected.filter(id => !catIds.includes(id)) : [...new Set([...selected, ...catIds])]);
+        const unlocked = catIds.filter(id => !locked.includes(id));
+        const allUnlockedSel = unlocked.length > 0 && unlocked.every(id => selected.includes(id));
+        if (allUnlockedSel) {
+            onChange(selected.filter(id => !unlocked.includes(id)));
+        } else {
+            onChange([...new Set([...selected, ...unlocked])]);
+        }
     };
 
     const toggleExpanded = (cat: string) => setExpanded(prev => ({ ...prev, [cat]: !prev[cat] }));
@@ -868,19 +881,26 @@ function PermissionsSelector({
                         </div>
                         {isExp && (
                             <div className="p-2 grid grid-cols-2 gap-1 bg-white dark:bg-neutral-900/20">
-                                {group.permissions.map(perm => (
-                                    <label key={perm.perm_id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 cursor-pointer transition-colors">
-                                        <input
-                                            type="checkbox"
-                                            checked={selected.includes(perm.perm_id)}
-                                            onChange={() => toggle(perm.perm_id)}
-                                            className="rounded border-neutral-300 text-indigo-600 focus:ring-indigo-500"
-                                        />
-                                        <span className={`text-[10px] font-medium transition-colors ${selected.includes(perm.perm_id) ? 'text-indigo-700 dark:text-indigo-400' : 'text-neutral-600 dark:text-neutral-400'}`}>
-                                            {perm.name}
-                                        </span>
-                                    </label>
-                                ))}
+                                {group.permissions.map(perm => {
+                                    const isLocked = locked.includes(perm.perm_id);
+                                    return (
+                                        <label
+                                            key={perm.perm_id}
+                                            className={`flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors ${isLocked ? 'opacity-70 cursor-not-allowed' : 'hover:bg-indigo-50 dark:hover:bg-indigo-900/20 cursor-pointer'}`}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={selected.includes(perm.perm_id)}
+                                                onChange={() => toggle(perm.perm_id)}
+                                                disabled={isLocked}
+                                                className="rounded border-neutral-300 text-indigo-600 focus:ring-indigo-500 disabled:cursor-not-allowed"
+                                            />
+                                            <span className={`text-[10px] font-medium transition-colors ${isLocked ? 'text-indigo-500 dark:text-indigo-500' : selected.includes(perm.perm_id) ? 'text-indigo-700 dark:text-indigo-400' : 'text-neutral-600 dark:text-neutral-400'}`}>
+                                                {perm.name}{isLocked ? ' 🔒' : ''}
+                                            </span>
+                                        </label>
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
@@ -928,6 +948,13 @@ function AccountModal({
         prevOpen.current = open;
     }, [open, currentRoleId]);
 
+    // Permissions belonging to the selected role are locked — cannot be unchecked
+    const lockedPermissions = useMemo(() => {
+        if (!rolePreset) return [] as number[];
+        const role = roles.find(r => r.role_id === Number(rolePreset));
+        return role ? role.permission_ids : ([] as number[]);
+    }, [rolePreset, roles]);
+
     if (!open) return null;
 
     return (
@@ -960,15 +987,23 @@ function AccountModal({
                     <hr className="border-sidebar-border" />
 
                     <div>
-                        <p className="text-[10px] font-bold uppercase text-neutral-400 tracking-wider mb-2">Quick Role Preset <span className="font-normal text-neutral-400 normal-case">(optional — auto-fills permissions below)</span></p>
+                        <p className="text-[10px] font-bold uppercase text-neutral-400 tracking-wider mb-2">
+                            Role <span className="font-normal text-neutral-400 normal-case">(selecting a role locks its base permissions)</span>
+                        </p>
                         <select
                             className="w-full text-xs p-2.5 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
                             value={rolePreset}
                             onChange={e => { setRolePreset(e.target.value); onRoleSelect(e.target.value); }}
                         >
-                            <option value="">— Select a role to auto-fill permissions —</option>
+                            <option value="">— No role / Custom permissions —</option>
                             {roles.map(r => <option key={r.role_id} value={r.role_id}>{r.name}{r.description ? ` — ${r.description}` : ''}</option>)}
                         </select>
+                        {lockedPermissions.length > 0 && (
+                            <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1.5 flex items-center gap-1">
+                                <Shield className="size-3 inline" />
+                                {lockedPermissions.length} base permissions from this role are locked and cannot be removed.
+                            </p>
+                        )}
                     </div>
 
                     <div>
@@ -978,7 +1013,7 @@ function AccountModal({
                             </p>
                             <div className="flex gap-2">
                                 <button type="button" onClick={() => onChange('permissions', allPermissions.flatMap(g => g.permissions.map(p => p.perm_id)))} className="text-[10px] text-indigo-600 hover:underline flex items-center gap-1"><CheckSquare className="size-3" /> All</button>
-                                <button type="button" onClick={() => onChange('permissions', [])} className="text-[10px] text-red-500 hover:underline flex items-center gap-1"><Square className="size-3" /> None</button>
+                                <button type="button" onClick={() => onChange('permissions', [...lockedPermissions])} className="text-[10px] text-red-500 hover:underline flex items-center gap-1"><Square className="size-3" /> None</button>
                             </div>
                         </div>
                         {errors.permissions && <p className="text-[10px] text-red-500 mb-2">{errors.permissions}</p>}
@@ -986,6 +1021,7 @@ function AccountModal({
                             allPermissions={allPermissions}
                             selected={data.permissions ?? []}
                             onChange={ids => onChange('permissions', ids)}
+                            locked={lockedPermissions}
                         />
                     </div>
                 </form>

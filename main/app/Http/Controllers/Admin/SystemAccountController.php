@@ -70,13 +70,14 @@ class SystemAccountController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'sys_fname'   => 'required|string|max:255',
-            'sys_mname'   => 'nullable|string|max:255',
-            'sys_lname'   => 'required|string|max:255',
-            'email'       => 'nullable|email|max:255|unique:system_accounts,email',
-            'sys_password'=> 'required|string|min:6',
-            'permissions' => 'required|array|min:1',
-            'permissions.*' => 'integer|exists:permissions,perm_id',
+            'sys_fname'    => 'required|string|max:255',
+            'sys_mname'    => 'nullable|string|max:255',
+            'sys_lname'    => 'required|string|max:255',
+            'email'        => 'nullable|email|max:255|unique:system_accounts,email',
+            'sys_password' => 'required|string|min:6',
+            'role_id'      => 'nullable|integer|exists:roles,role_id',
+            'permissions'  => 'required|array|min:1',
+            'permissions.*'=> 'integer|exists:permissions,perm_id',
         ], [
             'sys_fname.required'   => 'First name is required.',
             'sys_lname.required'   => 'Last name is required.',
@@ -94,6 +95,7 @@ class SystemAccountController extends Controller
 
         $account = SystemAccount::create([
             'sys_account_id' => $newId,
+            'role_id'        => $request->role_id ?: null,
             'sys_fname'      => $request->sys_fname,
             'sys_mname'      => $request->sys_mname,
             'sys_lname'      => $request->sys_lname,
@@ -136,6 +138,7 @@ class SystemAccountController extends Controller
             'sys_lname'    => 'required|string|max:255',
             'email'        => 'nullable|email|max:255|unique:system_accounts,email,' . $account->sys_id . ',sys_id',
             'sys_password' => 'nullable|string|min:6',
+            'role_id'      => 'nullable|integer|exists:roles,role_id',
             'permissions'  => 'required|array|min:1',
             'permissions.*'=> 'integer|exists:permissions,perm_id',
         ], [
@@ -153,6 +156,7 @@ class SystemAccountController extends Controller
             'sys_mname' => $request->sys_mname,
             'sys_lname' => $request->sys_lname,
             'email'     => $request->email ?: null,
+            'role_id'   => $request->role_id ?: null,
         ];
 
         if ($request->filled('sys_password')) {
@@ -284,19 +288,31 @@ class SystemAccountController extends Controller
     private function mapAccounts($collection, $roles)
     {
         return $collection->map(function ($account) use ($roles) {
-            $userPermIds = $account->permissions->pluck('perm_id')->toArray();
+            $userPermIds = $account->permissions->pluck('perm_id')->map(fn($id) => (int) $id)->toArray();
             sort($userPermIds);
 
             $matchedRoleName = 'Custom';
             $matchedRoleId   = null;
 
-            foreach ($roles as $role) {
-                $rolePermIds = $role['permission_ids'];
-                sort($rolePermIds);
-                if ($rolePermIds === $userPermIds) {
-                    $matchedRoleName = $role['name'];
-                    $matchedRoleId   = $role['role_id'];
-                    break;
+            // Prefer the explicitly stored role_id
+            if ($account->role_id) {
+                $found = $roles->firstWhere('role_id', $account->role_id);
+                if ($found) {
+                    $matchedRoleName = $found['name'];
+                    $matchedRoleId   = $found['role_id'];
+                }
+            }
+
+            // Fallback: infer from exact permission match (for legacy accounts without role_id)
+            if ($matchedRoleId === null) {
+                foreach ($roles as $role) {
+                    $rolePermIds = array_map('intval', $role['permission_ids']);
+                    sort($rolePermIds);
+                    if ($rolePermIds === $userPermIds) {
+                        $matchedRoleName = $role['name'];
+                        $matchedRoleId   = $role['role_id'];
+                        break;
+                    }
                 }
             }
 

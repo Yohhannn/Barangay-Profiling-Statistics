@@ -20,6 +20,7 @@ class SystemAccount extends Authenticatable
 
     protected $fillable = [
         'sys_account_id',
+        'role_id',
         'sys_password',
         'sys_fname',
         'sys_mname',
@@ -64,6 +65,11 @@ class SystemAccount extends Authenticatable
     }
 
     // Relationships
+    public function role()
+    {
+        return $this->belongsTo(Role::class, 'role_id', 'role_id');
+    }
+
     public function roles()
     {
         return $this->hasMany(Role::class, 'created_by', 'sys_id');

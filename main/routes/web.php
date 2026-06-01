@@ -213,15 +213,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('archives/citizen-history/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreCitizenHistory'])->name('archives.citizen-history.restore');
 
 
-    Route::post('/citizens/store', [CitizenController::class, 'store']);
-    Route::post('/citizens/register-face', [CitizenController::class, 'registerFace']);
-    Route::post('/citizens/search-face', [CitizenController::class, 'searchFace']);
-    Route::put('/citizens/{id}', [CitizenController::class, 'update']);
-    Route::delete('/citizens/{id}', [CitizenController::class, 'destroy']);
+    Route::post('/citizens/store', [CitizenController::class, 'store'])->middleware('permission:Create Citizen Profile');
+    Route::post('/citizens/register-face', [CitizenController::class, 'registerFace'])->middleware('permission:Create Citizen Profile');
+    Route::post('/citizens/search-face', [CitizenController::class, 'searchFace'])->middleware('permission:View Citizen Profile');
+    Route::put('/citizens/{id}', [CitizenController::class, 'update'])->middleware('permission:Update Citizen Profile');
+    Route::delete('/citizens/{id}', [CitizenController::class, 'destroy'])->middleware('permission:Delete Citizen Profile');
 
     // Households
-    Route::post('/households/store', [HouseholdController::class, 'store']);
-    Route::put('/households/{id}', [HouseholdController::class, 'update']);
+    Route::post('/households/store', [HouseholdController::class, 'store'])->middleware('permission:Create Household Profile');
+    Route::put('/households/{id}', [HouseholdController::class, 'update'])->middleware('permission:Update Household Profile');
 
     Route::get('/api/sitio-list', function () {
         return Sitio::select('sitio_id', 'sitio_name')->orderBy('sitio_name')->get();
