@@ -74,7 +74,7 @@ class SystemAccountController extends Controller
             'sys_mname'    => 'nullable|string|max:255',
             'sys_lname'    => 'required|string|max:255',
             'email'        => 'nullable|email|max:255|unique:system_accounts,email',
-            'sys_password' => 'required|string|min:6',
+            'sys_password' => 'required|string|min:8',
             'role_id'      => 'nullable|integer|exists:roles,role_id',
             'permissions'  => 'required|array|min:1',
             'permissions.*'=> 'integer|exists:permissions,perm_id',
@@ -84,10 +84,24 @@ class SystemAccountController extends Controller
             'email.email'          => 'The email must be a valid email address.',
             'email.unique'         => 'This email is already in use.',
             'sys_password.required'=> 'Password is required.',
-            'sys_password.min'     => 'Password must be at least 6 characters.',
+            'sys_password.min'     => 'Password must be at least 8 characters.',
             'permissions.required' => 'Please select at least one permission.',
             'permissions.min'      => 'Please select at least one permission.',
         ]);
+
+        // Actor can only assign permissions they themselves hold — prevents privilege escalation
+        $actor        = Auth::user();
+        $actorPermIds = SystemPermission::where('sys_id', $actor->sys_id)
+            ->pluck('perm_id')->map(fn($id) => (int) $id)->toArray();
+        $newPermIds   = array_map('intval', $request->permissions);
+        $forbidden    = array_diff($newPermIds, $actorPermIds);
+
+        if (!empty($forbidden)) {
+            $forbiddenNames = Permission::whereIn('perm_id', $forbidden)->pluck('name')->toArray();
+            return back()->withErrors([
+                'permissions' => 'You cannot assign permissions you do not hold: ' . implode(', ', $forbiddenNames),
+            ]);
+        }
 
         // Auto-generate unique 6-digit account ID
         $maxId = SystemAccount::max('sys_account_id') ?? 100000;
@@ -106,12 +120,19 @@ class SystemAccountController extends Controller
         ]);
 
         // Assign selected permissions
-        foreach ($request->permissions as $permId) {
+        foreach ($newPermIds as $permId) {
             SystemPermission::create([
                 'sys_id'  => $account->sys_id,
                 'perm_id' => $permId,
             ]);
         }
+
+        \App\Models\AuditLog::create([
+            'action_name' => 'CREATE',
+            'description' => "system_accounts: created account #{$account->sys_account_id}",
+            'sys_id'      => Auth::id(),
+            'created_at'  => now(),
+        ]);
 
         $fullName = trim($account->sys_fname . ' ' . $account->sys_lname);
         NotificationService::notifyByPermission(
@@ -130,14 +151,25 @@ class SystemAccountController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $actor   = Auth::user();
         $account = SystemAccount::findOrFail($id);
+
+        // Block modifying the system admin account
+        if ($account->sys_account_id == 100000) {
+            abort(403, 'The system admin account cannot be modified.');
+        }
+
+        // Block self-modification (consistent with frontend restriction)
+        if ($actor->sys_id === $account->sys_id) {
+            abort(403, 'You cannot modify your own account.');
+        }
 
         $request->validate([
             'sys_fname'    => 'required|string|max:255',
             'sys_mname'    => 'nullable|string|max:255',
             'sys_lname'    => 'required|string|max:255',
             'email'        => 'nullable|email|max:255|unique:system_accounts,email,' . $account->sys_id . ',sys_id',
-            'sys_password' => 'nullable|string|min:6',
+            'sys_password' => 'nullable|string|min:8',
             'role_id'      => 'nullable|integer|exists:roles,role_id',
             'permissions'  => 'required|array|min:1',
             'permissions.*'=> 'integer|exists:permissions,perm_id',
@@ -146,10 +178,23 @@ class SystemAccountController extends Controller
             'sys_lname.required'  => 'Last name is required.',
             'email.email'         => 'The email must be a valid email address.',
             'email.unique'        => 'This email is already in use.',
-            'sys_password.min'    => 'Password must be at least 6 characters.',
+            'sys_password.min'    => 'Password must be at least 8 characters.',
             'permissions.required'=> 'Please select at least one permission.',
             'permissions.min'     => 'Please select at least one permission.',
         ]);
+
+        // Actor can only assign permissions they themselves hold — prevents privilege escalation
+        $actorPermIds = SystemPermission::where('sys_id', $actor->sys_id)
+            ->pluck('perm_id')->map(fn($pid) => (int) $pid)->toArray();
+        $newPermIds   = array_map('intval', $request->permissions);
+        $forbidden    = array_diff($newPermIds, $actorPermIds);
+
+        if (!empty($forbidden)) {
+            $forbiddenNames = Permission::whereIn('perm_id', $forbidden)->pluck('name')->toArray();
+            return back()->withErrors([
+                'permissions' => 'You cannot assign permissions you do not hold: ' . implode(', ', $forbiddenNames),
+            ]);
+        }
 
         $updateData = [
             'sys_fname' => $request->sys_fname,
@@ -167,20 +212,30 @@ class SystemAccountController extends Controller
 
         // Capture old permission IDs before wiping
         $oldPermIds = SystemPermission::where('sys_id', $account->sys_id)
-            ->pluck('perm_id')->toArray();
-        $newPermIds = array_map('intval', $request->permissions);
+            ->pluck('perm_id')->map(fn($pid) => (int) $pid)->toArray();
 
         // Sync permissions: wipe old, insert new
         SystemPermission::where('sys_id', $account->sys_id)->delete();
-        foreach ($request->permissions as $permId) {
+        foreach ($newPermIds as $permId) {
             SystemPermission::create([
                 'sys_id'  => $account->sys_id,
                 'perm_id' => $permId,
             ]);
         }
 
-        // Alert if permissions were escalated (newly added high-privilege perms)
-        $addedPermIds = array_diff($newPermIds, $oldPermIds);
+        // Audit log every permission change
+        $addedPermIds   = array_diff($newPermIds, $oldPermIds);
+        $removedPermIds = array_diff($oldPermIds, $newPermIds);
+        if (!empty($addedPermIds) || !empty($removedPermIds)) {
+            \App\Models\AuditLog::create([
+                'action_name' => 'PERMISSION_CHANGE',
+                'description' => "system_accounts #{$account->sys_account_id}: +" . count($addedPermIds) . " permissions, -" . count($removedPermIds) . " permissions",
+                'sys_id'      => Auth::id(),
+                'created_at'  => now(),
+            ]);
+        }
+
+        // Alert on high-privilege escalation (still useful for audit trail even when actor is authorised)
         if (!empty($addedPermIds)) {
             $addedNames = Permission::whereIn('perm_id', $addedPermIds)->pluck('name')->toArray();
             $highPriv   = array_filter($addedNames, fn($n) =>
@@ -190,11 +245,11 @@ class SystemAccountController extends Controller
                 stripos($n, 'Export') !== false
             );
             if (!empty($highPriv)) {
-                $fullName  = trim($account->sys_fname . ' ' . $account->sys_lname);
-                $permList  = implode(', ', array_values($highPriv));
+                $fullName = trim($account->sys_fname . ' ' . $account->sys_lname);
+                $permList = implode(', ', array_values($highPriv));
                 NotificationService::sendAlert(
-                    'Permission Escalation Detected',
-                    "High-privilege permissions were granted to {$fullName} (Account #{$account->sys_account_id}): {$permList}.",
+                    'High-Privilege Permissions Granted',
+                    "Actor #{$actor->sys_account_id} granted high-privilege permissions to {$fullName} (#{$account->sys_account_id}): {$permList}.",
                     '/admin-panel/manage-accounts'
                 );
             }
@@ -274,7 +329,7 @@ class SystemAccountController extends Controller
         \App\Models\AuditLog::create([
             'action_name' => 'VIEW',
             'description' => "system_accounts {$account->sys_account_id}",
-            'sys_id'      => Auth::id() ?? 1,
+            'sys_id'      => Auth::id(),
             'created_at'  => now(),
         ]);
 

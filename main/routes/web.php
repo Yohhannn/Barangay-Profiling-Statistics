@@ -181,36 +181,31 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('activity-logs', [\App\Http\Controllers\Admin\AuditLogController::class, 'index'])
             ->middleware('permission:View Audit Logs')->name('activity-logs');
 
-        // Archives
+        // Archives — view sub-pages require View Archive
         Route::middleware('permission:View Archive')->group(function () {
             Route::get('/archives', [\App\Http\Controllers\Admin\ArchiveController::class, 'index'])->name('archives');
+            Route::get('archives/citizens', [\App\Http\Controllers\Admin\ArchiveController::class, 'citizens'])->name('archives.citizens');
+            Route::get('archives/household', [\App\Http\Controllers\Admin\ArchiveController::class, 'household'])->name('archives.household');
+            Route::get('archives/business', [\App\Http\Controllers\Admin\ArchiveController::class, 'business'])->name('archives.business');
+            Route::get('archives/infrastructures', [\App\Http\Controllers\Admin\ArchiveController::class, 'infrastructures'])->name('archives.infrastructures');
+            Route::get('archives/services', [\App\Http\Controllers\Admin\ArchiveController::class, 'services'])->name('archives.services');
+            Route::get('archives/medical-history', [\App\Http\Controllers\Admin\ArchiveController::class, 'medicalHistory'])->name('archives.medical-history');
+            Route::get('archives/settlement-history', [\App\Http\Controllers\Admin\ArchiveController::class, 'settlementHistory'])->name('archives.settlement-history');
+            Route::get('archives/citizen-history', [\App\Http\Controllers\Admin\ArchiveController::class, 'citizenHistory'])->name('archives.citizen-history');
+        });
+
+        // Archives — restore operations require Restore Archive
+        Route::middleware('permission:Restore Archive')->group(function () {
+            Route::post('archives/citizens/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreCitizen'])->name('archives.citizens.restore');
+            Route::post('archives/household/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreHousehold'])->name('archives.household.restore');
+            Route::post('archives/business/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreBusiness'])->name('archives.business.restore');
+            Route::post('archives/infrastructures/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreInfrastructure'])->name('archives.infrastructures.restore');
+            Route::post('archives/services/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreService'])->name('archives.services.restore');
+            Route::post('archives/medical-history/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreMedicalHistory'])->name('archives.medical-history.restore');
+            Route::post('archives/settlement-history/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreSettlementHistory'])->name('archives.settlement-history.restore');
+            Route::post('archives/citizen-history/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreCitizenHistory'])->name('archives.citizen-history.restore');
         });
     });
-
-    // Archive sub-pages
-    Route::get('archives/citizens', [\App\Http\Controllers\Admin\ArchiveController::class, 'citizens'])->name('archives.citizens');
-    Route::post('archives/citizens/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreCitizen'])->name('archives.citizens.restore');
-
-    Route::get('archives/household', [\App\Http\Controllers\Admin\ArchiveController::class, 'household'])->name('archives.household');
-    Route::post('archives/household/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreHousehold'])->name('archives.household.restore');
-
-    Route::get('archives/business', [\App\Http\Controllers\Admin\ArchiveController::class, 'business'])->name('archives.business');
-    Route::post('archives/business/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreBusiness'])->name('archives.business.restore');
-
-    Route::get('archives/infrastructures', [\App\Http\Controllers\Admin\ArchiveController::class, 'infrastructures'])->name('archives.infrastructures');
-    Route::post('archives/infrastructures/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreInfrastructure'])->name('archives.infrastructures.restore');
-
-    Route::get('archives/services', [\App\Http\Controllers\Admin\ArchiveController::class, 'services'])->name('archives.services');
-    Route::post('archives/services/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreService'])->name('archives.services.restore');
-
-    Route::get('archives/medical-history', [\App\Http\Controllers\Admin\ArchiveController::class, 'medicalHistory'])->name('archives.medical-history');
-    Route::post('archives/medical-history/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreMedicalHistory'])->name('archives.medical-history.restore');
-
-    Route::get('archives/settlement-history', [\App\Http\Controllers\Admin\ArchiveController::class, 'settlementHistory'])->name('archives.settlement-history');
-    Route::post('archives/settlement-history/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreSettlementHistory'])->name('archives.settlement-history.restore');
-
-    Route::get('archives/citizen-history', [\App\Http\Controllers\Admin\ArchiveController::class, 'citizenHistory'])->name('archives.citizen-history');
-    Route::post('archives/citizen-history/{id}/restore', [\App\Http\Controllers\Admin\ArchiveController::class, 'restoreCitizenHistory'])->name('archives.citizen-history.restore');
 
 
     Route::post('/citizens/store', [CitizenController::class, 'store'])->middleware('permission:Create Citizen Profile');
@@ -223,23 +218,50 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/households/store', [HouseholdController::class, 'store'])->middleware('permission:Create Household Profile');
     Route::put('/households/{id}', [HouseholdController::class, 'update'])->middleware('permission:Update Household Profile');
 
+    // sitio list — used in forms, no PII, only requires auth
     Route::get('/api/sitio-list', function () {
         return Sitio::select('sitio_id', 'sitio_name')->orderBy('sitio_name')->get();
     });
 
-    Route::get('/api/household-search', [HouseholdController::class, 'search']);
-    Route::get('/api/citizen-search', [CitizenController::class, 'searchForHousehold']);
-    Route::get('/api/verify-history-link', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'verifyHistoryLink']);
-    Route::get('/api/recent-histories', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'getRecentHistories']);
-    Route::get('/api/citizen-history-search', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'search']);
-    Route::get('/api/history-detail/{uuid}', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'getHistoryDetail']);
-    Route::get('/api/settlement-detail/{uuid}', [\App\Http\Controllers\Records\SettlementController::class, 'getSettlementDetail']);
-    Route::get('/api/medical-detail/{uuid}', [\App\Http\Controllers\Records\MedicalHistoryController::class, 'getMedicalDetail']);
-    Route::get('/api/household-detail/{uuid}', [HouseholdController::class, 'getHouseholdDetail']);
-    Route::get('/api/business-detail/{uuid}', [\App\Http\Controllers\Institutions_Transactions\BusinessController::class, 'getQuickViewData']);
-    Route::get('/api/infrastructure-detail/{id}', [\App\Http\Controllers\Institutions_Transactions\InfrastructureController::class, 'getQuickViewData']);
-    Route::get('/api/transaction-detail/{id}', [TransactionLogController::class, 'getQuickViewData']);
-    Route::get('/api/citizen/{id}', [CitizenController::class, 'getQuickViewData']);
+    // Citizen PII endpoints
+    Route::middleware('permission:View Citizen Profile')->group(function () {
+        Route::get('/api/citizen/{id}', [CitizenController::class, 'getQuickViewData']);
+        Route::get('/api/citizen-search', [CitizenController::class, 'searchForHousehold']);
+    });
+
+    // Household PII endpoints
+    Route::middleware('permission:View Household Profile')->group(function () {
+        Route::get('/api/household-search', [HouseholdController::class, 'search']);
+        Route::get('/api/household-detail/{uuid}', [HouseholdController::class, 'getHouseholdDetail']);
+    });
+
+    // Business detail endpoint
+    Route::get('/api/business-detail/{uuid}', [\App\Http\Controllers\Institutions_Transactions\BusinessController::class, 'getQuickViewData'])
+        ->middleware('permission:View Business');
+
+    // Infrastructure detail endpoint
+    Route::get('/api/infrastructure-detail/{id}', [\App\Http\Controllers\Institutions_Transactions\InfrastructureController::class, 'getQuickViewData'])
+        ->middleware('permission:View Infrastructure');
+
+    // Transaction detail endpoint
+    Route::get('/api/transaction-detail/{id}', [TransactionLogController::class, 'getQuickViewData'])
+        ->middleware('permission:View Services');
+
+    // Citizen history endpoints
+    Route::middleware('permission:View Citizen History')->group(function () {
+        Route::get('/api/verify-history-link', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'verifyHistoryLink']);
+        Route::get('/api/recent-histories', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'getRecentHistories']);
+        Route::get('/api/citizen-history-search', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'search']);
+        Route::get('/api/history-detail/{uuid}', [\App\Http\Controllers\Records\CitizenHistoryController::class, 'getHistoryDetail']);
+    });
+
+    // Medical history detail endpoint
+    Route::get('/api/medical-detail/{uuid}', [\App\Http\Controllers\Records\MedicalHistoryController::class, 'getMedicalDetail'])
+        ->middleware('permission:View Medical History');
+
+    // Settlement detail endpoint
+    Route::get('/api/settlement-detail/{uuid}', [\App\Http\Controllers\Records\SettlementController::class, 'getSettlementDetail'])
+        ->middleware('permission:View Settlement History');
 
     // --- NOTIFICATIONS ---
     Route::prefix('api/notifications')->group(function () {
