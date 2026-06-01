@@ -185,7 +185,7 @@ export default function ServicesCreation({ isOpen, onClose }: ServicesCreationPr
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <FieldWrap error={errors.type}>
-                                    <SelectGroup label="Transaction Type" options={['Business Clearance', 'Business Permit', 'Complaint']} value={type} onChange={e => setType(e.target.value)} required />
+                                    <SelectGroup label="Transaction Type" options={['Barangay Clearance', 'Business Permit', 'Complaint', 'Cedula', 'Indigency', 'Residency']} value={type} onChange={e => setType(e.target.value)} required />
                                 </FieldWrap>
                                 <FieldWrap error={errors.date_requested}>
                                     <InputGroup type="date" label="Date Requested" value={dateRequested} onChange={e => setDateRequested(e.target.value)} required />
