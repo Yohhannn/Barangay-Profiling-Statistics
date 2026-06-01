@@ -15,7 +15,8 @@
       "Bash(Remove-Item replacements.txt)",
       "PowerShell(cd \"e:\\\\AntigravityFiles\\\\Side\\\\Barangay-Profiling-Statistics\"; Get-ChildItem -Force | Select-Object Name, @{Name=\"Type\"; Expression={if \\($_.PSIsContainer\\) { \"Folder\" } else { \"File\" }}})",
       "PowerShell(cd \"e:\\\\AntigravityFiles\\\\Side\\\\Barangay-Profiling-Statistics\\\\main\"; Get-ChildItem -Directory | Where-Object {$_.Name -notmatch \"vendor|node_modules|\\\\.git\"} | Select-Object Name)",
-      "PowerShell(cd \"e:\\\\AntigravityFiles\\\\Side\\\\Barangay-Profiling-Statistics\\\\main\"; Get-ChildItem \"package.json\" | Get-Content | ConvertFrom-Json | Select-Object -Property name, version, @{Name=\"dependencies\"; Expression={$_.dependencies | Get-Member -MemberType NoteProperty | Select-Object -ExpandProperty Name | Sort-Object}})"
+      "PowerShell(cd \"e:\\\\AntigravityFiles\\\\Side\\\\Barangay-Profiling-Statistics\\\\main\"; Get-ChildItem \"package.json\" | Get-Content | ConvertFrom-Json | Select-Object -Property name, version, @{Name=\"dependencies\"; Expression={$_.dependencies | Get-Member -MemberType NoteProperty | Select-Object -ExpandProperty Name | Sort-Object}})",
+      "Bash(findstr /i \"chart\\\\|recharts\\\\|apexcharts\\\\|victory\\\\|nivo\\\\|echarts\" package.json)"
     ]
   }
 }

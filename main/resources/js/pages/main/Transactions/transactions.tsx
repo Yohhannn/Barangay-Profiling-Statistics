@@ -23,7 +23,8 @@ export default function Transactions({ pendingCount = 0 }: TransactionsProps) {
             <div className="flex flex-col gap-8 p-6 lg:p-8 h-full min-h-[85vh] max-w-7xl mx-auto w-full">
 
                 {/* --- Header Section --- */}
-                <div className="relative overflow-hidden rounded-2xl border border-sidebar-border/60 bg-gradient-to-br from-sidebar via-sidebar to-neutral-50/50 dark:to-neutral-900/20 p-8 shadow-sm">
+                <div className="relative overflow-hi
+                dden rounded-2xl border border-sidebar-border/60 bg-gradient-to-br from-sidebar via-sidebar to-neutral-50/50 dark:to-neutral-900/20 p-8 shadow-sm">
                     <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div className="space-y-2">
                             <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">

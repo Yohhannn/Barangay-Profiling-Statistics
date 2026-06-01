@@ -3,8 +3,9 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft, Search, Plus, Trash2,
-    FileText, User, Calendar, CheckCircle,
-    Download, Edit3, X, SlidersHorizontal, ClipboardList
+    FileText, User,
+    Download, Edit3, X, SlidersHorizontal, ClipboardList,
+    BarChart2, TrendingUp,
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import ServicesCreation from './popup/services-creation';
@@ -250,6 +251,9 @@ export default function ServicesProfile({ transactions = [] }: ServicesProfilePr
                         <Download className="size-4" /> Export
                     </button>
                 </div>
+
+                {/* Mini Statistics Panel */}
+                <MiniStats transactions={transactions} />
 
                 {/* Main Content Split */}
                 <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
@@ -515,6 +519,162 @@ export default function ServicesProfile({ transactions = [] }: ServicesProfilePr
                 </div>
             </div>
         </AppLayout>
+    );
+}
+
+// --- Mini Statistics ---
+
+function MiniStats({ transactions }: { transactions: Transaction[] }) {
+    const total = transactions.length;
+
+    // Status counts
+    const statusCounts = useMemo(() => ({
+        Approved: transactions.filter(t => t.status === 'Approved').length,
+        Pending:  transactions.filter(t => t.status === 'Pending').length,
+        Declined: transactions.filter(t => t.status === 'Declined').length,
+    }), [transactions]);
+
+    // Top 5 transaction types
+    const topTypes = useMemo(() => {
+        const map: Record<string, number> = {};
+        transactions.forEach(t => { map[t.type] = (map[t.type] || 0) + 1; });
+        return Object.entries(map)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5);
+    }, [transactions]);
+
+    // Monthly volume — last 6 months
+    const monthlyData = useMemo(() => {
+        const map: Record<string, number> = {};
+        transactions.forEach(t => {
+            if (!t.dateRequestedRaw) return;
+            const d = new Date(t.dateRequestedRaw);
+            if (isNaN(d.getTime())) return;
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            map[key] = (map[key] || 0) + 1;
+        });
+        const months: { label: string; count: number }[] = [];
+        const now = new Date();
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            months.push({
+                label: d.toLocaleString('default', { month: 'short' }),
+                count: map[key] || 0,
+            });
+        }
+        return months;
+    }, [transactions]);
+
+    const maxMonthly = Math.max(...monthlyData.map(m => m.count), 1);
+    const maxType = topTypes[0]?.[1] ?? 1;
+
+    if (total === 0) return null;
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0">
+
+            {/* 1. Status Breakdown */}
+            <div className="bg-white dark:bg-sidebar border border-sidebar-border/60 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                    <BarChart2 className="size-4 text-violet-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Status Breakdown</span>
+                    <span className="ml-auto text-[10px] font-mono text-neutral-400">{total} total</span>
+                </div>
+                {/* Stacked bar */}
+                <div className="flex h-3 rounded-full overflow-hidden gap-px">
+                    {statusCounts.Approved > 0 && (
+                        <div
+                            className="bg-green-500 transition-all"
+                            style={{ width: `${(statusCounts.Approved / total) * 100}%` }}
+                            title={`Approved: ${statusCounts.Approved}`}
+                        />
+                    )}
+                    {statusCounts.Pending > 0 && (
+                        <div
+                            className="bg-orange-400 transition-all"
+                            style={{ width: `${(statusCounts.Pending / total) * 100}%` }}
+                            title={`Pending: ${statusCounts.Pending}`}
+                        />
+                    )}
+                    {statusCounts.Declined > 0 && (
+                        <div
+                            className="bg-red-400 transition-all"
+                            style={{ width: `${(statusCounts.Declined / total) * 100}%` }}
+                            title={`Declined: ${statusCounts.Declined}`}
+                        />
+                    )}
+                </div>
+                <div className="grid grid-cols-3 gap-1 text-center">
+                    {([
+                        { label: 'Approved', count: statusCounts.Approved, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20' },
+                        { label: 'Pending',  count: statusCounts.Pending,  color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-900/20' },
+                        { label: 'Declined', count: statusCounts.Declined, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-900/20' },
+                    ] as const).map(s => (
+                        <div key={s.label} className={`rounded-lg p-2 ${s.bg}`}>
+                            <div className={`text-lg font-black font-mono ${s.color}`}>{s.count}</div>
+                            <div className="text-[9px] uppercase font-bold text-neutral-400">{s.label}</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* 2. Top Transaction Types */}
+            <div className="bg-white dark:bg-sidebar border border-sidebar-border/60 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                    <ClipboardList className="size-4 text-violet-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Top Types</span>
+                    <span className="ml-auto text-[10px] font-mono text-neutral-400">{topTypes.length} type{topTypes.length !== 1 ? 's' : ''}</span>
+                </div>
+                <div className="space-y-2">
+                    {topTypes.map(([type, count]) => (
+                        <div key={type} className="space-y-0.5">
+                            <div className="flex justify-between text-[10px]">
+                                <span className="truncate max-w-[70%] font-medium text-neutral-700 dark:text-neutral-300">{type}</span>
+                                <span className="font-mono font-bold text-violet-600">{count}</span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+                                <div
+                                    className="h-full bg-violet-500 rounded-full transition-all"
+                                    style={{ width: `${(count / maxType) * 100}%` }}
+                                />
+                            </div>
+                        </div>
+                    ))}
+                    {topTypes.length === 0 && (
+                        <p className="text-xs text-neutral-400 italic">No data.</p>
+                    )}
+                </div>
+            </div>
+
+            {/* 3. Monthly Volume (last 6 months) */}
+            <div className="bg-white dark:bg-sidebar border border-sidebar-border/60 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                    <TrendingUp className="size-4 text-violet-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Monthly Volume</span>
+                    <span className="ml-auto text-[10px] font-mono text-neutral-400">6 mo.</span>
+                </div>
+                <div className="flex items-end gap-1 h-16">
+                    {monthlyData.map((m) => (
+                        <div key={m.label} className="flex-1 flex flex-col items-center gap-1">
+                            <div className="w-full flex items-end justify-center" style={{ height: '40px' }}>
+                                <div
+                                    className="w-full rounded-t bg-violet-500 dark:bg-violet-600 transition-all min-h-[2px]"
+                                    style={{ height: `${(m.count / maxMonthly) * 40}px` }}
+                                    title={`${m.label}: ${m.count}`}
+                                />
+                            </div>
+                            <span className="text-[9px] font-mono text-neutral-400">{m.label}</span>
+                        </div>
+                    ))}
+                </div>
+                <div className="flex justify-between text-[9px] font-mono text-neutral-400 border-t border-sidebar-border/40 pt-1">
+                    <span>0</span>
+                    <span>{maxMonthly}</span>
+                </div>
+            </div>
+
+        </div>
     );
 }
 
