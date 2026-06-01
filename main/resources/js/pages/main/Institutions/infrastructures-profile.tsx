@@ -4,7 +4,8 @@ import { Head, Link, usePage, router } from '@inertiajs/react';
 import {
     ArrowLeft, Search, Plus, Trash2,
     Building, User, MapPin, FileText, Users, Info, BadgeCheck,
-    Edit3, X, SlidersHorizontal, Construction
+    Edit3, X, SlidersHorizontal, Construction,
+    BarChart2, TrendingUp,
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import InfrastructureCreation from './popup/infrastructures-creation';
@@ -166,6 +167,9 @@ export default function InfrastructureProfile() {
                         </h1>
                     </div>
                 </div>
+
+                {/* Mini Statistics Panel */}
+                <InfrastructureMiniStats infrastructures={infrastructures} />
 
                 <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
 
@@ -384,6 +388,108 @@ export default function InfrastructureProfile() {
                 </div>
             </div>
         </AppLayout>
+    );
+}
+
+// --- Mini Statistics ---
+
+function InfrastructureMiniStats({ infrastructures }: { infrastructures: Infrastructure[] }) {
+    const total = infrastructures.length;
+
+    // Type distribution
+    const topTypes = useMemo(() => {
+        const map: Record<string, number> = {};
+        infrastructures.forEach(i => { map[i.type] = (map[i.type] || 0) + 1; });
+        return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    }, [infrastructures]);
+
+    const maxType = topTypes[0]?.[1] ?? 1;
+
+    // Top sitios
+    const topSitios = useMemo(() => {
+        const map: Record<string, number> = {};
+        infrastructures.forEach(i => { if (i.sitio) map[i.sitio] = (map[i.sitio] || 0) + 1; });
+        return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 4);
+    }, [infrastructures]);
+
+    const maxSitio = topSitios[0]?.[1] ?? 1;
+
+    const linkedCount = useMemo(() => infrastructures.filter(i => i.ctzId !== null).length, [infrastructures]);
+    const uniqueTypes = topTypes.length;
+
+    if (total === 0) return null;
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0">
+
+            {/* 1. Infrastructure Types */}
+            <div className="bg-white dark:bg-sidebar border border-sidebar-border/60 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                    <BarChart2 className="size-4 text-sky-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Infra Types</span>
+                    <span className="ml-auto text-[10px] font-mono text-neutral-400">{total} total</span>
+                </div>
+                <div className="space-y-2">
+                    {topTypes.map(([type, count]) => (
+                        <div key={type} className="space-y-0.5">
+                            <div className="flex justify-between text-[10px]">
+                                <span className="truncate max-w-[70%] font-medium text-neutral-700 dark:text-neutral-300">{type}</span>
+                                <span className="font-mono font-bold text-sky-600">{count}</span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+                                <div className="h-full bg-sky-500 rounded-full transition-all" style={{ width: `${(count / maxType) * 100}%` }} />
+                            </div>
+                        </div>
+                    ))}
+                    {topTypes.length === 0 && <p className="text-xs text-neutral-400 italic">No data.</p>}
+                </div>
+            </div>
+
+            {/* 2. Top Sitios */}
+            <div className="bg-white dark:bg-sidebar border border-sidebar-border/60 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                    <MapPin className="size-4 text-sky-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Top Sitios</span>
+                </div>
+                <div className="space-y-2">
+                    {topSitios.map(([sitio, count]) => (
+                        <div key={sitio} className="space-y-0.5">
+                            <div className="flex justify-between text-[10px]">
+                                <span className="truncate max-w-[70%] font-medium text-neutral-700 dark:text-neutral-300">{sitio}</span>
+                                <span className="font-mono font-bold text-sky-600">{count}</span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+                                <div className="h-full bg-sky-400 rounded-full transition-all" style={{ width: `${(count / maxSitio) * 100}%` }} />
+                            </div>
+                        </div>
+                    ))}
+                    {topSitios.length === 0 && <p className="text-xs text-neutral-400 italic">No data.</p>}
+                </div>
+            </div>
+
+            {/* 3. Summary Tiles */}
+            <div className="bg-white dark:bg-sidebar border border-sidebar-border/60 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                    <TrendingUp className="size-4 text-sky-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Summary</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-xl bg-sky-50 dark:bg-sky-900/20 p-3 text-center">
+                        <div className="text-2xl font-black font-mono text-sky-600">{total}</div>
+                        <div className="text-[9px] uppercase font-bold text-neutral-400 mt-0.5">Total</div>
+                    </div>
+                    <div className="rounded-xl bg-indigo-50 dark:bg-indigo-900/20 p-3 text-center">
+                        <div className="text-2xl font-black font-mono text-indigo-600">{uniqueTypes}</div>
+                        <div className="text-[9px] uppercase font-bold text-neutral-400 mt-0.5">Types</div>
+                    </div>
+                    <div className="rounded-xl bg-green-50 dark:bg-green-900/20 p-3 text-center col-span-2">
+                        <div className="text-2xl font-black font-mono text-green-600">{linkedCount}</div>
+                        <div className="text-[9px] uppercase font-bold text-neutral-400 mt-0.5">Linked to Citizens</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
     );
 }
 

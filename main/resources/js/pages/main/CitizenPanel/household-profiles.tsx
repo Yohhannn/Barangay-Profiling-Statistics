@@ -5,7 +5,8 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft, Search, Plus, Trash2,
     Home, MapPin, Droplets, Link as LinkIcon,
-    UserCheck, FileText, Edit3, X, SlidersHorizontal, Hash, Check, RotateCcw, Info, Lock
+    UserCheck, FileText, Edit3, X, SlidersHorizontal, Hash, Check, RotateCcw, Info, Lock,
+    BarChart2, TrendingUp,
 } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import HouseholdCreation from './popup/household-creation';
@@ -303,6 +304,9 @@ export default function HouseholdProfiles({ households = [], filters = {}, syste
                         </div>
                     </div>
                 </div>
+
+                {/* Mini Statistics Panel */}
+                <HouseholdMiniStats households={households} />
 
                 <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
 
@@ -965,6 +969,119 @@ export default function HouseholdProfiles({ households = [], filters = {}, syste
             )}
 
         </AppLayout>
+    );
+}
+
+// --- Mini Statistics ---
+
+function HouseholdMiniStats({ households }: { households: Household[] }) {
+    const total = households.length;
+
+    // Ownership breakdown
+    const ownershipCounts = useMemo(() => {
+        const map: Record<string, number> = {};
+        households.forEach(h => { map[h.ownershipStatus] = (map[h.ownershipStatus] || 0) + 1; });
+        return Object.entries(map).sort((a, b) => b[1] - a[1]);
+    }, [households]);
+
+    // Avg members
+    const avgMembers = useMemo(() => {
+        if (total === 0) return 0;
+        return (households.reduce((sum, h) => sum + h.members.length, 0) / total).toFixed(1);
+    }, [households, total]);
+
+    const maxOwnership = ownershipCounts[0]?.[1] ?? 1;
+
+    // Top 5 water sources
+    const topWater = useMemo(() => {
+        const map: Record<string, number> = {};
+        households.forEach(h => { if (h.waterSource) map[h.waterSource] = (map[h.waterSource] || 0) + 1; });
+        return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 4);
+    }, [households]);
+
+    const maxWater = topWater[0]?.[1] ?? 1;
+
+    if (total === 0) return null;
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0">
+
+            {/* 1. Ownership Status */}
+            <div className="bg-white dark:bg-sidebar border border-sidebar-border/60 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                    <BarChart2 className="size-4 text-orange-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Ownership Status</span>
+                    <span className="ml-auto text-[10px] font-mono text-neutral-400">{total} total</span>
+                </div>
+                <div className="space-y-2">
+                    {ownershipCounts.slice(0, 4).map(([status, count]) => (
+                        <div key={status} className="space-y-0.5">
+                            <div className="flex justify-between text-[10px]">
+                                <span className="truncate max-w-[70%] font-medium text-neutral-700 dark:text-neutral-300">{status}</span>
+                                <span className="font-mono font-bold text-orange-600">{count}</span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+                                <div className="h-full bg-orange-500 rounded-full transition-all" style={{ width: `${(count / maxOwnership) * 100}%` }} />
+                            </div>
+                        </div>
+                    ))}
+                    {ownershipCounts.length === 0 && <p className="text-xs text-neutral-400 italic">No data.</p>}
+                </div>
+            </div>
+
+            {/* 2. Household Summary */}
+            <div className="bg-white dark:bg-sidebar border border-sidebar-border/60 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                    <Home className="size-4 text-orange-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Summary</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-xl bg-orange-50 dark:bg-orange-900/20 p-3 text-center">
+                        <div className="text-2xl font-black font-mono text-orange-600">{total}</div>
+                        <div className="text-[9px] uppercase font-bold text-neutral-400 mt-0.5">Households</div>
+                    </div>
+                    <div className="rounded-xl bg-blue-50 dark:bg-blue-900/20 p-3 text-center">
+                        <div className="text-2xl font-black font-mono text-blue-600">{avgMembers}</div>
+                        <div className="text-[9px] uppercase font-bold text-neutral-400 mt-0.5">Avg Members</div>
+                    </div>
+                    <div className="rounded-xl bg-green-50 dark:bg-green-900/20 p-3 text-center">
+                        <div className="text-2xl font-black font-mono text-green-600">
+                            {households.reduce((s, h) => s + h.members.length, 0)}
+                        </div>
+                        <div className="text-[9px] uppercase font-bold text-neutral-400 mt-0.5">Total Members</div>
+                    </div>
+                    <div className="rounded-xl bg-purple-50 dark:bg-purple-900/20 p-3 text-center">
+                        <div className="text-2xl font-black font-mono text-purple-600">
+                            {households.filter(h => h.photoUrl).length}
+                        </div>
+                        <div className="text-[9px] uppercase font-bold text-neutral-400 mt-0.5">With Photo</div>
+                    </div>
+                </div>
+            </div>
+
+            {/* 3. Water Source */}
+            <div className="bg-white dark:bg-sidebar border border-sidebar-border/60 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                    <TrendingUp className="size-4 text-orange-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Water Sources</span>
+                </div>
+                <div className="space-y-2">
+                    {topWater.map(([source, count]) => (
+                        <div key={source} className="space-y-0.5">
+                            <div className="flex justify-between text-[10px]">
+                                <span className="truncate max-w-[70%] font-medium text-neutral-700 dark:text-neutral-300">{source}</span>
+                                <span className="font-mono font-bold text-orange-600">{count}</span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+                                <div className="h-full bg-cyan-500 rounded-full transition-all" style={{ width: `${(count / maxWater) * 100}%` }} />
+                            </div>
+                        </div>
+                    ))}
+                    {topWater.length === 0 && <p className="text-xs text-neutral-400 italic">No data.</p>}
+                </div>
+            </div>
+
+        </div>
     );
 }
 

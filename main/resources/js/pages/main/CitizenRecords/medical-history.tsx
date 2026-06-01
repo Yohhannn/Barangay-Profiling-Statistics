@@ -5,7 +5,8 @@ import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowLeft, Search, Plus, Trash2,
     Stethoscope, User, Calendar, FileText,
-    Download, Edit3, X, SlidersHorizontal, Activity, Info, Check, RotateCcw
+    Download, Edit3, X, SlidersHorizontal, Activity, Info, Check, RotateCcw,
+    BarChart2, TrendingUp,
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import MedicalHistoryCreation from './popup/medical-history-creation'; // IMPORTED
@@ -216,6 +217,9 @@ export default function MedicalHistory({ histories = [], filters = {} as any }: 
                         </div>
                     </div>
                 </div>
+
+                {/* Mini Statistics Panel */}
+                <MedicalMiniStats histories={histories} />
 
                 {/* --- Main Content Split --- */}
                 <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
@@ -558,6 +562,127 @@ export default function MedicalHistory({ histories = [], filters = {} as any }: 
                 </>
             )}
         </AppLayout>
+    );
+}
+
+// --- Mini Statistics ---
+
+function MedicalMiniStats({ histories }: { histories: MedicalRecord[] }) {
+    const total = histories.length;
+
+    // Top medical types
+    const topTypes = useMemo(() => {
+        const map: Record<string, number> = {};
+        histories.forEach(h => { map[h.type] = (map[h.type] || 0) + 1; });
+        return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    }, [histories]);
+
+    const maxType = topTypes[0]?.[1] ?? 1;
+
+    // Linked vs unlinked citizens
+    const linked   = useMemo(() => histories.filter(h => h.ctz_id !== null).length, [histories]);
+    const unlinked = total - linked;
+
+    // Monthly volume (last 6 months) using dateDiagnosed
+    const monthlyData = useMemo(() => {
+        const map: Record<string, number> = {};
+        histories.forEach(h => {
+            if (!h.dateDiagnosed) return;
+            const d = new Date(h.dateDiagnosed);
+            if (isNaN(d.getTime())) return;
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            map[key] = (map[key] || 0) + 1;
+        });
+        const now = new Date();
+        return Array.from({ length: 6 }, (_, i) => {
+            const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            return { label: d.toLocaleString('default', { month: 'short' }), count: map[key] || 0 };
+        });
+    }, [histories]);
+
+    const maxMonthly = Math.max(...monthlyData.map(m => m.count), 1);
+
+    if (total === 0) return null;
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0">
+
+            {/* 1. Top Medical Types */}
+            <div className="bg-white dark:bg-sidebar border border-sidebar-border/60 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                    <BarChart2 className="size-4 text-rose-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Top Conditions</span>
+                    <span className="ml-auto text-[10px] font-mono text-neutral-400">{total} total</span>
+                </div>
+                <div className="space-y-2">
+                    {topTypes.map(([type, count]) => (
+                        <div key={type} className="space-y-0.5">
+                            <div className="flex justify-between text-[10px]">
+                                <span className="truncate max-w-[70%] font-medium text-neutral-700 dark:text-neutral-300">{type}</span>
+                                <span className="font-mono font-bold text-rose-600">{count}</span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+                                <div className="h-full bg-rose-500 rounded-full transition-all" style={{ width: `${(count / maxType) * 100}%` }} />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* 2. Patient Linkage */}
+            <div className="bg-white dark:bg-sidebar border border-sidebar-border/60 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                    <User className="size-4 text-rose-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Patient Linkage</span>
+                </div>
+                <div className="flex h-3 rounded-full overflow-hidden gap-px">
+                    {linked > 0 && (
+                        <div className="bg-rose-500 transition-all" style={{ width: `${(linked / total) * 100}%` }} title={`Linked: ${linked}`} />
+                    )}
+                    {unlinked > 0 && (
+                        <div className="bg-neutral-300 dark:bg-neutral-600 transition-all" style={{ width: `${(unlinked / total) * 100}%` }} title={`Unlinked: ${unlinked}`} />
+                    )}
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-center">
+                    <div className="rounded-lg p-2 bg-rose-50 dark:bg-rose-900/20">
+                        <div className="text-xl font-black font-mono text-rose-600">{linked}</div>
+                        <div className="text-[9px] uppercase font-bold text-neutral-400">Linked</div>
+                    </div>
+                    <div className="rounded-lg p-2 bg-neutral-50 dark:bg-neutral-900/20">
+                        <div className="text-xl font-black font-mono text-neutral-500">{unlinked}</div>
+                        <div className="text-[9px] uppercase font-bold text-neutral-400">Manual Entry</div>
+                    </div>
+                </div>
+            </div>
+
+            {/* 3. Monthly Volume */}
+            <div className="bg-white dark:bg-sidebar border border-sidebar-border/60 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                    <TrendingUp className="size-4 text-rose-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Monthly Volume</span>
+                    <span className="ml-auto text-[10px] font-mono text-neutral-400">6 mo.</span>
+                </div>
+                <div className="flex items-end gap-1 h-16">
+                    {monthlyData.map((m) => (
+                        <div key={m.label} className="flex-1 flex flex-col items-center gap-1">
+                            <div className="w-full flex items-end justify-center" style={{ height: '40px' }}>
+                                <div
+                                    className="w-full rounded-t bg-rose-500 dark:bg-rose-600 transition-all min-h-[2px]"
+                                    style={{ height: `${(m.count / maxMonthly) * 40}px` }}
+                                    title={`${m.label}: ${m.count}`}
+                                />
+                            </div>
+                            <span className="text-[9px] font-mono text-neutral-400">{m.label}</span>
+                        </div>
+                    ))}
+                </div>
+                <div className="flex justify-between text-[9px] font-mono text-neutral-400 border-t border-sidebar-border/40 pt-1">
+                    <span>0</span><span>{maxMonthly}</span>
+                </div>
+            </div>
+
+        </div>
     );
 }
 

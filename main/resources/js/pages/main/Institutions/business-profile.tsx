@@ -4,7 +4,8 @@ import { Head, Link, usePage, router } from '@inertiajs/react';
 import {
     ArrowLeft, Search, Plus, Trash2,
     Store, User, Users, MapPin, FileText,
-    Edit3, X, SlidersHorizontal, BadgeCheck
+    Edit3, X, SlidersHorizontal, BadgeCheck,
+    BarChart2, TrendingUp,
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import BusinessCreation from './popup/business-creation';
@@ -180,6 +181,9 @@ export default function BusinessProfile() {
                         </h1>
                     </div>
                 </div>
+
+                {/* Mini Statistics Panel */}
+                <BusinessMiniStats businesses={businesses} />
 
                 <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
 
@@ -448,6 +452,116 @@ export default function BusinessProfile() {
                 </div>
             </div>
         </AppLayout>
+    );
+}
+
+// --- Mini Statistics ---
+
+function BusinessMiniStats({ businesses }: { businesses: Business[] }) {
+    const total = businesses.length;
+
+    // Status counts
+    const statusCounts = useMemo(() => ({
+        Active:    businesses.filter(b => b.status === 'Active').length,
+        Inactive:  businesses.filter(b => b.status === 'Inactive').length,
+        Closed:    businesses.filter(b => b.status === 'Closed').length,
+        Suspended: businesses.filter(b => b.status === 'Suspended').length,
+    }), [businesses]);
+
+    // Top business types
+    const topTypes = useMemo(() => {
+        const map: Record<string, number> = {};
+        businesses.forEach(b => { map[b.businessType] = (map[b.businessType] || 0) + 1; });
+        return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    }, [businesses]);
+
+    const maxType = topTypes[0]?.[1] ?? 1;
+
+    const dtiCount    = useMemo(() => businesses.filter(b => b.isDti).length, [businesses]);
+    const multiOwner  = useMemo(() => businesses.filter(b => b.owners.length > 1).length, [businesses]);
+
+    if (total === 0) return null;
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0">
+
+            {/* 1. Status Breakdown */}
+            <div className="bg-white dark:bg-sidebar border border-sidebar-border/60 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                    <BarChart2 className="size-4 text-indigo-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Business Status</span>
+                    <span className="ml-auto text-[10px] font-mono text-neutral-400">{total} total</span>
+                </div>
+                <div className="flex h-3 rounded-full overflow-hidden gap-px">
+                    {statusCounts.Active    > 0 && <div className="bg-green-500"  style={{ width: `${(statusCounts.Active    / total) * 100}%` }} title={`Active: ${statusCounts.Active}`} />}
+                    {statusCounts.Inactive  > 0 && <div className="bg-neutral-400" style={{ width: `${(statusCounts.Inactive  / total) * 100}%` }} title={`Inactive: ${statusCounts.Inactive}`} />}
+                    {statusCounts.Suspended > 0 && <div className="bg-orange-400" style={{ width: `${(statusCounts.Suspended / total) * 100}%` }} title={`Suspended: ${statusCounts.Suspended}`} />}
+                    {statusCounts.Closed    > 0 && <div className="bg-red-400"    style={{ width: `${(statusCounts.Closed    / total) * 100}%` }} title={`Closed: ${statusCounts.Closed}`} />}
+                </div>
+                <div className="grid grid-cols-2 gap-1">
+                    {([
+                        { label: 'Active',    count: statusCounts.Active,    color: 'text-green-600',   bg: 'bg-green-50 dark:bg-green-900/20' },
+                        { label: 'Inactive',  count: statusCounts.Inactive,  color: 'text-neutral-500', bg: 'bg-neutral-50 dark:bg-neutral-900/20' },
+                        { label: 'Suspended', count: statusCounts.Suspended, color: 'text-orange-500',  bg: 'bg-orange-50 dark:bg-orange-900/20' },
+                        { label: 'Closed',    count: statusCounts.Closed,    color: 'text-red-500',     bg: 'bg-red-50 dark:bg-red-900/20' },
+                    ] as const).map(s => (
+                        <div key={s.label} className={`rounded-lg p-2 text-center ${s.bg}`}>
+                            <div className={`text-lg font-black font-mono ${s.color}`}>{s.count}</div>
+                            <div className="text-[9px] uppercase font-bold text-neutral-400">{s.label}</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* 2. Top Business Types */}
+            <div className="bg-white dark:bg-sidebar border border-sidebar-border/60 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                    <Store className="size-4 text-indigo-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Top Types</span>
+                </div>
+                <div className="space-y-2">
+                    {topTypes.map(([type, count]) => (
+                        <div key={type} className="space-y-0.5">
+                            <div className="flex justify-between text-[10px]">
+                                <span className="truncate max-w-[70%] font-medium text-neutral-700 dark:text-neutral-300">{type}</span>
+                                <span className="font-mono font-bold text-indigo-600">{count}</span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+                                <div className="h-full bg-indigo-500 rounded-full transition-all" style={{ width: `${(count / maxType) * 100}%` }} />
+                            </div>
+                        </div>
+                    ))}
+                    {topTypes.length === 0 && <p className="text-xs text-neutral-400 italic">No data.</p>}
+                </div>
+            </div>
+
+            {/* 3. Summary Tiles */}
+            <div className="bg-white dark:bg-sidebar border border-sidebar-border/60 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                    <TrendingUp className="size-4 text-indigo-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Summary</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-xl bg-indigo-50 dark:bg-indigo-900/20 p-3 text-center">
+                        <div className="text-2xl font-black font-mono text-indigo-600">{total}</div>
+                        <div className="text-[9px] uppercase font-bold text-neutral-400 mt-0.5">Businesses</div>
+                    </div>
+                    <div className="rounded-xl bg-green-50 dark:bg-green-900/20 p-3 text-center">
+                        <div className="text-2xl font-black font-mono text-green-600">{statusCounts.Active}</div>
+                        <div className="text-[9px] uppercase font-bold text-neutral-400 mt-0.5">Active</div>
+                    </div>
+                    <div className="rounded-xl bg-blue-50 dark:bg-blue-900/20 p-3 text-center">
+                        <div className="text-2xl font-black font-mono text-blue-600">{dtiCount}</div>
+                        <div className="text-[9px] uppercase font-bold text-neutral-400 mt-0.5">DTI Reg.</div>
+                    </div>
+                    <div className="rounded-xl bg-purple-50 dark:bg-purple-900/20 p-3 text-center">
+                        <div className="text-2xl font-black font-mono text-purple-600">{multiOwner}</div>
+                        <div className="text-[9px] uppercase font-bold text-neutral-400 mt-0.5">Multi-Owner</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
     );
 }
 

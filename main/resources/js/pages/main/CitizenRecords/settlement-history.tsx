@@ -6,7 +6,8 @@ import {
     Scale, User, Calendar, FileText,
     Edit3, X, SlidersHorizontal, Activity, ShieldAlert, Handshake,
     Filter, ChevronDown, CheckCircle, Info, UserCheck, AlertCircle, AlertTriangle,
-    Landmark, LayoutGrid, List, Users, Clock, FileClock // Added new icons
+    Landmark, LayoutGrid, List, Users, Clock, FileClock,
+    BarChart2, TrendingUp,
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import SettlementHistoryCreation from './popup/settlement-history-creation';
@@ -220,6 +221,9 @@ export default function SettlementHistory({ histories = [], filters = {} as any 
                         </div>
                     </div>
                 </div>
+
+                {/* Mini Statistics Panel */}
+                <SettlementMiniStats histories={histories} />
 
                 <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
 
@@ -548,6 +552,127 @@ export default function SettlementHistory({ histories = [], filters = {} as any 
                 rawHistory={rawHistoryData}
             />
         </AppLayout>
+    );
+}
+
+// --- Mini Statistics ---
+
+function SettlementMiniStats({ histories }: { histories: SettlementRecord[] }) {
+    const total = histories.length;
+
+    // Summary counts
+    const totalComplainants  = useMemo(() => histories.reduce((s, h) => s + (h.complainants?.length  || 0), 0), [histories]);
+    const totalRespondents   = useMemo(() => histories.reduce((s, h) => s + (h.linked_histories?.length || 0), 0), [histories]);
+
+    // Top mediators
+    const topMediators = useMemo(() => {
+        const map: Record<string, number> = {};
+        histories.forEach(h => {
+            const m = h.mediator?.trim() || 'Unknown';
+            map[m] = (map[m] || 0) + 1;
+        });
+        return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    }, [histories]);
+
+    const maxMediator = topMediators[0]?.[1] ?? 1;
+
+    // Monthly volume using dateOfSettlement
+    const monthlyData = useMemo(() => {
+        const map: Record<string, number> = {};
+        histories.forEach(h => {
+            if (!h.dateOfSettlement) return;
+            const d = new Date(h.dateOfSettlement);
+            if (isNaN(d.getTime())) return;
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            map[key] = (map[key] || 0) + 1;
+        });
+        const now = new Date();
+        return Array.from({ length: 6 }, (_, i) => {
+            const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            return { label: d.toLocaleString('default', { month: 'short' }), count: map[key] || 0 };
+        });
+    }, [histories]);
+
+    const maxMonthly = Math.max(...monthlyData.map(m => m.count), 1);
+
+    if (total === 0) return null;
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0">
+
+            {/* 1. Settlement Summary */}
+            <div className="bg-white dark:bg-sidebar border border-sidebar-border/60 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                    <BarChart2 className="size-4 text-amber-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Summary</span>
+                    <span className="ml-auto text-[10px] font-mono text-neutral-400">{total} total</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1 text-center">
+                    <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 p-2">
+                        <div className="text-xl font-black font-mono text-amber-600">{total}</div>
+                        <div className="text-[9px] uppercase font-bold text-neutral-400">Cases</div>
+                    </div>
+                    <div className="rounded-xl bg-rose-50 dark:bg-rose-900/20 p-2">
+                        <div className="text-xl font-black font-mono text-rose-600">{totalComplainants}</div>
+                        <div className="text-[9px] uppercase font-bold text-neutral-400">Complainants</div>
+                    </div>
+                    <div className="rounded-xl bg-blue-50 dark:bg-blue-900/20 p-2">
+                        <div className="text-xl font-black font-mono text-blue-600">{totalRespondents}</div>
+                        <div className="text-[9px] uppercase font-bold text-neutral-400">Respondents</div>
+                    </div>
+                </div>
+            </div>
+
+            {/* 2. Top Mediators */}
+            <div className="bg-white dark:bg-sidebar border border-sidebar-border/60 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                    <Handshake className="size-4 text-amber-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Top Mediators</span>
+                </div>
+                <div className="space-y-2">
+                    {topMediators.map(([mediator, count]) => (
+                        <div key={mediator} className="space-y-0.5">
+                            <div className="flex justify-between text-[10px]">
+                                <span className="truncate max-w-[70%] font-medium text-neutral-700 dark:text-neutral-300">{mediator}</span>
+                                <span className="font-mono font-bold text-amber-600">{count}</span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+                                <div className="h-full bg-amber-500 rounded-full transition-all" style={{ width: `${(count / maxMediator) * 100}%` }} />
+                            </div>
+                        </div>
+                    ))}
+                    {topMediators.length === 0 && <p className="text-xs text-neutral-400 italic">No data.</p>}
+                </div>
+            </div>
+
+            {/* 3. Monthly Volume */}
+            <div className="bg-white dark:bg-sidebar border border-sidebar-border/60 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                    <TrendingUp className="size-4 text-amber-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Monthly Volume</span>
+                    <span className="ml-auto text-[10px] font-mono text-neutral-400">6 mo.</span>
+                </div>
+                <div className="flex items-end gap-1 h-16">
+                    {monthlyData.map((m) => (
+                        <div key={m.label} className="flex-1 flex flex-col items-center gap-1">
+                            <div className="w-full flex items-end justify-center" style={{ height: '40px' }}>
+                                <div
+                                    className="w-full rounded-t bg-amber-500 dark:bg-amber-600 transition-all min-h-[2px]"
+                                    style={{ height: `${(m.count / maxMonthly) * 40}px` }}
+                                    title={`${m.label}: ${m.count}`}
+                                />
+                            </div>
+                            <span className="text-[9px] font-mono text-neutral-400">{m.label}</span>
+                        </div>
+                    ))}
+                </div>
+                <div className="flex justify-between text-[9px] font-mono text-neutral-400 border-t border-sidebar-border/40 pt-1">
+                    <span>0</span><span>{maxMonthly}</span>
+                </div>
+            </div>
+
+        </div>
     );
 }
 

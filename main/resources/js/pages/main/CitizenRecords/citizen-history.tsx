@@ -6,7 +6,8 @@ import {
     ArrowLeft, Search, Plus, Trash2,
     FileClock, User, Calendar, FileText,
     Download, Edit3, X, SlidersHorizontal, Activity, Tag, Info,
-    Handshake, Check, RotateCcw
+    Handshake, Check, RotateCcw,
+    BarChart2, TrendingUp,
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import CitizenHistoryCreation from './popup/citizen-history-creation'; // IMPORTED
@@ -232,6 +233,9 @@ export default function CitizenHistory({ histories = [], filters = {} as any }: 
                     {/* <Download className="size-4" /> Export Report*/}
                     {/*</button>*/}
                 </div>
+
+                {/* Mini Statistics Panel */}
+                <HistoryMiniStats histories={histories} />
 
                 {/* --- Main Content Split --- */}
                 <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
@@ -590,6 +594,146 @@ export default function CitizenHistory({ histories = [], filters = {} as any }: 
                 </>
             )}
         </AppLayout>
+    );
+}
+
+// --- Mini Statistics ---
+
+function HistoryMiniStats({ histories }: { histories: HistoryRecord[] }) {
+    const total = histories.length;
+
+    // Type counts
+    const typeCounts = useMemo(() => ({
+        Violation:    histories.filter(h => h.type === 'Violation').length,
+        Complaint:    histories.filter(h => h.type === 'Complaint').length,
+        Commendation: histories.filter(h => h.type === 'Commendation').length,
+        Other:        histories.filter(h => !['Violation', 'Complaint', 'Commendation'].includes(h.type)).length,
+    }), [histories]);
+
+    // Top 5 case classifications
+    const topClassifications = useMemo(() => {
+        const map: Record<string, number> = {};
+        histories.forEach(h => {
+            const key = h.caseClassification || 'Unclassified';
+            map[key] = (map[key] || 0) + 1;
+        });
+        return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    }, [histories]);
+
+    const maxClass = topClassifications[0]?.[1] ?? 1;
+
+    // Monthly volume (last 6 months)
+    const monthlyData = useMemo(() => {
+        const map: Record<string, number> = {};
+        histories.forEach(h => {
+            if (!h.dateRecorded) return;
+            const d = new Date(h.dateRecorded);
+            if (isNaN(d.getTime())) return;
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            map[key] = (map[key] || 0) + 1;
+        });
+        const now = new Date();
+        return Array.from({ length: 6 }, (_, i) => {
+            const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            return { label: d.toLocaleString('default', { month: 'short' }), count: map[key] || 0 };
+        });
+    }, [histories]);
+
+    const maxMonthly = Math.max(...monthlyData.map(m => m.count), 1);
+
+    if (total === 0) return null;
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0">
+
+            {/* 1. Record Type Breakdown */}
+            <div className="bg-white dark:bg-sidebar border border-sidebar-border/60 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                    <BarChart2 className="size-4 text-purple-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Record Types</span>
+                    <span className="ml-auto text-[10px] font-mono text-neutral-400">{total} total</span>
+                </div>
+                {/* Stacked bar */}
+                <div className="flex h-3 rounded-full overflow-hidden gap-px">
+                    {typeCounts.Violation > 0 && (
+                        <div className="bg-red-400 transition-all" style={{ width: `${(typeCounts.Violation / total) * 100}%` }} title={`Violation: ${typeCounts.Violation}`} />
+                    )}
+                    {typeCounts.Complaint > 0 && (
+                        <div className="bg-orange-400 transition-all" style={{ width: `${(typeCounts.Complaint / total) * 100}%` }} title={`Complaint: ${typeCounts.Complaint}`} />
+                    )}
+                    {typeCounts.Commendation > 0 && (
+                        <div className="bg-green-500 transition-all" style={{ width: `${(typeCounts.Commendation / total) * 100}%` }} title={`Commendation: ${typeCounts.Commendation}`} />
+                    )}
+                    {typeCounts.Other > 0 && (
+                        <div className="bg-neutral-300 transition-all" style={{ width: `${(typeCounts.Other / total) * 100}%` }} title={`Other: ${typeCounts.Other}`} />
+                    )}
+                </div>
+                <div className="grid grid-cols-2 gap-1">
+                    {([
+                        { label: 'Violation',    count: typeCounts.Violation,    color: 'text-red-600',     bg: 'bg-red-50 dark:bg-red-900/20' },
+                        { label: 'Complaint',    count: typeCounts.Complaint,    color: 'text-orange-500',  bg: 'bg-orange-50 dark:bg-orange-900/20' },
+                        { label: 'Commendation', count: typeCounts.Commendation, color: 'text-green-600',   bg: 'bg-green-50 dark:bg-green-900/20' },
+                        { label: 'Other',        count: typeCounts.Other,        color: 'text-neutral-500', bg: 'bg-neutral-50 dark:bg-neutral-900/20' },
+                    ] as const).map(s => (
+                        <div key={s.label} className={`rounded-lg p-2 text-center ${s.bg}`}>
+                            <div className={`text-lg font-black font-mono ${s.color}`}>{s.count}</div>
+                            <div className="text-[9px] uppercase font-bold text-neutral-400">{s.label}</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* 2. Case Classifications */}
+            <div className="bg-white dark:bg-sidebar border border-sidebar-border/60 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                    <FileClock className="size-4 text-purple-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Classifications</span>
+                </div>
+                <div className="space-y-2">
+                    {topClassifications.map(([cls, count]) => (
+                        <div key={cls} className="space-y-0.5">
+                            <div className="flex justify-between text-[10px]">
+                                <span className="truncate max-w-[70%] font-medium text-neutral-700 dark:text-neutral-300">{cls}</span>
+                                <span className="font-mono font-bold text-purple-600">{count}</span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+                                <div className="h-full bg-purple-500 rounded-full transition-all" style={{ width: `${(count / maxClass) * 100}%` }} />
+                            </div>
+                        </div>
+                    ))}
+                    {topClassifications.length === 0 && <p className="text-xs text-neutral-400 italic">No data.</p>}
+                </div>
+            </div>
+
+            {/* 3. Monthly Volume */}
+            <div className="bg-white dark:bg-sidebar border border-sidebar-border/60 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                    <TrendingUp className="size-4 text-purple-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Monthly Volume</span>
+                    <span className="ml-auto text-[10px] font-mono text-neutral-400">6 mo.</span>
+                </div>
+                <div className="flex items-end gap-1 h-16">
+                    {monthlyData.map((m) => (
+                        <div key={m.label} className="flex-1 flex flex-col items-center gap-1">
+                            <div className="w-full flex items-end justify-center" style={{ height: '40px' }}>
+                                <div
+                                    className="w-full rounded-t bg-purple-500 dark:bg-purple-600 transition-all min-h-[2px]"
+                                    style={{ height: `${(m.count / maxMonthly) * 40}px` }}
+                                    title={`${m.label}: ${m.count}`}
+                                />
+                            </div>
+                            <span className="text-[9px] font-mono text-neutral-400">{m.label}</span>
+                        </div>
+                    ))}
+                </div>
+                <div className="flex justify-between text-[9px] font-mono text-neutral-400 border-t border-sidebar-border/40 pt-1">
+                    <span>0</span>
+                    <span>{maxMonthly}</span>
+                </div>
+            </div>
+
+        </div>
     );
 }
 

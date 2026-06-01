@@ -7,7 +7,8 @@ import {
     User, MapPin, Briefcase, UserX, GraduationCap,
     HeartPulse, Baby, Phone, Hash, Home,
     Filter, X, SlidersHorizontal, Edit3, ScanFace, Check, RotateCcw,
-    Activity, FileText, Info, Store, Building, Lock
+    Activity, FileText, Info, Store, Building, Lock,
+    BarChart2, TrendingUp,
 } from 'lucide-react';
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import CitizenCreation from './popup/citizen-creation';
@@ -535,6 +536,9 @@ export default function CitizenProfiles({ citizens = [], sitios = [], systemAcco
                         </h1>
                     </div>
                 </div>
+
+                {/* Mini Statistics Panel */}
+                <CitizenMiniStats citizens={citizens} />
 
                 {/* --- Main Content Split --- */}
                 <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
@@ -1479,6 +1483,115 @@ function InfoItem({ label, value, highlight = false }: { label: string, value: s
             <span className={`text-sm truncate font-medium ${highlight ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-800 dark:text-neutral-200'}`}>
                 {value}
             </span>
+        </div>
+    );
+}
+
+// --- Mini Statistics ---
+
+function CitizenMiniStats({ citizens }: { citizens: Citizen[] }) {
+    const total = citizens.length;
+
+    // Status counts
+    const active   = useMemo(() => citizens.filter(c => !c.isDeceased).length, [citizens]);
+    const deceased = useMemo(() => citizens.filter(c => c.isDeceased).length,  [citizens]);
+
+    // Sex split
+    const male   = useMemo(() => citizens.filter(c => c.sex === 'Male').length,   [citizens]);
+    const female = useMemo(() => citizens.filter(c => c.sex === 'Female').length, [citizens]);
+
+    // Top 5 sitios
+    const topSitios = useMemo(() => {
+        const map: Record<string, number> = {};
+        citizens.forEach(c => { if (c.sitio) map[c.sitio] = (map[c.sitio] || 0) + 1; });
+        return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    }, [citizens]);
+
+    const maxSitio = topSitios[0]?.[1] ?? 1;
+
+    if (total === 0) return null;
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0">
+
+            {/* 1. Status Breakdown */}
+            <div className="bg-white dark:bg-sidebar border border-sidebar-border/60 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                    <BarChart2 className="size-4 text-blue-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Citizen Status</span>
+                    <span className="ml-auto text-[10px] font-mono text-neutral-400">{total} total</span>
+                </div>
+                <div className="flex h-3 rounded-full overflow-hidden gap-px">
+                    {active > 0 && (
+                        <div className="bg-green-500 transition-all" style={{ width: `${(active / total) * 100}%` }} title={`Active: ${active}`} />
+                    )}
+                    {deceased > 0 && (
+                        <div className="bg-red-400 transition-all" style={{ width: `${(deceased / total) * 100}%` }} title={`Deceased: ${deceased}`} />
+                    )}
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-center">
+                    {([
+                        { label: 'Active',   count: active,   color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20' },
+                        { label: 'Deceased', count: deceased, color: 'text-red-500',   bg: 'bg-red-50 dark:bg-red-900/20' },
+                    ] as const).map(s => (
+                        <div key={s.label} className={`rounded-lg p-2 ${s.bg}`}>
+                            <div className={`text-xl font-black font-mono ${s.color}`}>{s.count}</div>
+                            <div className="text-[9px] uppercase font-bold text-neutral-400">{s.label}</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* 2. Sex Distribution */}
+            <div className="bg-white dark:bg-sidebar border border-sidebar-border/60 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                    <User className="size-4 text-blue-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Sex Distribution</span>
+                </div>
+                <div className="flex h-3 rounded-full overflow-hidden gap-px">
+                    {male > 0 && (
+                        <div className="bg-blue-500 transition-all" style={{ width: `${(male / total) * 100}%` }} title={`Male: ${male}`} />
+                    )}
+                    {female > 0 && (
+                        <div className="bg-pink-400 transition-all" style={{ width: `${(female / total) * 100}%` }} title={`Female: ${female}`} />
+                    )}
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-center">
+                    {([
+                        { label: 'Male',   count: male,   color: 'text-blue-600',  bg: 'bg-blue-50 dark:bg-blue-900/20' },
+                        { label: 'Female', count: female, color: 'text-pink-500',  bg: 'bg-pink-50 dark:bg-pink-900/20' },
+                    ] as const).map(s => (
+                        <div key={s.label} className={`rounded-lg p-2 ${s.bg}`}>
+                            <div className={`text-xl font-black font-mono ${s.color}`}>{s.count}</div>
+                            <div className="text-[9px] uppercase font-bold text-neutral-400">{s.label}</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* 3. Top Sitios */}
+            <div className="bg-white dark:bg-sidebar border border-sidebar-border/60 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                    <MapPin className="size-4 text-blue-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Top Sitios</span>
+                    <span className="ml-auto text-[10px] font-mono text-neutral-400">{topSitios.length} location{topSitios.length !== 1 ? 's' : ''}</span>
+                </div>
+                <div className="space-y-2">
+                    {topSitios.map(([sitio, count]) => (
+                        <div key={sitio} className="space-y-0.5">
+                            <div className="flex justify-between text-[10px]">
+                                <span className="truncate max-w-[70%] font-medium text-neutral-700 dark:text-neutral-300">{sitio}</span>
+                                <span className="font-mono font-bold text-blue-600">{count}</span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+                                <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${(count / maxSitio) * 100}%` }} />
+                            </div>
+                        </div>
+                    ))}
+                    {topSitios.length === 0 && <p className="text-xs text-neutral-400 italic">No data.</p>}
+                </div>
+            </div>
+
         </div>
     );
 }
